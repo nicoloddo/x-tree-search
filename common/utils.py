@@ -1,3 +1,5 @@
+import itertools
+
 def join_arrays_respective_elements(arr1, arr2):
     """
     Combine each element of the first array with the respective same position element(s) of the second array.
@@ -21,3 +23,6 @@ def join_arrays_respective_elements(arr1, arr2):
         combined_array.append(combined_element)
     
     return combined_array
+
+def flatten_list(list_input):
+    return list(itertools.chain.from_iterable(list_input))

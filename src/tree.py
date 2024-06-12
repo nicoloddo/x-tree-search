@@ -8,14 +8,20 @@ class Tree(MarkovChain):
     A subsequent node would be for example:
     "0102" which means that to get there you need: root.children[1].children[0].children[2]
     """
+    def __init__(self):
+        super().__init__()
+        self.root = self.__add_node() # Add root node
+
     class TreeNode(MarkovChain.MarkovNode):
         """
         Represents a single node in a tree.
 
         Attributes:
             parent (TreeNode): The TreeNode parent of this node. If it is None, this is the root node, identified with the id:"0".
-            children (list): A list of Node instances that are the children of this node.
             is_leaf (bool): Indicates whether this node is a leaf of the tree.
+            value (object): Any object can be assigned to a node value.
+            children (list) (derived): A list of Node instances that are the children of this node (derived property from the original MarkovNode.connections attribute)
+            children_and_probs (list) (derived): List of tuples containing children of this node and the respective transition probability
         """
         def __init__(self, parent, value):
             self.parent = parent
@@ -23,11 +29,11 @@ class Tree(MarkovChain):
             self.is_leaf = True
 
             if parent == None:
-                name = "0"
+                node_id = "0"
             else:
-                name = parent.name + str(len(parent.children))
+                node_id = parent.id + str(len(parent.children))
 
-            super().__init__(name)
+            super().__init__(node_id)
         
         def __add_child(self, child, probability):
             self._MarkovNode__add_connection(child, probability)
@@ -43,16 +49,19 @@ class Tree(MarkovChain):
         def children(self):
             """Returns a list of children nodes of this node"""
             return [t[0] for t in self.children_and_probs] # Extract the first item of the tuple, which is the pointer to the child node
-    
 
-    def __init__(self):
-        super().__init__()
-        self.root = self.__add_node() # Add root node
+        @property
+        def id(self):
+            return self.name
 
-    def __add_node(self, parent=None, value=0):
+        @id.setter
+        def id(self, value):
+            self.name = value
+
+    def __add_node(self, parent=None, value=None):
         """Overrides the add_node method to ensure TreeNode objects are created."""
         new_node = self.TreeNode(parent, value)
-        self.nodes[new_node.name] = new_node
+        self.nodes[new_node.id] = new_node
         return new_node
 
     def set_children(self, node_id, children_values):
@@ -83,7 +92,7 @@ class Tree(MarkovChain):
         for node_id, node in self.nodes.items():
             result += f"\nNode: {node_id}\nChildren:\n"
             for child, prob in node.children_and_probs:
-                result += f"{child.name} with P = {prob.item()} and value V = {child.value}\n" # remember that prob is a tensor
+                result += f"{child.id} with P = {prob.item()} and value V = {child.value}\n" # remember that prob is a tensor
         return result
 
 

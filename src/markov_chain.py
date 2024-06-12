@@ -22,7 +22,12 @@ import warnings
 import torch
 
 class MarkovChain:
-
+    def __init__(self):
+        self.nodes = {}
+        ''' 
+        self.nodes maps node ids to their instances.
+        '''
+        
     class MarkovNode:
         '''MarkovNode objects should be handled through the MarkovChain class.'''
         def __init__(self, name):
@@ -48,13 +53,6 @@ class MarkovChain:
             if not abs(sum(prob for _, prob in self.connections) - 1) + probability < 1e-6:
                 warnings.warn("Probabilities for each node must sum to 1")
                 return False
-
-
-    def __init__(self):
-        self.nodes = {}
-        ''' 
-        self.nodes maps node ids to their instances.
-        '''
 
     @classmethod
     def from_dict(cls, input_dict):

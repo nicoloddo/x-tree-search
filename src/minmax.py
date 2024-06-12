@@ -13,7 +13,7 @@ class Minimax:
         Recursively calculates the best score using the Minimax algorithm.
 
         Args:
-            node (Node): The current node in the game tree.
+            node (TreeNode): The current node in the game tree.
             depth (int): The maximum depth to search in the tree.
             maximizing_player (bool): True if the current move is by the maximizing player, False otherwise.
 

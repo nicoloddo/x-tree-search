@@ -1,6 +1,6 @@
 MAX_ENVIRONMENT_SIZE_TO_PRINT = 30
 
-from common.utils import join_arrays_respective_elements
+from common.utils import join_arrays_respective_elements, flatten_list
 
 import numpy as np
 import inspect
@@ -14,6 +14,8 @@ class GameModel:
         Elements or "slots" of action spaces can be modified.
         The agents variable refer as well to a modifiable Action Space, allowing agents to perform actions on other agents and modify their features.
         The game model then allows to define rules. Rules constrain the Action Spaces by limiting the possible actions to perform on them.
+
+        To initialize a GameModel you need to specify the number of agents and the values of their features, including the default and alternative values.
 
         Args:
             
@@ -60,7 +62,8 @@ class GameModel:
 
         print(f"""
         You can add spaces on which to perform actions with the function add_action_space(dimensions, default_labels, additional_labels, dimensions_description).
-        Examples of that are the environment space (or board) and the agent space, which are by default already there.
+        For example most games need a board. By default there is the agent space, allowing for actions onto the agents features.
+        You can disable actions on an action space with 
 
         You can use the method gm.action_is_violation_if(rule, rule_description) to express rules for the game.\n
         Use help(gm.action_is_violation_if) for help on how to define rules.
@@ -100,8 +103,18 @@ class GameModel:
             raise ValueError("You should specify an alternative label for each default label.")
 
         # Initialize the environment matrix with the default labels
-        self.action_spaces[action_space_id] = ActionSpace(dimensions, default_labels, available_labels=labels, dimensions_descriptions=dimensions_descriptions)
+        self.action_spaces[action_space_id] = ActionSpace(dimensions=dimensions, default_labels=default_labels, available_labels=labels, dimensions_descriptions=dimensions_descriptions)
         self.rules[action_space_id] = [] # Initialize the array of rules to apply to the action space
+
+    ''' 
+    def set_action_space(self, action_space, action_space_id):
+        """ Sets an action space to a given ActionSpace instance. You can use it to add a new already existent action space or to modify one that is already present. """
+        self.action_spaces[action_space_id] = action_space
+        if action_space_id not in self.rules:
+            self.rules[action_space_id] = []
+        # Recheck properties that are Consequences of action_space states.
+        self.check_started()
+        self.check_ended()'''
 
     @property
     def printable_action_spaces(self):
@@ -125,7 +138,6 @@ class GameModel:
             Attributes:
                 on : the action_space_id on which to enable actions.
         """
-
         self.action_spaces[on].actions_enabled = True
     
     def disable_actions(self, on):
@@ -134,6 +146,25 @@ class GameModel:
                 on : the action_space_id on which to disable actions.
         """
         self.action_spaces[on].actions_enabled = False
+
+    def get_available_actions_and_states(self, action_space, rules_action_space_id):
+        """ 
+        return (list of dict): list containing all available actions that can be performed at the current state of the action_space, and the action space after that action was performed. 
+                               each dictionary is in the form {"action": action, "state": theoretical_action_space}
+        """
+        available_actions_and_states = []
+        theoretical_action_space_id = "theoretical_" + rules_action_space_id
+
+        for who, agent in enumerate(self.agents):
+            for where, element in np.ndenumerate(action_space):
+                for what in action_space.available_labels_flat:
+                    if not self.__break_rules(who, where, what, action_space, rules_action_space_id):
+                        # found available action
+                        what_before=element
+                        theoretical_action_space = self.__theoretical_apply_action(action_space, where, what)
+                        available_actions_and_states.append({"action": self.__action_to_dict(who, where, what, what_before, theoretical_action_space_id), "state": theoretical_action_space})
+        
+        return available_actions_and_states
 
     ''' Actions dynamics'''
     def action(self, action_space_id, who, where, what):
@@ -149,26 +180,38 @@ class GameModel:
         Returns:
             False if the action breaks any rules; otherwise, returns the action.
         """
-        if self.__break_rules(who, where, what, action_space_id):
+        action_space = self.action_spaces[action_space_id]
+        where = tuple(where)
+
+        if self.__break_rules(who, where, what, action_space, action_space_id):
             print("This action is not permitted.\n")
             return False
         else:
-            action_space = self.action_spaces[action_space_id]
-            what_before = self.__apply_action(action_space, where, what)
-            return self.__action_performed({'who':who, 'where':where, 'what':what, 'what_before':what_before, 'on':action_space_id})
+            what_before = action_space[where]
+            self.__apply_action(action_space, where, what)
+            action_dict = self.__action_to_dict(who, where, what, what_before, action_space_id)
+            self.actions.append(action_dict)
+
+            self.check_started()
+            self.check_ended()
+
+            return action_dict
             
-    def __action_performed(self, action):
-        self.actions.append(action)
-        self.check_started()
-        self.check_ended()
-        return action
+    def __action_to_dict(self, who, where, what, what_before, action_space_id):
+        action_dict = {'who':who, 'where':where, 'what':what, 'what_before':what_before, 'on':action_space_id}
+        return action_dict
 
     def __apply_action(self, action_space, where, what):
-        if not any(what in sublist for sublist in action_space.available_labels):
+        if what not in action_space.available_labels_flat:
             raise ValueError("Actions can only be done with the labels available to the given action space.")
-        what_before = action_space[tuple(where)]
-        action_space[tuple(where)] = what
-        return what_before
+        action_space[where] = what
+    
+    def __theoretical_apply_action(self, action_space, where, what):
+        theoretical_action_space = copy.deepcopy(action_space)
+        if what not in theoretical_action_space.available_labels_flat:
+            raise ValueError("Actions can only be done with the labels available to the given action space.")
+        theoretical_action_space[where] = what
+        return theoretical_action_space
     
     def theoretical_unapply_actions(self, actions_to_reverse_amount):
         ''' 
@@ -193,7 +236,6 @@ class GameModel:
             previous_action_spaces[action_space_id][tuple(where)] = what
         
         return previous_action_spaces
-
 
     ''' Rules definition'''
     def action_is_violation_if(self, rule, action_space_id = "general", *, rule_description): # Any argument assigned to parameters after the asterisk * can only be passed as keyword (named) arguments.
@@ -263,7 +305,7 @@ class GameModel:
     def __wrapped_rule(self, rule, who, where, what, action_space):
         return rule(who, where, what, self)
     
-    def __break_rules(self, who, where, what, action_space_id):
+    def __break_rules(self, who, where, what, action_space, rules_action_space_id):
         """
         Checks all rules based on the given parameters.
 
@@ -271,11 +313,13 @@ class GameModel:
             who (int): Identifier for the entity performing the action as index of the respective row in the agents matrix
             where (list/tuple): Location or coordinates in the action_space where the action takes place.
             what (str): The action or change being proposed.
+            action_space (ActionSpace): The actual action space to check.
+            rules_action_space_id (str): The id of the action space which rules we have to consider. Usually it's simply the action_space_id
+            We are allowing to pass the action space itself as well to make it possible to check on theoretical instances of the action space rather than the current.
 
         Returns:
             bool: Returns True if any rule is violated, otherwise False.
         """
-        action_space = self.action_spaces[action_space_id]
         if not action_space.actions_enabled: # First check if actions are allowed in the space
             print("Actions are not allowed in this Action Space.")
             return True
@@ -287,7 +331,7 @@ class GameModel:
                     print("Broke general rule " + str(i+1) + ': ' + rule['description'])
                     return True
 
-            for i, rule in enumerate(self.rules[action_space_id]): # Check rules specific to that action space
+            for i, rule in enumerate(self.rules[rules_action_space_id]): # Check rules specific to that action space
                 if rule['broken'](who, where, what):
                     print("Broke rule " + str(i+1) + ': ' + rule['description'])
                     return True
@@ -310,6 +354,10 @@ class GameModel:
 
     def delete_rule(self, action_space_id, index):
         del self.rules[action_space_id][index - 1]
+    
+    def delete_all_actionspace_rules(self, action_space_id):
+        for rule in self.rules[action_space_id]:
+            del rule
 
     ''' Endgame dynamics setting '''
     def set_endgame(self, callable_function):
@@ -382,7 +430,7 @@ class GameModel:
         return to_return
 
 class ActionSpace(np.ndarray):
-    def __new__(cls, dimensions, default_labels, available_labels, dimensions_descriptions, numpy_matrix=None, *, enable_actions = True):
+    def __new__(cls, *, dimensions=None, default_labels=None, numpy_matrix=None, trust_matrix_input=False, available_labels, dimensions_descriptions, enable_actions = True):
         """
         Create a numpy array with the given dimensions and default values for each row.
         
@@ -396,8 +444,12 @@ class ActionSpace(np.ndarray):
         Returns:
         ActionSpace: An enhanced numpy array with additional attributes.
         """
+        available_labels_flat = flatten_list(available_labels) # better to keep both the flat and not flat available labels list
 
-        if numpy_matrix is None:
+        if numpy_matrix is None: # numpy_matrix not provided
+            if dimensions is None or default_labels is None:
+                raise TypeError("Either 'numpy_matrix' or both 'dimensions' and 'default_labels' must be provided.")
+
             # Check that the second dimension matches the length of the default list
             if len(default_labels) != 1:
                 if dimensions[1] > len(default_labels):
@@ -405,15 +457,22 @@ class ActionSpace(np.ndarray):
             # Create the numpy array with the specified dimensions and default values
             flat_array = np.tile(default_labels, int(np.prod(dimensions) / len(default_labels)))
             obj = flat_array.reshape(dimensions).view(cls)
-        else:
-            if numpy_matrix.shape != tuple(dimensions):
-                raise ValueError("numpy_matrix has to have the same shape as specified in the dimensions input.")
-            else:
-                obj = numpy_matrix.view(cls)
+
+        else: # numpy_matrix was provided
+            if dimensions is not None or default_labels is not None:
+                warning.warn("Only 'numpy_matrix' or both 'dimensions' and 'default_labels' must be provided. numpy_matrix has precedence in this case.")
+
+            if not trust_matrix_input: # if we don't trust the matrix input we check that the matrix has proper labels
+                # checking every element can be expensive. Set the trust to True if you already know that the matrix has proper labels.
+                available_labels_set = set(available_labels_flat) # Transform into set for efficient checking
+                if not np.isin(numpy_matrix, list(available_labels_set)).all():
+                    raise ValueError("All elements in the numpy_array should be available labels and be present in the available_labels list.")
+            obj = numpy_matrix.view(cls)
         
 
         # Set the id and available labels attribute to the object
         obj.available_labels = available_labels
+        obj.available_labels_flat = available_labels_flat
         obj.dimensions_descriptions = dimensions_descriptions
         obj.actions_enabled = enable_actions     
 
@@ -423,6 +482,7 @@ class ActionSpace(np.ndarray):
         if obj is None:
             return
         self.available_labels = getattr(obj, 'available_labels', None)
+        self.available_labels_flat = getattr(obj, 'available_labels_flat', None)
         self.dimensions_descriptions = getattr(obj, 'dimensions_descriptions', None)
         self.actions_enabled = getattr(obj, 'actions_enabled', None)
 
@@ -435,11 +495,11 @@ class ActionSpace(np.ndarray):
         actions_enabled = getattr(self, 'actions_enabled', None)
 
         # Create a new instance with the copied data and custom attributes
-        new_obj = ActionSpace(list(self.shape),
-                            None, # We are using the numpy_matrix argument, the body of the array will not nead to be initialized
-                            copy.deepcopy(available_labels, memo),
-                            copy.deepcopy(dimensions_descriptions, memo),
+        new_obj = ActionSpace(available_labels=copy.deepcopy(available_labels, memo),
                             numpy_matrix=matrix,
+                            trust_matrix_input=True,
+                            dimensions_descriptions=dimensions_descriptions, 
+                            # The dimensions description is not deepcopied because it is memory demanding and not necessary. Strings are also immutable objects.
                             enable_actions=copy.deepcopy(actions_enabled, memo))
         # Add the new object to the memo dictionary to handle recursive copying
         memo[id(self)] = new_obj
