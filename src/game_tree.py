@@ -11,6 +11,7 @@ class GameTree(Tree):
         The game parameter must be an instance of GameModel, which includes defining agents, action spaces, and rules. Action spaces are the areas or elements where actions can be performed, such as a board in tic-tac-toe. Each action space can have modifiable elements or slots. The agents variable refers to an action space that allows agents to perform actions on other agents and modify their features. Rules constrain these action spaces by limiting the possible actions.
 
         The scoring_function should be a callable that takes one input called state, which is used to evaluate the game states. The function must be defined to appropriately score the states of the game.
+        The state is a numpy.ndarray matrix with elements belonging to the available_labels in the game.action_spaces[action_spaces_id].
 
         The action_space_id is an identifier for the action space on which to build the game tree. This specifies the area or context within the game where the actions are evaluated and performed.
 
@@ -38,6 +39,7 @@ class GameTree(Tree):
         self.game = game
         self.score = scoring_function
         self.action_space_id = action_space_id
+        self.root.state = game.action_spaces[action_space_id]
 
     class GameTreeNode(Tree.TreeNode):
         """
@@ -82,13 +84,13 @@ class GameTree(Tree):
         def action(self, value):
             self.value["action"] = value
 
-    def expand_node(node_id):
+    def expand_node(self, node_id):
         node = self.nodes[node_id]
 
         state = node.state
-        staste_rules_id = self.action_space_id
+        state_rules_id = self.action_space_id
 
-        available_actions_and_states = self.game.get_available_actions_and_states(state, staste_rules_id)
+        available_actions_and_states = self.game.get_available_actions_and_states(state, state_rules_id)
 
         children_values = []
         for actions_and_states in available_actions_and_states:
@@ -99,4 +101,4 @@ class GameTree(Tree):
             value = {"state": state, "score": score, "action": action}
             children_values.append(value)
 
-        set_children(self, node_id, children_values)
+        self.set_children(node_id, children_values)

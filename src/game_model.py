@@ -158,7 +158,7 @@ class GameModel:
         for who, agent in enumerate(self.agents):
             for where, element in np.ndenumerate(action_space):
                 for what in action_space.available_labels_flat:
-                    if not self.__break_rules(who, where, what, action_space, rules_action_space_id):
+                    if not self.__break_rules(who, where, what, action_space, rules_action_space_id, verbose=False):
                         # found available action
                         what_before=element
                         theoretical_action_space = self.__theoretical_apply_action(action_space, where, what)
@@ -305,7 +305,7 @@ class GameModel:
     def __wrapped_rule(self, rule, who, where, what, action_space):
         return rule(who, where, what, self)
     
-    def __break_rules(self, who, where, what, action_space, rules_action_space_id):
+    def __break_rules(self, who, where, what, action_space, rules_action_space_id, *, verbose=True):
         """
         Checks all rules based on the given parameters.
 
@@ -328,12 +328,14 @@ class GameModel:
         try:
             for i, rule in enumerate(self.rules["general"]): # Check general rules
                 if rule['broken'](who, where, what):
-                    print("Broke general rule " + str(i+1) + ': ' + rule['description'])
+                    if verbose:
+                        print("Broke general rule " + str(i+1) + ': ' + rule['description'])
                     return True
 
             for i, rule in enumerate(self.rules[rules_action_space_id]): # Check rules specific to that action space
                 if rule['broken'](who, where, what):
-                    print("Broke rule " + str(i+1) + ': ' + rule['description'])
+                    if verbose:
+                        print("Broke rule " + str(i+1) + ': ' + rule['description'])
                     return True
 
         except Exception as e:
