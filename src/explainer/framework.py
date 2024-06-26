@@ -4,9 +4,9 @@ from src.explainer.adjective import Adjective, StaticAdjective, PointerAdjective
 from src.explainer.explanation import AssumptionExplanation, SiblingsComparisonExplanation, CompositeExplanation
 
 MAX_RANKING_ASSUMPTION = AssumptionExplanation(
-    "A node is maxranked in a RankingAdjective if the Ranking Condition is TRUE when compared to all its siblings.")
+    "A node is max-ranked in a RankingAdjective if the Ranking Condition is TRUE when compared to all its siblings.")
 MIN_RANKING_ASSUMPTION = AssumptionExplanation(
-    "A node is minranked in a RankingAdjective if the Ranking Condition is FALSE when compared to all its siblings.")
+    "A node is min-ranked in a RankingAdjective if the Ranking Condition is FALSE when compared to all its siblings.")
 
 class ArgumentationFramework:
     """Manages adjectives and their relationships in the argumentation framework."""
