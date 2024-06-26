@@ -48,7 +48,8 @@ class And(LogicalExpression):
         return all(expr.evaluate(interpretation) for expr in self.exprs)
 
     def __str__(self) -> str:
-        return f"({' ∧ '.join(str(expr) for expr in self.exprs)})"
+        joined = '\n ∧ '.join(str(expr) for expr in self.exprs)
+        return f"({joined})"
 
 class Or(LogicalExpression):
     """Represents the disjunction of logical expressions."""
