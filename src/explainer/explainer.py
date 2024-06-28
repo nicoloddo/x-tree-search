@@ -1,22 +1,13 @@
-from typing import Any
-
-from src.explainer.propositional_logic import Implies, Not
-from src.explainer.framework import ArgumentationFramework
-
-from src.explainer.adjective import RankingAdjective
+from typing import Any, Callable
 
 class ArgumentativeExplainer:
     """
     Generates explanations based on the argumentation framework.
-    The nodes of the tree to explain need to have the following parameters:
-        - children
-        - parent
-    It is suggested to provide a __str__(self) method to print the nodes.
-    If the tree nodes do not have them, it is mandatory to create an
-    interfacing layer between the tree and the explainer for the Explainer.
+    It is suggested to provide a __str__(self) method in the node classes
+    to print the nodes correctly.
     """
     
-    def __init__(self, framework: ArgumentationFramework):
+    def __init__(self, framework: 'ArgumentationFramework'):
         """
         Initialize the ArgumentativeExplainer.
         
@@ -24,8 +15,20 @@ class ArgumentativeExplainer:
             framework: The ArgumentationFramework to use for explanations.
         """
         self.framework = framework
+        self.getters = {}
 
-    def explain_adjective(self, node: Any, adjective_name: str, comparison_node: Any = None) -> Implies:
+    def set_getter(self, adjective_name: str, getter: Callable[[Any], Any]):
+        self.framework.get_adjective(adjective_name).contextualize(getter)
+
+    def evaluate(self, node: Any, adjective_name: str, comparison_node: Any = None) -> bool:
+        adjective = self.framework.get_adjective(adjective_name)
+
+        if comparison_node:
+            adjective.evaluate(node, comparison_node)
+        else:
+            adjective.evaluate(node, context=self)
+
+    def explain_adjective(self, node: Any, adjective_name: str, comparison_node: Any = None) -> Any:
         """
         Generate a propositional logic explanation for why a node has a specific adjective.
         
@@ -41,24 +44,17 @@ class ArgumentativeExplainer:
             KeyError: If no adjective with the given name is found.
         """
         adjective = self.framework.get_adjective(adjective_name)
-        context = {"explainer": self, "node": node}
         
         if not comparison_node: # The adjective is not comparative
-            truth = adjective.evaluate(node)
-            explanation = adjective.explanation(node, context)
-            affirmation = adjective.affirm(node, not truth)
+            explanation = adjective.explain(node)
         
         else:
-            if not isinstance(adjective, RankingAdjective):
-                raise ValueError("Comparison explanations are possible only with RankingAdjectives.")
-            truth = adjective.evaluate(node, comparison_node)
-            explanation = adjective.explanation(node, comparison_node, context, not truth)
-            affirmation = adjective.affirm(node, comparison_node, not truth)
+            explanation = adjective.explain(node, comparison_node)
 
-        return Implies(explanation, affirmation) 
+        return explanation
 
 
-    def query_explanation(self, node: Any, query: str) -> Implies:
+    def query_explanation(self, node: Any, query: str) -> Any:
         pass
         """
         Generate an explanation for a specific query about a node's adjective.
@@ -76,3 +72,18 @@ class ArgumentativeExplainer:
             return self.explain_adjective(node, adjective_name)
         else:
             return #Implies("Invalid query format. Please use 'Why does [node] have [adjective]?'")
+
+    def set_tree_search_motivation(self, getter: Callable, adjective_name: str):
+        pass
+        """
+        Set the adjective that motivates tree search choices.
+        
+        Args:
+            adjective_name: The name of the adjective to use as motivation.
+        
+        Raises:
+            ValueError: If no adjective with the given name is found.
+        """
+        if adjective_name not in self.framework.adjectives:
+            raise ValueError(f"Adjective '{adjective_name}' not found.")
+        #self.tree_search_motivation = adjective_name

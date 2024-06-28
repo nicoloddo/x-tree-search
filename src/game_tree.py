@@ -62,7 +62,7 @@ class GameTree(Tree):
             if not all(features in value for features in mandatory_features):
                 raise ValueError(f"All mandatory features should be in the GameTreeNode value: {mandatory_features}")
 
-            super.__init__(self, parent, value)
+            super().__init__(self, parent, value)
 
         @property
         def state(self):

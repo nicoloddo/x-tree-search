@@ -1,133 +1,246 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Iterable
+from typing import Any, Callable
 
-from src.explainer.propositional_logic import Proposition, And, Or, Implies, Not
-from src.explainer.condition import Condition
+from src.explainer.propositional_logic import LogicalExpression, Proposition, And, Or, Implies, Not
+from src.explainer.framework import ArgumentationFramework
+
+"""
+Explanations are the base of inference for an adjective to be assigned.
+Why is a node leaf?
+Why is a node's score = 4?
+Why is a node better than another?
+
+All Explanations redirect to underlying explanations.
+Only Assumptions don't, stopping the explanation inception.
+"""
+
+"""DELETE
+class Implication():
+    def __init__(explanation, affirmation):
+        self.implication = Implies(explanation, affirmation)
+    @property
+    def implies():
+        return self.implication
+"""
 
 class Explanation(ABC):
     """Abstract base class for all types of explanations."""
     
+    def set_belonging_framework(self, framework: ArgumentationFramework, adjective: 'Adjective'):
+        """Sets the Argumentation framework the Explanation belongs to."""
+        self.framework = framework
+        self.explanation_of_adjective = adjective
+        self.contextualize()
+    
+    def contextualize(self):
+        pass
+
     @abstractmethod
-    def explain(self, node: Any, context: Dict[str, Any]) -> Proposition:
+    def explain(self, node: Any = None) -> LogicalExpression:
         """
         Generate a propositional logic explanation for the given node.
         
         Args:
             node: The node to explain.
-            context: Additional context information for the explanation.
         
         Returns:
-            A Proposition representing the explanation.
+            A LogicalExpression representing the explanation.
         """
         pass
 
-class AssumptionExplanation(Explanation):
+""" Assumptions """
+class Assumption(Explanation):
     """Represents an explanation based on an assumption."""
     
     def __init__(self, description: str):
         """
-        Initialize the AssumptionExplanation.
+        Initialize the Assumption.
         
         Args:
             description: A string describing the assumption.
         """
         self.description = description
 
-    def explain(self, node: Any, context: Dict[str, Any]) -> Proposition:
+    def explain(self, node: Any = None) -> LogicalExpression:
         """Return the assumption as a Proposition."""
         return Proposition(self.description)
 
-class AdjectiveExplanation(Explanation):
+class BooleanAdjectiveAssumption(Assumption):
+    """Represents the assumption underlying a boolean adjective attribution."""
+    
+    def __init__(self, adjective_name: str):
+        """
+        Initialize the ComparisonAssumption.
+        
+        Args:
+            adjective_name: The name of the boolean adjective.
+        """
+        description = f"By definition of {adjective_name}"
+        super().__init__(description)
+
+class ComparisonAssumption(Assumption):
+    """Represents the assumption underlying the comparison between two nodes."""
+    
+    def __init__(self, ranking_adjective_name: str, pointer_adjective_name: str, operator: str):
+        """
+        Initialize the ComparisonAssumption.
+        
+        Args:
+            ranking_adjective_name: The name of the ranking adjective.
+            pointer_adjective_name: The name of the pointer adjective used for comparison.
+            comparison_operator: The comparison function.
+        """
+        description = f"By definition, node1 is \"{ranking_adjective_name}\" than node2 if node1 {pointer_adjective_name} {operator} node2 {pointer_adjective_name}"
+        super().__init__(description)
+
+""" Straightforward Explanations """
+class Possession(Explanation):
     """
-    Represents an explanation provided by referring to the fact that:
+    Represents an explanation provided by referring to the fact that
     a given pointer adjective possess a given adjective.
     """
     
-    def __init__(self, pointer_adjective_name: str, adjective_name: str):
+    def __init__(self, *args): #pointer_adjective_name: str = None, adjective_name: str = None):
         """
-        Initialize the AdjectiveExplanation.
+        Initialize the Possession explanation.
+
+        Usage:
+            Possession(adjective_name)
+            Possession(pointer_adjective_name, adjective_name)
         
         Args:
+            *args: Either one or two string arguments.
+                   If one argument: adjective_name
+                   If two arguments: pointer_adjective_name, adjective_name
+
             pointer_adjective_name: The name of the pointer adjective that selects the object.
+                                    If not given the node itself will be checked.
             adjective_name: The name of the adjective to explain for the selected object.
         """
-        self.pointer_adjective_name = pointer_adjective_name
-        self.adjective_name = adjective_name
+        
+        if len(args) == 1:
+            # If they did not provide 2 arguments, the first is the adjective name
+            self.pointer_adjective_name = None
+            self.adjective_name = args[0]
+        elif len(args) == 2:
+            # If two arguments are provided, the first is the pointer adjective name
+            self.pointer_adjective_name, self.adjective_name = args
+        else:
+            raise ValueError("AdjectiveExplanation takes a max of 2 arguments")
 
-    def explain(self, node: Any, context: Dict[str, Any]) -> Proposition:
+    def explain(self, node: Any = None) -> LogicalExpression:
         """
-        Generate an explanation by redirecting to explain_adjective for the selected object.
+        Generate an explanation by explaining the underlying possession adjectives.
+        Only Assumptions don't redirect to other explanations.
         
         Args:
             node: The node containing the pointer adjective.
-            context: Additional context, including the explainer.
+            
         
         Returns:
-            A Proposition representing the explanation of the specified adjective for the selected object.
+            A LogicalExpression representing the explanation of the specified adjective for the selected object.
         """
-        explainer = context['explainer']
-        pointer_adjective = explainer.framework.get_adjective(self.pointer_adjective_name)
-        referred_object = pointer_adjective.evaluate(node)
+        adjective = self.framework.get_adjective(self.adjective_name)
 
-        forward_explanation = ForwardExplanation(self.adjective_name)
-        return forward_explanation.explain(referred_object, context)
+        if not self.pointer_adjective_name:
+            return adjective.explain(node)
+
+        else:
+            pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
+            referred_object = pointer_adjective.evaluate(node)
+
+            if self.explanation_of_adjective == pointer_adjective:
+                # only forward the explanation without asking why this referred object
+                explanation = adjective.explain(referred_object)
+            else:
+                explanation = And(
+                    pointer_adjective.explain(node), # why this referred_object?
+                    adjective.explain(referred_object)) # why the referred_object has this property?
+            return explanation
 
 
-class ConditionalExplanation(Explanation):
-    """Represents an explanation that depends on a condition."""
+class Comparison(Explanation):
+    """Represents an explanation provided by referring to a comparison
+    between the node and another node referenced via pointer adjective."""
     
-    def __init__(self, condition: Condition, true_explanation: Explanation, false_explanation: Explanation):
+    def __init__(self, comparison_adjective_name: str, node_pointer_adjective_name: str):
         """
-        Initialize the ConditionalExplanation.
+        Initialize the Comparison Explanation.
         
         Args:
-            condition: The condition to evaluate.
-            true_explanation: The explanation to use when the condition is true.
-            false_explanation: The explanation to use when the condition is false.
+            comparison_adjective_name: The name of the comparison adjective.
+            pointer_adjective_name: The name of the pointer adjective that selects the object.
         """
-        self.condition = condition
-        self.true_explanation = true_explanation
-        self.false_explanation = false_explanation
+        self.comparison_adjective_name = comparison_adjective_name
+        self.node_pointer_adjective_name = node_pointer_adjective_name
 
-    def explain(self, node: Any, context: Dict[str, Any]) -> Proposition:
+    def explain(self, node: Any = None) -> Proposition:
         """
-        Generate an explanation based on the condition's evaluation.
+        Generate an explanation for the comparison between a node and its adjective reference.
         
         Args:
             node: The node to explain.
-            context: Additional context for the explanation.
+            
         
         Returns:
-            A Proposition representing the condition and the appropriate explanation.
+            A Proposition explaining the comparison.
         """
-        condition_result = self.condition.evaluate(node, context)
+        comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
+        property_for_comparison_adjective = self.framework.get_adjective(comparison_adjective.property_pointer_adjective_name)
 
+        node_pointer_adjective = self.framework.get_adjective(self.node_pointer_adjective_name)
+        other_node = node_pointer_adjective.evaluate(node)
+
+        explanation = And(
+            property_for_comparison_adjective.explain(node),
+            property_for_comparison_adjective.explain(other_node), 
+            comparison_adjective.explain(node, other_node))
+
+        return explanation
+
+""" Group Comparison non-straightforward Explanation """
+class GroupComparison(Explanation):
+    """Represents an explanation given by referring to 
+    a comparison between a node and all nodes of a group."""
+    
+    def __init__(self, comparison_adjective_name: str, group_pointer_adjective_name: str):
         """
-        if self.condition.value == True or self.condition.value == False: # if the value is a boolean
-            if self.condition.value:
-                end_sentence = f"is {self.condition.adjective_name}"
-            else:
-                end_sentence = f"is not {self.condition.adjective_name}"
-        else:
-            end_sentence = f"has {self.condition.adjective_name} = {self.condition.value})"
-
-        if not self.condition.pointer_adjective_name: 
-            condition_explanation = Proposition(f"The node {end_sentence}")
-        else:
-            condition_explanation = Proposition(f"The {self.condition.pointer_adjective_name} {end_sentence}")
+        Initialize the Group Comparison explanation.
+        
+        Args:
+            comparison_adjective_name: The name of the ranking adjective.
+            siblings_selector: The selector of sibling: a callable that given a node returns an array of siblings
         """
-        if not self.condition.pointer_adjective_name: 
-            condition_explanation = ForwardExplanation(self.condition.adjective_name)
-        else:
-            condition_explanation = ForwardExplanation(self.condition.adjective_name, self.condition.pointer_adjective_name)
+        self.comparison_adjective_name = comparison_adjective_name
+        self.group_pointer_adjective_name = group_pointer_adjective_name
 
-        if condition_result:
-            return And(condition_explanation.explain(node, context), 
-                        self.true_explanation.explain(node, context))
-        else:
-            return And(Not(condition_explanation.explain(node, context)), 
-                        self.false_explanation.explain(node, context))
+    def explain(self, node: Any = None) -> Proposition:
+        """
+        Generate an explanation for the comparison between a node and all nodes pointed at
+        by the group pointer adjective specified.
+        
+        Args:
+            node: The node to explain.
+            
+        
+        Returns:
+            A Proposition explaining the comparison.
+        """
+        comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
+        value_for_comparison_adjective = self.framework.get_adjective(comparison_adjective.property_pointer_adjective_name)
 
+        group_pointer_adjective = self.framework.get_adjective(self.group_pointer_adjective_name)
+        group = group_pointer_adjective.evaluate(node)
+
+        explanations = [And(
+            value_for_comparison_adjective.explain(node),
+            value_for_comparison_adjective.explain(other_node), 
+            comparison_adjective.explain(node, other_node))
+            for other_node in group]
+        explanation = And(*explanations)
+        return explanation
+
+""" Composite Explanations """
 class CompositeExplanation(Explanation):
     """Represents an explanation composed of multiple sub-explanations."""
     
@@ -140,176 +253,122 @@ class CompositeExplanation(Explanation):
         """
         self.explanations = explanations
 
-    def explain(self, node: Any, context: Dict[str, Any]) -> Proposition:
+    def contextualize(self):
+        for exp in self.explanations:
+            exp.set_belonging_framework(self.framework, self.explanation_of_adjective)
+
+    def explain(self, node: Any = None) -> LogicalExpression:
         """
         Generate an explanation by combining all sub-explanations with AND.
         
         Args:
             node: The node to explain.
-            context: Additional context for the explanation.
-        
-        Returns:
-            A Proposition representing the combination of all sub-explanations.
-        """
-        return And(*[exp.explain(node, context) for exp in self.explanations])
-
-class ForwardExplanation(Explanation):
-    """Represents an explanation that points to another explanation."""
-    
-    def __init__(self, forward_adjective_name: str, pointer_adjective_name: str = None):
-        """
-        Initialize the CompositeExplanation.
-        
-        Args:
-            forward_adjective_name: The adjective explanation to forward to
-        """
-        self.forward_adjective_name = forward_adjective_name
-        self.pointer_adjective_name = pointer_adjective_name
-
-    def explain(self, node: Any, context: Dict[str, Any]) -> Proposition:
-        """
-        Generate an explanation by combining all sub-explanations with AND.
-        
-        Args:
-            node: The node to explain.
-            context: Additional context for the explanation.
-        
-        Returns:
-            A Proposition representing the combination of all sub-explanations.
-        """
-        explainer = context['explainer']
-
-        if self.pointer_adjective_name:
-            pointer_adjective = explainer.framework.get_adjective(self.pointer_adjective_name)
-            referred_object = pointer_adjective.evaluate(node)
             
-            return explainer.explain_adjective(referred_object, self.forward_adjective_name) # recursion
+        
+        Returns:
+            A LogicalExpression representing the combination of all sub-explanations.
+        """
+        return And(*[exp.explain(node) for exp in self.explanations])
+
+
+""" Conditional Explanations """
+class PossessionCondition(Possession):
+    """
+    Represents a condition based on an adjective's value.
+    If provided with a pointer_adjective_name, the condition is based on the
+    value stored at the pointer. If not, the condition is based on the self node.
+
+    When not provided with a value, 
+    the condition is simply checked as a static adjective (boolean)
+    """
+
+    def __init__(self, *args, value: Any = True):
+        """
+        Initialize the Condition.
+        
+        Usage:
+            Condition("leaf")
+            Conditon("backtracing child", "minoptimal")
+            Condition("backtracing child", "score", value = 5)
+
+        Args:
+            *args: Either one or two string arguments.
+                   If one argument: adjective_name
+                   If two arguments: pointer_adjective_name, adjective_name
+            value: Any, optional keyword-only argument
+                   An optional value associated with the adjective explanation.
+                   Must be specified as a keyword argument if provided.
+
+            pointer_adjective_name: The name of the pointer adjective to the object to check.
+            adjective_name: The name of the static adjective to check.
+            value: The expected value of the adjective.
+            
+        """
+        super().__init__(*args)
+        self.value = value
+
+    def evaluate(self, node: Any) -> bool:
+        """
+        Evaluate if the given node possess the given static adjective.
+        
+        Args:
+            node: The node to evaluate.            
+        
+        Returns:
+            True if the adjective's value matches the expected value, False otherwise.
+        """
+
+        if not self.pointer_adjective_name:        
+            obj_under_evaluation = node
+            
         else:
-            return explainer.explain_adjective(node, self.forward_adjective_name) # recursion
+            pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
+            obj_under_evaluation = pointer_adjective.evaluate(node)
 
-""" Double argument Explanations """
-class ComparisonAssumptionExplanation(Explanation):
-    """Represents an assumption based on a comparison between two nodes."""
+        adjective = self.framework.get_adjective(self.adjective_name)
+        return adjective.evaluate(obj_under_evaluation) == self.value
+
+
+class ConditionalExplanation(Explanation):
+    """Represents an explanation that depends on a condition."""
     
-    def __init__(self, ranking_adjective_name: str, pointer_adjective_name: str, operator: str):
+    def __init__(self, condition: PossessionCondition, true_explanation: Explanation, false_explanation: Explanation):
         """
-        Initialize the ComparisonAssumptionExplanation.
+        Initialize the ConditionalExplanation.
         
         Args:
-            ranking_adjective_name: The name of the ranking adjective.
-            pointer_adjective_name: The name of the pointer adjective used for comparison.
-            comparison_operator: The comparison function.
+            condition: The condition to evaluate.
+            true_explanation: The explanation to use when the condition is true.
+            false_explanation: The explanation to use when the condition is false.
         """
-        self.ranking_adjective_name = ranking_adjective_name
-        self.pointer_adjective_name = pointer_adjective_name
-        self.operator = operator
+        self.condition = condition
+        self.true_explanation = true_explanation
+        self.false_explanation = false_explanation
 
-    def explain(self, node1: Any, node2: Any, context: Dict[str, Any], negation=False) -> Proposition:
+    def contextualize(self):
+        self.condition.set_belonging_framework(self.framework, self.explanation_of_adjective)
+        self.true_explanation.set_belonging_framework(self.framework, self.explanation_of_adjective)
+        self.false_explanation.set_belonging_framework(self.framework, self.explanation_of_adjective)
+
+    def explain(self, node: Any = None) -> LogicalExpression:
         """
-        Generate an explanation for the comparison between two nodes.
+        Generate an explanation based on the condition's evaluation.
         
         Args:
-            node1: The first node to compare.
-            node2: The second node to compare.
-            context: Additional context for the explanation.
+            node: The node to explain.
+            
         
         Returns:
-            A Proposition explaining the comparison.
+            A LogicalExpression representing the condition and the appropriate explanation.
         """
-        proposition = Proposition(f"{node1} {self.pointer_adjective_name} {self.operator} {node2} {self.pointer_adjective_name}")
-        if not negation:
-            comparison_assumption = proposition
+        condition_result = self.condition.evaluate(node)
+
+        if condition_result:
+            explanation = And(
+                        self.condition.explain(node), 
+                        self.true_explanation.explain(node))
         else:
-            comparison_assumption = Not(proposition)
-        return comparison_assumption
-
-class ComparisonExplanation(Explanation):
-    """Represents an explanation provided by referring to a comparison
-    between the node and another node referenced via pointer adjective."""
-    
-    def __init__(self, ranking_adjective_name: str, pointer_adjective_name: str):
-        """
-        Initialize the ComparisonExplanation.
-        
-        Args:
-            ranking_adjective_name: The name of the ranking adjective.
-            pointer_adjective_name: The name of the pointer adjective that selects the object.
-        """
-        self.ranking_adjective_name = ranking_adjective_name
-        self.sibling_selector = sibling_selector
-
-    def explain(self, node: Any, context: Dict[str, Any]) -> Proposition:
-        """
-        Generate an explanation for the comparison between a node and its adjective reference.
-        
-        Args:
-            node: The node to explain.
-            context: Additional context for the explanation.
-        
-        Returns:
-            A Proposition explaining the comparison.
-        """
-        explainer = context['explainer']
-        pointer_adjective = explainer.framework.get_adjective(self.pointer_adjective_name)
-        referred_object = pointer_adjective.evaluate(node)
-        comparison = _ForwardObjectComparisonExplanation(self.pointer_adjective_name, referred_object)
-        return comparison.explain(node, context)
-
-class SiblingsComparisonExplanation(Explanation):
-    """Represents an explanation given by referring to 
-    a comparison between a node and all its siblings."""
-    
-    def __init__(self, ranking_adjective_name: str, siblings_selector: Callable[[Any], Iterable[Any]]):
-        """
-        Initialize the SiblingsComparisonExplanation.
-        
-        Args:
-            ranking_adjective_name: The name of the ranking adjective.
-            siblings_selector: The selector of sibling: a callable that given a node returns an array of siblings
-        """
-        self.ranking_adjective_name = ranking_adjective_name
-        self.siblings_selector = siblings_selector
-
-    def explain(self, node: Any, context: Dict[str, Any]) -> Proposition:
-        """
-        Generate an explanation for the comparison between a node and its adjective reference.
-        
-        Args:
-            node: The node to explain.
-            context: Additional context for the explanation.
-        
-        Returns:
-            A Proposition explaining the comparison.
-        """
-        siblings = self.siblings_selector(node)
-        explanations = [
-            _ForwardObjectComparisonExplanation(self.ranking_adjective_name, sibling)
-            for sibling in siblings]
-        
-        return CompositeExplanation(*explanations).explain(node, context)
-
-class _ForwardObjectComparisonExplanation(Explanation):
-    def __init__(self, ranking_adjective_name: str, referred_object: Any):
-        """
-        Initialize the ComparisonExplanation.
-        
-        Args:
-            ranking_adjective_name: The name of the ranking adjective.
-            referred_object: The object to compare
-        """
-        self.ranking_adjective_name = ranking_adjective_name
-        self.referred_object = referred_object
-
-    def explain(self, node: Any, context: Dict[str, Any]) -> Proposition:
-        """
-        Generate an explanation for the comparison between a node and an object.
-        
-        Args:
-            node: The node to explain.
-            context: Additional context for the explanation.
-        
-        Returns:
-            A Proposition explaining the comparison.
-        """
-        explainer = context['explainer']
-        return explainer.explain_adjective(node, self.ranking_adjective_name, self.referred_object)
+            explanation = And(Not(
+                        self.condition.explain(node)), 
+                        self.false_explanation.explain(node))
+        return explanation
