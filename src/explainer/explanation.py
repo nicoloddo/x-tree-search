@@ -368,7 +368,7 @@ class ConditionalExplanation(Explanation):
                         self.condition.explain(node), 
                         self.true_explanation.explain(node))
         else:
-            explanation = And(Not(
-                        self.condition.explain(node)), 
+            explanation = And(
+                        self.condition.explain(node), 
                         self.false_explanation.explain(node))
         return explanation
