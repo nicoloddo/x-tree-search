@@ -265,7 +265,7 @@ class MaxRankAdjective(RankAdjective):
 class MinRankAdjective(RankAdjective):
     def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, group_pointer_adjective_name: PointerAdjective):
         explanation = CompositeExplanation(
-            RankAssumption('max', name, comparison_adjective_name, group_pointer_adjective_name),
+            RankAssumption('min', name, comparison_adjective_name, group_pointer_adjective_name),
             GroupComparison(comparison_adjective_name, group_pointer_adjective_name))
         evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(other_node, node) for other_node in group)
         super().__init__(name, comparison_adjective_name, group_pointer_adjective_name, explanation, evaluator)
