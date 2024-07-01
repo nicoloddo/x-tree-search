@@ -1,5 +1,5 @@
 .ipynb_checkpoints
-**/__pycache__/
+src/explainer/__pycache__/
 .lightning_studio/
 .idea/
 .vscode/
