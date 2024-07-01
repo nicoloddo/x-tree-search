@@ -74,7 +74,7 @@ class Implies(LogicalExpression):
         return (not self.antecedent.evaluate(interpretation)) or self.consequent.evaluate(interpretation)
 
     def __str__(self) -> str:
-        return f"{self.antecedent} → {self.consequent}"
+        return f"[{self.antecedent} → {self.consequent}]"
 
 class Iff(LogicalExpression):
     """Represents the biconditional (if and only if) between two logical expressions."""

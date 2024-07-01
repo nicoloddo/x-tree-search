@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable
     
 from src.explainer.propositional_logic import Proposition, Not, Implies
-from src.explainer.explanation import Explanation, Assumption, BooleanAdjectiveAssumption, ComparisonAssumption, CompositeExplanation, GroupComparison
+from src.explainer.explanation import Explanation, BooleanAdjectiveAssumption, ComparisonAssumption, RankAssumption, CompositeExplanation, GroupComparison
 from src.explainer.framework import ArgumentationFramework
 
 """
@@ -15,10 +15,7 @@ node <adjective> than node2 (RankingAdjective)
 """
 
 class FrameworkAssumption:
-    MAX_RANKING = Assumption(
-    "A node is max-ranked in a RankingAdjective if the Ranking Condition is TRUE when compared to all its siblings")
-    MIN_RANKING = Assumption(
-    "A node is min-ranked in a RankingAdjective if the Ranking Condition is FALSE when compared to all its siblings")
+    pass
 
 class AdjectiveType:
     """Enum for different types of adjectives."""
@@ -260,7 +257,7 @@ class RankAdjective(BooleanAdjective):
 class MaxRankAdjective(RankAdjective):
     def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, group_pointer_adjective_name: PointerAdjective):
         explanation = CompositeExplanation(
-            FrameworkAssumption.MAX_RANKING,
+            RankAssumption('max', name, comparison_adjective_name, group_pointer_adjective_name),
             GroupComparison(comparison_adjective_name, group_pointer_adjective_name))
         evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(node, other_node) for other_node in group)
         super().__init__(name, comparison_adjective_name, group_pointer_adjective_name, explanation, evaluator)
@@ -268,7 +265,7 @@ class MaxRankAdjective(RankAdjective):
 class MinRankAdjective(RankAdjective):
     def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, group_pointer_adjective_name: PointerAdjective):
         explanation = CompositeExplanation(
-            FrameworkAssumption.MIN_RANKING,
+            RankAssumption('max', name, comparison_adjective_name, group_pointer_adjective_name),
             GroupComparison(comparison_adjective_name, group_pointer_adjective_name))
         evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(other_node, node) for other_node in group)
         super().__init__(name, comparison_adjective_name, group_pointer_adjective_name, explanation, evaluator)

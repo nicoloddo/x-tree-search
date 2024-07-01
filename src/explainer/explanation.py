@@ -63,7 +63,7 @@ class Assumption(Explanation):
 
     def explain(self, node: Any = None) -> LogicalExpression:
         """Return the assumption as a Proposition."""
-        return Proposition(self.description)
+        return Proposition("(assumption) " + self.description)
 
 class BooleanAdjectiveAssumption(Assumption):
     """Represents the assumption underlying a boolean adjective attribution."""
@@ -81,7 +81,7 @@ class BooleanAdjectiveAssumption(Assumption):
 class ComparisonAssumption(Assumption):
     """Represents the assumption underlying the comparison between two nodes."""
     
-    def __init__(self, ranking_adjective_name: str, pointer_adjective_name: str, operator: str):
+    def __init__(self, comparison_adjective_name: str, pointer_adjective_name: str, operator: str):
         """
         Initialize the ComparisonAssumption.
         
@@ -90,7 +90,26 @@ class ComparisonAssumption(Assumption):
             pointer_adjective_name: The name of the pointer adjective used for comparison.
             comparison_operator: The comparison function.
         """
-        description = f"By definition, node1 is \"{ranking_adjective_name}\" than node2 if node1 {pointer_adjective_name} {operator} node2 {pointer_adjective_name}"
+        description = f"By definition, node1 is \"{comparison_adjective_name}\" than node2 if node1 {pointer_adjective_name} {operator} node2 {pointer_adjective_name}"
+        super().__init__(description)
+
+class RankAssumption(Assumption):
+    """Represents the assumption underlying the comparison between two nodes."""
+    def __init__(self, rank_type : str, name: str, comparison_adjective_name: str, group_pointer_adjective_name: str):
+        """
+        Initialize the ComparisonAssumption.
+        
+        Args:
+            ranking_adjective_name: The name of the ranking adjective.
+            pointer_adjective_name: The name of the pointer adjective used for comparison.
+            comparison_operator: The comparison function.
+        """
+        if rank_type == 'max':
+            description = f"By definition a node is {name} if it's {comparison_adjective_name} compared to all nodes among {group_pointer_adjective_name}"
+        elif rank_type == 'min':
+            description = f"By definition a node is {name} if it's {Not(comparison_adjective_name)} compared to all nodes among {group_pointer_adjective_name}"
+        else:
+            raise ValueError("RankAssumption of unknown type.")
         super().__init__(description)
 
 """ Straightforward Explanations """
