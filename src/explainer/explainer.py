@@ -18,6 +18,8 @@ class ArgumentativeExplainer:
         self.getters = {}
 
     def set_getter(self, adjective_name: str, getter: Callable[[Any], Any]):
+        """Overrides the getter function setted during the adjective declaration.
+        Be aware that no safeness checks are performed when setting the getter directly."""
         self.framework.get_adjective(adjective_name)._set_getter(getter)
 
     def evaluate(self, node: Any, adjective_name: str, comparison_node: Any = None) -> bool:
