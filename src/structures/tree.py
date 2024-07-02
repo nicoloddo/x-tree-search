@@ -1,4 +1,4 @@
-from src.markov_chain import MarkovChain
+from src.structures.markov_chain import MarkovChain
 
 class Tree(MarkovChain):
     """

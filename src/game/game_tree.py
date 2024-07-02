@@ -1,5 +1,5 @@
-from src.tree import Tree
-from src.game_model import GameModel
+from src.structures.tree import Tree
+from src.game.game_model import GameModel
 
 class GameTree(Tree):
     def __init__(self, game, scoring_function, action_space_id):

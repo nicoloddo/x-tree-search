@@ -36,7 +36,7 @@ class MarkovChain:
             ''' 
             self.connections maps node instances to probability of transition. 
             e.g.:
-            {<src.markov_chain.MarkovNode object at 0x7f54ea37e3e0>: tensor(0.1000)}
+            {<src.structures.markov_chain.MarkovNode object at 0x7f54ea37e3e0>: tensor(0.1000)}
             Do not customize the __hash__ of the MarkovNode or you might cause collisions and other problems with the connections dict.
             '''
 
