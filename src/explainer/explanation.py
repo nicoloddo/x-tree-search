@@ -55,21 +55,30 @@ class Explanation(ABC):
 class Assumption(Explanation):
     """Represents an explanation based on an assumption."""
     
-    def __init__(self, description: str):
+    def __init__(self, description: str, definition: str = None):
         """
         Initialize the Assumption.
         
         Args:
             description: A string describing the assumption.
         """
-        self.description = description
+        assumption = "(assumption) " + description
+        
+        if not definition:
+            self.verbose = Proposition(assumption)
+        else:
+            self.verbose = Proposition(f"{assumption} is {definition}")
+
+        self.minimal = Proposition("(from assumptions)")
 
     def explain(self, node: Any) -> LogicalExpression:
         """Return the assumption as a Proposition."""
         if self.framework.assumptions_verbosity == 'verbose':
-            return Proposition("(assumption) " + self.description)
+            return self.verbose
+
         elif self.framework.assumptions_verbosity == 'minimal':
-            return Proposition("(from assumptions)")
+            return self.minimal
+
         elif self.framework.assumptions_verbosity == 'no':
             return None
         else:
@@ -77,20 +86,20 @@ class Assumption(Explanation):
     
     def implies(self) -> LogicalExpression:
         """Return the assumption as a Proposition."""
-        return Proposition("(assumption) " + self.description)
+        return self.verbose
 
-class BooleanAdjectiveAssumption(Assumption):
+class PossessionAssumption(Assumption):
     """Represents the assumption underlying a boolean adjective attribution."""
     
-    def __init__(self, adjective_name: str):
+    def __init__(self, adjective_name: str, definition: str):
         """
         Initialize the ComparisonAssumption.
         
         Args:
             adjective_name: The name of the boolean adjective.
         """
-        description = f"By definition of \"{adjective_name}\""
-        super().__init__(description)
+        description = f"Definition of \"{adjective_name}\""
+        super().__init__(description, definition)
 
 class ComparisonAssumption(Assumption):
     """Represents the assumption underlying the comparison between two nodes."""

@@ -4,6 +4,7 @@ from typing import Any, Callable
 from src.explainer.propositional_logic import Proposition, Not, Implies
 from src.explainer.explanation import *
 from src.explainer.framework import ArgumentationFramework
+from src.explainer.common import validate_getter, validate_comparison_operator
 
 """
 Adjectives constitute predicates by getting attributed to a node.
@@ -13,6 +14,8 @@ node is <adjective> (BooleanAdjective)
 node has <adjective> = value (PointerAdjective)
 node <adjective> than node2 (RankingAdjective)
 """
+
+DEFAULT_GETTER = "node.no_getter_provided"
 
 class FrameworkAssumption:
     pass
@@ -26,7 +29,7 @@ class AdjectiveType:
 class Adjective(ABC):
     """Abstract base class for all types of adjectives."""
     
-    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation):
+    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, *, definition: str):
         """
         Initialize the Adjective.
         
@@ -42,22 +45,29 @@ class Adjective(ABC):
         self.type = adjective_type
         self.explanation = explanation
         self.framework = None
+        self.definition = definition
         self.getter = None
+        self.contextualize(definition)
 
-        """ Explanations helpers """
+        """Explanations helpers"""
         self.initialize_explanation()
     
     def initialize_explanation(self):
+        """Initialize the explanation helpers"""
         self.adj_current_explanation_depth = 0
         self.current_explanation_node = None
         self.previous_explanation_node = None
 
-    def contextualize(self, getter: Callable[[Any], Any]):
+    def _set_getter(self, getter: Callable[[Any], Any]):
+        self.getter = getter
+
+    def contextualize(self, getter: str):
         """ 
         Contextualizes the adjective onto the current tree by specifying
         the getter function that permits to evaluate the adjective.
         """
-        self.getter = getter
+        validate_getter(getter)
+        self._set_getter(eval(f"lambda node: {getter}"))
 
     def set_belonging_framework(self, framework: ArgumentationFramework):
         """Sets the Argumentation framework the Adjective belongs to."""
@@ -142,7 +152,7 @@ class Adjective(ABC):
             # they can change depending on the node. Non conditional explanations 
             # will mostly be the same even for different nodes.)
             if self.framework.repeat_expl_per_node or isinstance(self.explanation, ConditionalExplanation):
-                self.adj_current_explanation_depth = 0
+                self.initialize_explanation()
         self.previous_explanation_node = self.current_explanation_node
 
         if self.type == AdjectiveType.COMPARISON:
@@ -159,23 +169,25 @@ class Adjective(ABC):
 
         if antecedent is not None: # If the explanation was given
             return Implies(antecedent, consequent)
-            self.adj_current_explanation_depth = 0
+            if self.framework.repeat_future_expl_same_node:
+                self.initialize_explanation()
         else:
             return consequent
 
 class BooleanAdjective(Adjective):
     """Represents a boolean adjective."""
     
-    def __init__(self, name: str, explanation: Explanation = None):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None):
         """
         Initialize the BooleanAdjective.
         
         Args:
             name: The name of the adjective.
+            definition: The correspondant node attribute
             explanation: An explanation for the adjective.
         """
-        explanation = explanation or BooleanAdjectiveAssumption(name)
-        super().__init__(name, AdjectiveType.STATIC, explanation)
+        explanation = explanation or PossessionAssumption(name, definition)
+        super().__init__(name, AdjectiveType.STATIC, explanation, definition = definition)
 
     def proposition(self, evaluation: bool = True, node: Any = "node") -> Proposition:
         """ Returns a proposition reflecting the adjective """
@@ -194,16 +206,17 @@ class BooleanAdjective(Adjective):
 class PointerAdjective(Adjective):
     """Represents a pointer adjective that references a specific attribute or object."""
     
-    def __init__(self, name: str, explanation: Explanation = None):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None):
         """
         Initialize the PointerAdjective.
         
         Args:
             name: The name of the adjective.
+            definition: The correspondant node attribute
             explanation: An explanation for the adjective.
         """
-        explanation = explanation or BooleanAdjectiveAssumption(name)
-        super().__init__(name, AdjectiveType.POINTER, explanation)
+        explanation = explanation or PossessionAssumption(name, definition)
+        super().__init__(name, AdjectiveType.POINTER, explanation, definition = definition)
 
     def proposition(self, value: str = "?", node: Any = "node") -> Proposition:
         """ Returns a proposition reflecting the pointer value """
@@ -228,15 +241,14 @@ class ComparisonAdjective(Adjective):
             comparison_operator: A function that compares two values and returns a boolean.
         """
         explanation = ComparisonAssumption(name, property_pointer_adjective_name, operator)
-        super().__init__(name, AdjectiveType.COMPARISON, explanation)
+        super().__init__(name, AdjectiveType.COMPARISON, explanation, definition=DEFAULT_GETTER)
         self.property_pointer_adjective_name = property_pointer_adjective_name
 
         # Validate the operator to ensure it's safe and expected
-        if operator not in ['>', '<', '==', '!=', '>=', '<=']:
-            raise ValueError("Invalid operator")
+        validate_comparison_operator(operator)
         # Construct and return the lambda function
-        else:
-            self.comparison_operator = eval(f"lambda x, y: x {operator} y")
+        self.comparison_operator = eval(f"lambda x, y: x {operator} y")
+            
 
         self.operator = operator
 
@@ -263,7 +275,7 @@ class ComparisonAdjective(Adjective):
         value2 = getattr(node2, self.property_pointer_adjective_name)
         return self.comparison_operator(value1, value2)
 
-class RankAdjective(BooleanAdjective):
+class _RankAdjective(BooleanAdjective):
     """Represents a static (boolean) adjective that specifically refers to the
     property of being x ranked in a group, based on a given comparison adjective
     and the evaluator function. This is parent class of MaxRankAdjective and MinRankAdjective."""
@@ -278,7 +290,7 @@ class RankAdjective(BooleanAdjective):
             group_pointer_adjective:
         """
         explanation = explanation or BooleanAdjectiveAssumption(name)
-        super().__init__(name, explanation)
+        super().__init__(name, explanation=explanation)
         self.comparison_adjective_name = comparison_adjective_name
         self.group_pointer_adjective_name = group_pointer_adjective_name
         self.evaluator = evaluator
@@ -291,7 +303,7 @@ class RankAdjective(BooleanAdjective):
 
         return self.evaluator(node, comparison_adjective, group)
 
-class MaxRankAdjective(RankAdjective):
+class MaxRankAdjective(_RankAdjective):
     def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, group_pointer_adjective_name: PointerAdjective):
         explanation = CompositeExplanation(
             RankAssumption('max', name, comparison_adjective_name, group_pointer_adjective_name),
@@ -299,7 +311,7 @@ class MaxRankAdjective(RankAdjective):
         evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(node, other_node) for other_node in group)
         super().__init__(name, comparison_adjective_name, group_pointer_adjective_name, explanation, evaluator)
 
-class MinRankAdjective(RankAdjective):
+class MinRankAdjective(_RankAdjective):
     def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, group_pointer_adjective_name: PointerAdjective):
         explanation = CompositeExplanation(
             RankAssumption('min', name, comparison_adjective_name, group_pointer_adjective_name),

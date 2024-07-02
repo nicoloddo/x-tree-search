@@ -18,7 +18,7 @@ class ArgumentativeExplainer:
         self.getters = {}
 
     def set_getter(self, adjective_name: str, getter: Callable[[Any], Any]):
-        self.framework.get_adjective(adjective_name).contextualize(getter)
+        self.framework.get_adjective(adjective_name)._set_getter(getter)
 
     def evaluate(self, node: Any, adjective_name: str, comparison_node: Any = None) -> bool:
         adjective = self.framework.get_adjective(adjective_name)
@@ -44,7 +44,7 @@ class ArgumentativeExplainer:
             KeyError: If no adjective with the given name is found.
         """
         adjective = self.framework.get_adjective(adjective_name)
-        adjective.initialize_explanation()
+        #adjective.initialize_explanation()
         if not comparison_node: # The adjective is not comparative
             explanation = adjective.explain(node)
         else:
