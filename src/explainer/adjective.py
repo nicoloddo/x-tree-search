@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable
     
 from src.explainer.propositional_logic import Proposition, Not, Implies
-from src.explainer.explanation import Explanation, BooleanAdjectiveAssumption, ComparisonAssumption, RankAssumption, CompositeExplanation, GroupComparison
+from src.explainer.explanation import *
 from src.explainer.framework import ArgumentationFramework
 
 """
@@ -43,6 +43,14 @@ class Adjective(ABC):
         self.explanation = explanation
         self.framework = None
         self.getter = None
+
+        """ Explanations helpers """
+        self.initialize_explanation()
+    
+    def initialize_explanation(self):
+        self.adj_current_explanation_depth = 0
+        self.current_explanation_node = None
+        self.previous_explanation_node = None
 
     def contextualize(self, getter: Callable[[Any], Any]):
         """ 
@@ -122,14 +130,38 @@ class Adjective(ABC):
         Returns:
             An Implies object representing the explanation.
         """
-        antecedent = self.explanation.explain(node)
+        self.current_explanation_node = node
+        # Check if we are explaining a different node
+        # If we are, we zero the explanation depth to be able to generate a 
+        # new explanation for the new node. This explanation will probably be 
+        # analogous to the previous one.
+        if self.current_explanation_node != self.previous_explanation_node:
+            # set the repeat_expl_per_node setting to False if you don't want to
+            # repeat explanations for every node and one actually suffices.
+            # (conditional explanations are by default zeroed for new nodes because
+            # they can change depending on the node. Non conditional explanations 
+            # will mostly be the same even for different nodes.)
+            if self.framework.repeat_expl_per_node or isinstance(self.explanation, ConditionalExplanation):
+                self.adj_current_explanation_depth = 0
+        self.previous_explanation_node = self.current_explanation_node
 
         if self.type == AdjectiveType.COMPARISON:
             consequent = self.proposition(self.evaluate(node, other_node), [node, other_node])
         else:
             consequent = self.proposition(self.evaluate(node), node)
 
-        return Implies(antecedent, consequent)
+        self.adj_current_explanation_depth += 1
+        """ Stop at maximum depth """
+        if self.adj_current_explanation_depth >= self.framework.explanation_depth:
+            return consequent
+
+        antecedent = self.explanation.explain(node)
+
+        if antecedent is not None: # If the explanation was given
+            return Implies(antecedent, consequent)
+            self.adj_current_explanation_depth = 0
+        else:
+            return consequent
 
 class BooleanAdjective(Adjective):
     """Represents a boolean adjective."""

@@ -44,10 +44,9 @@ class ArgumentativeExplainer:
             KeyError: If no adjective with the given name is found.
         """
         adjective = self.framework.get_adjective(adjective_name)
-        
+        adjective.initialize_explanation()
         if not comparison_node: # The adjective is not comparative
             explanation = adjective.explain(node)
-        
         else:
             explanation = adjective.explain(node, comparison_node)
 

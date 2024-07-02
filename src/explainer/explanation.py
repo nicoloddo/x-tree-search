@@ -66,7 +66,14 @@ class Assumption(Explanation):
 
     def explain(self, node: Any) -> LogicalExpression:
         """Return the assumption as a Proposition."""
-        return Proposition("(assumption) " + self.description)
+        if self.framework.assumptions_verbosity == 'verbose':
+            return Proposition("(assumption) " + self.description)
+        elif self.framework.assumptions_verbosity == 'minimal':
+            return Proposition("(from assumptions)")
+        elif self.framework.assumptions_verbosity == 'no':
+            return None
+        else:
+            raise ValueError("Framework has unvalid assumptions verbosity.")
     
     def implies(self) -> LogicalExpression:
         """Return the assumption as a Proposition."""
@@ -239,9 +246,9 @@ class Comparison(Explanation):
         node_pointer_adjective = self.framework.get_adjective(self.node_pointer_adjective_name)
         other_node = node_pointer_adjective.evaluate(node)
 
-        explanation = And(
+        explanation = Implies(And(
             property_for_comparison_adjective.explain(node),
-            property_for_comparison_adjective.explain(other_node), 
+            property_for_comparison_adjective.explain(other_node)), 
             comparison_adjective.explain(node, other_node))
 
         return explanation
@@ -289,9 +296,9 @@ class GroupComparison(Explanation):
         group_pointer_adjective = self.framework.get_adjective(self.group_pointer_adjective_name)
         group = group_pointer_adjective.evaluate(node)
 
-        explanations = [And(
+        explanations = [Implies(And(
             value_for_comparison_adjective.explain(node),
-            value_for_comparison_adjective.explain(other_node), 
+            value_for_comparison_adjective.explain(other_node)), 
             comparison_adjective.explain(node, other_node))
             for other_node in group]
         explanation = And(*explanations)
@@ -328,10 +335,10 @@ class CompositeExplanation(Explanation):
         Returns:
             A LogicalExpression representing the combination of all sub-explanations.
         """
-        return And(*[exp.explain(node) for exp in self.explanations])
+        return And(*[exp.explain(node) for exp in self.explanations if exp is not None])
     
     def implies(self) -> LogicalExpression:
-        return And(*[exp.implies() for exp in self.explanations])
+        return And(*[exp.implies() for exp in self.explanations if exp is not None])
 
 """ Conditional Explanations """
 class PossessionCondition(Possession):
@@ -426,7 +433,7 @@ class ConditionalExplanation(Explanation):
             A LogicalExpression representing the condition and the appropriate explanation.
         """
         if not node:
-            return self.imply()
+            return self.implies()
         condition_result = self.condition.evaluate(node)
 
         if condition_result:

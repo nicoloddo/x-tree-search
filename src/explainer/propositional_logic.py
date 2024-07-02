@@ -48,7 +48,7 @@ class And(LogicalExpression):
         return all(expr.evaluate(interpretation) for expr in self.exprs)
 
     def __str__(self) -> str:
-        joined = '\n ∧ '.join(str(expr) for expr in self.exprs)
+        joined = ' ∧ '.join(str(expr) for expr in self.exprs if expr is not None)
         return joined
 
 class Or(LogicalExpression):
@@ -58,7 +58,7 @@ class Or(LogicalExpression):
         self.exprs = exprs
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        return any(expr.evaluate(interpretation) for expr in self.exprs)
+        return any(expr.evaluate(interpretation) for expr in self.exprs if expr is not None)
 
     def __str__(self) -> str:
         joined = '\n ∨ '.join(str(expr) for expr in self.exprs)
@@ -75,7 +75,7 @@ class Implies(LogicalExpression):
         return (not self.antecedent.evaluate(interpretation)) or self.consequent.evaluate(interpretation)
 
     def __str__(self) -> str:
-        return f"[{self.antecedent} → {self.consequent}]"
+        return f"[{self.antecedent} → {self.consequent}]\n"
 
 class Iff(LogicalExpression):
     """Represents the biconditional (if and only if) between two logical expressions."""

@@ -8,6 +8,23 @@ class ArgumentationFramework:
         self.adjectives: Dict[str, 'Adjective'] = {}
         self.tree_search_motivation: str = ""
 
+        """Explanations settings"""
+
+        """How deep in the explanation we want to go"""
+        self.explanation_depth = 3
+
+        """Set to 'verbose', 'minimal' or 'no'
+        The setting decides how much of the assumptions to print."""
+        self.assumptions_verbosity = 'no'
+
+        """Set the repeat_expl_per_node setting to False if you don't want to
+        repeat explanations for every node. Explanations of the same adjective are
+        usually analogous, explaining one node can suffice to understand the others.
+        (conditional explanations are by default zeroed for new nodes because
+        they can change depending on the node. Non conditional explanations will 
+        mostly be the same even for different nodes.)"""
+        self.repeat_expl_per_node = False
+
     def add_adjective(self, adjective: 'Adjective'):
         """
         Add an adjective to the framework and create derived adjectives if it's a ranking adjective.
