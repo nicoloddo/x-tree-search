@@ -55,8 +55,6 @@ class Adjective(ABC):
     def initialize_explanation(self):
         """Initialize the explanation helpers"""
         self.adj_current_explanation_depth = 0
-        self.current_explanation_node = None
-        self.previous_explanation_node = None
 
     def _set_getter(self, getter: Callable[[Any], Any]):
         self.getter = getter
@@ -140,25 +138,22 @@ class Adjective(ABC):
         Returns:
             An Implies object representing the explanation.
         """
-        self.current_explanation_node = node
-        # Check if we are explaining a different node
-        # If we are, we zero the explanation depth to be able to generate a 
-        # new explanation for the new node. This explanation will probably be 
-        # analogous to the previous one.
-        if self.current_explanation_node != self.previous_explanation_node:
-            # set the repeat_expl_each_node setting to False if you don't want to
-            # repeat explanations for every node and one actually suffices.
-            # (conditional explanations are by default zeroed for new nodes because
-            # they can change depending on the node. Non conditional explanations 
-            # will mostly be the same even for different nodes.)
-            if self.framework.repeat_expl_each_node or isinstance(self.explanation, ConditionalExplanation):
-                self.initialize_explanation()
-        self.previous_explanation_node = self.current_explanation_node
-
+        # Get consequent proposition
         if self.type == AdjectiveType.COMPARISON:
             consequent = self.proposition(self.evaluate(node, other_node), [node, other_node])
         else:
             consequent = self.proposition(self.evaluate(node), node)
+
+        # Check if we already explained this adjective
+        if self.adj_current_explanation_depth > 0:
+            # We are. This explanation will probably be analogous to the 
+            # previous one (except for Conditional explanations).
+            if self.framework.repeat_explanations or isinstance(self.explanation, ConditionalExplanation):
+                # If we have setted to repeat the explanation,
+                # or if this is a conditional explanation
+                self.initialize_explanation() # we reinitialize the adjective
+            else:
+                return consequent
 
         self.adj_current_explanation_depth += 1
         """ Stop at maximum depth """
