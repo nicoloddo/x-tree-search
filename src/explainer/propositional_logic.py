@@ -49,7 +49,7 @@ class And(LogicalExpression):
 
     def __str__(self) -> str:
         joined = '\n ∧ '.join(str(expr) for expr in self.exprs)
-        return f"{joined}"
+        return joined
 
 class Or(LogicalExpression):
     """Represents the disjunction of logical expressions."""
@@ -61,7 +61,8 @@ class Or(LogicalExpression):
         return any(expr.evaluate(interpretation) for expr in self.exprs)
 
     def __str__(self) -> str:
-        return f"{' ∨ '.join(str(expr) for expr in self.exprs)}"
+        joined = '\n ∨ '.join(str(expr) for expr in self.exprs)
+        return joined
 
 class Implies(LogicalExpression):
     """Represents the implication between two logical expressions."""

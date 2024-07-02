@@ -52,7 +52,8 @@ class ArgumentationFramework:
         return self.adjectives[name]
 
     def __str__(self):
-        propositions = [adjective.proposition() for adjective in self.adjectives.values()]
-        implications = [adjective.implies() for adjective in self.adjectives.values()]
-        knowledgebase_string = propositions.extend(implications)
-        return '\n\n'.join(implications)
+        propositions = [adjective.proposition().__str__() for adjective in self.adjectives.values()]
+        implications = [adjective.implies().__str__() for adjective in self.adjectives.values()]
+        
+        framework_string = '\n\n'.join(propositions) + '\n\nImplications:\n' + '\n\n'.join(implications)
+        return framework_string

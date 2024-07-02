@@ -14,15 +14,6 @@ All Explanations redirect to underlying explanations.
 Only Assumptions don't, stopping the explanation inception.
 """
 
-"""DELETE
-class Implication():
-    def __init__(explanation, affirmation):
-        self.implication = Implies(explanation, affirmation)
-    @property
-    def implies():
-        return self.implication
-"""
-
 class Explanation(ABC):
     """Abstract base class for all types of explanations."""
     
@@ -36,7 +27,7 @@ class Explanation(ABC):
         pass
 
     @abstractmethod
-    def explain(self, node: Any = None) -> LogicalExpression:
+    def explain(self, node: Any) -> LogicalExpression:
         """
         Generate a propositional logic explanation for the given node.
         
@@ -47,6 +38,17 @@ class Explanation(ABC):
             A LogicalExpression representing the explanation.
         """
         pass
+
+    @abstractmethod
+    def implies(self):
+        """
+        Generate a propositional logic explanation decontextualized.
+        It should reflect in an abstract way the implication of the
+        explanation.
+        
+        Returns:
+            A LogicalExpression representing the explanation.
+        """
 
 """ Assumptions """
 class Assumption(Explanation):
@@ -61,7 +63,11 @@ class Assumption(Explanation):
         """
         self.description = description
 
-    def explain(self, node: Any = None) -> LogicalExpression:
+    def explain(self, node: Any) -> LogicalExpression:
+        """Return the assumption as a Proposition."""
+        return Proposition("(assumption) " + self.description)
+    
+    def implies(self):
         """Return the assumption as a Proposition."""
         return Proposition("(assumption) " + self.description)
 
@@ -75,7 +81,7 @@ class BooleanAdjectiveAssumption(Assumption):
         Args:
             adjective_name: The name of the boolean adjective.
         """
-        description = f"By definition of {adjective_name}"
+        description = f"By definition of \"{adjective_name}\""
         super().__init__(description)
 
 class ComparisonAssumption(Assumption):
@@ -105,9 +111,10 @@ class RankAssumption(Assumption):
             comparison_operator: The comparison function.
         """
         if rank_type == 'max':
-            description = f"By definition a node is {name} if it's {comparison_adjective_name} compared to all nodes among {group_pointer_adjective_name}"
+            description = f"By definition a node is \"{name}\" if it's \"{comparison_adjective_name}\" compared to all nodes among \"{group_pointer_adjective_name}\""
         elif rank_type == 'min':
-            description = f"By definition a node is {name} if it's {Not(comparison_adjective_name)} compared to all nodes among {group_pointer_adjective_name}"
+            negate = Not('\"' + comparison_adjective_name + '\"')
+            description = f"By definition a node is \"{name}\" if it's {negate} compared to all nodes among \"{group_pointer_adjective_name}\""
         else:
             raise ValueError("RankAssumption of unknown type.")
         super().__init__(description)
@@ -147,7 +154,7 @@ class Possession(Explanation):
         else:
             raise ValueError("AdjectiveExplanation takes a max of 2 arguments")
 
-    def explain(self, node: Any = None) -> LogicalExpression:
+    def explain(self, node: Any) -> LogicalExpression:
         """
         Generate an explanation by explaining the underlying possession adjectives.
         Only Assumptions don't redirect to other explanations.
@@ -161,7 +168,7 @@ class Possession(Explanation):
         """
         adjective = self.framework.get_adjective(self.adjective_name)
 
-        if not self.pointer_adjective_name:
+        if not self.pointer_adjective_name: # the possession refers to the self node
             return adjective.explain(node)
 
         else:
@@ -176,7 +183,28 @@ class Possession(Explanation):
                     pointer_adjective.explain(node), # why this referred_object?
                     adjective.explain(referred_object)) # why the referred_object has this property?
             return explanation
+    
+    def implies(self, evaluation = True):
+        """ Generates a proposition that contitutes the antecedent of an
+        implication explaining why a certain adjective is attributed to
+        a node. """
 
+        adjective = self.framework.get_adjective(self.adjective_name)
+
+        if not self.pointer_adjective_name: # the possession refers to the self node
+            return adjective.implies(evaluation)
+
+        else:
+            pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
+
+            if self.explanation_of_adjective == pointer_adjective:
+                # only forward the explanation without asking why this referred object
+                implication = adjective.implies()
+            else:
+                implication = And(
+                    pointer_adjective.implies(), # why this referred_object?
+                    adjective.implies(evaluation)) # why the referred_object has this property?
+            return implication
 
 class Comparison(Explanation):
     """Represents an explanation provided by referring to a comparison
@@ -193,7 +221,7 @@ class Comparison(Explanation):
         self.comparison_adjective_name = comparison_adjective_name
         self.node_pointer_adjective_name = node_pointer_adjective_name
 
-    def explain(self, node: Any = None) -> Proposition:
+    def explain(self, node: Any) -> Proposition:
         """
         Generate an explanation for the comparison between a node and its adjective reference.
         
@@ -217,23 +245,31 @@ class Comparison(Explanation):
 
         return explanation
 
+    def implies(self):
+        return Proposition(f"node1 is {self.comparison_adjective_name} than node2")
+
+
 """ Group Comparison non-straightforward Explanation """
 class GroupComparison(Explanation):
     """Represents an explanation given by referring to 
     a comparison between a node and all nodes of a group."""
     
-    def __init__(self, comparison_adjective_name: str, group_pointer_adjective_name: str):
+    def __init__(self, comparison_adjective_name: str, group_pointer_adjective_name: str, positive_implication: bool = True):
         """
         Initialize the Group Comparison explanation.
         
         Args:
-            comparison_adjective_name: The name of the ranking adjective.
+            comparison_adjective_name: The name of the comparison adjective.
             siblings_selector: The selector of sibling: a callable that given a node returns an array of siblings
+            positive_implication: If the implication in the framework is seeking for a positive implication of
+                                inference of the comparison adjective or a negative implication:
+                                e.g. better than OR not(better than)?
         """
         self.comparison_adjective_name = comparison_adjective_name
         self.group_pointer_adjective_name = group_pointer_adjective_name
+        self.positive_implication = positive_implication
 
-    def explain(self, node: Any = None) -> Proposition:
+    def explain(self, node: Any) -> Proposition:
         """
         Generate an explanation for the comparison between a node and all nodes pointed at
         by the group pointer adjective specified.
@@ -245,6 +281,7 @@ class GroupComparison(Explanation):
         Returns:
             A Proposition explaining the comparison.
         """
+
         comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
         value_for_comparison_adjective = self.framework.get_adjective(comparison_adjective.property_pointer_adjective_name)
 
@@ -258,6 +295,9 @@ class GroupComparison(Explanation):
             for other_node in group]
         explanation = And(*explanations)
         return explanation
+
+    def implies(self, evaluation = True):
+        return Proposition(f"Node {self.comparison_adjective_name if self.positive_implication else Not(self.comparison_adjective_name)} than all nodes in {self.group_pointer_adjective_name}")
 
 """ Composite Explanations """
 class CompositeExplanation(Explanation):
@@ -276,7 +316,7 @@ class CompositeExplanation(Explanation):
         for exp in self.explanations:
             exp.set_belonging_framework(self.framework, self.explanation_of_adjective)
 
-    def explain(self, node: Any = None) -> LogicalExpression:
+    def explain(self, node: Any) -> LogicalExpression:
         """
         Generate an explanation by combining all sub-explanations with AND.
         
@@ -288,7 +328,9 @@ class CompositeExplanation(Explanation):
             A LogicalExpression representing the combination of all sub-explanations.
         """
         return And(*[exp.explain(node) for exp in self.explanations])
-
+    
+    def implies(self):
+        return And(*[exp.implies() for exp in self.explanations])
 
 """ Conditional Explanations """
 class PossessionCondition(Possession):
@@ -325,6 +367,8 @@ class PossessionCondition(Possession):
         """
         super().__init__(*args)
         self.value = value
+    
+    #implies() method from Possession
 
     def evaluate(self, node: Any) -> bool:
         """
@@ -369,7 +413,7 @@ class ConditionalExplanation(Explanation):
         self.true_explanation.set_belonging_framework(self.framework, self.explanation_of_adjective)
         self.false_explanation.set_belonging_framework(self.framework, self.explanation_of_adjective)
 
-    def explain(self, node: Any = None) -> LogicalExpression:
+    def explain(self, node: Any) -> LogicalExpression:
         """
         Generate an explanation based on the condition's evaluation.
         
@@ -380,6 +424,8 @@ class ConditionalExplanation(Explanation):
         Returns:
             A LogicalExpression representing the condition and the appropriate explanation.
         """
+        if not node:
+            return self.imply()
         condition_result = self.condition.evaluate(node)
 
         if condition_result:
@@ -391,3 +437,12 @@ class ConditionalExplanation(Explanation):
                         self.condition.explain(node), 
                         self.false_explanation.explain(node))
         return explanation
+
+    def implies(self):
+        explanation1 = And(
+                        self.condition.implies(True), 
+                        self.true_explanation.implies())
+        explanation2 = And(
+                        self.condition.implies(False), 
+                        self.false_explanation.implies())
+        return Or(explanation1, explanation2)

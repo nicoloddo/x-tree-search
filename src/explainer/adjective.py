@@ -98,12 +98,17 @@ class Adjective(ABC):
         """
         pass
 
-    def implies(self) -> Implies:
+    def implies(self, evaluation = None) -> Implies:
         """ Returns an implication that leads from the explanation to 
         the adjective. This is like an explanation but not contextualized
         onto a specific node. """
-        antecedent = self.explanation.explain()
-        consequent = self.proposition()
+        antecedent = self.explanation.implies()
+
+        if self.type == AdjectiveType.COMPARISON:
+            consequent = self.proposition(evaluation, [None, None])
+        else:
+            consequent = self.proposition(evaluation, None)
+
         return Implies(antecedent, consequent)
 
     def explain(self, node: Any, other_node: Any = None) -> Implies:
@@ -142,7 +147,7 @@ class BooleanAdjective(Adjective):
 
     def proposition(self, evaluation: bool = True, node: Any = "node") -> Proposition:
         """ Returns a proposition reflecting the adjective """
-        proposition = Proposition(f"{node} is {self.name}")
+        proposition = Proposition(f"{node or 'node'} is {self.name}")
         if evaluation == False:
             return Not(proposition)
         else:
@@ -168,9 +173,9 @@ class PointerAdjective(Adjective):
         explanation = explanation or BooleanAdjectiveAssumption(name)
         super().__init__(name, AdjectiveType.POINTER, explanation)
 
-    def proposition(self, value: str = "not known", node: Any = "node") -> Proposition:
+    def proposition(self, value: str = "?", node: Any = "node") -> Proposition:
         """ Returns a proposition reflecting the pointer value """
-        proposition = Proposition(f"{node} has {self.name} = {value}")
+        proposition = Proposition(f"{node or 'node'} has {self.name} = {value or '?'}")
         return proposition
 
     def _evaluate(self, node: Any) -> Any:
@@ -205,7 +210,7 @@ class ComparisonAdjective(Adjective):
 
     def proposition(self, evaluation: bool = True, node: Any = ["node1", "node2"]) -> Proposition:
         """ Returns a proposition reflecting the comparison """
-        proposition = Proposition(f"{node[0]} is {self.name} than {node[1]}")
+        proposition = Proposition(f"{node[0] or 'node1'} is {self.name} than {node[1] or 'node1'}")
         if evaluation == False:
             return Not(proposition)
         else:
@@ -266,6 +271,6 @@ class MinRankAdjective(RankAdjective):
     def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, group_pointer_adjective_name: PointerAdjective):
         explanation = CompositeExplanation(
             RankAssumption('min', name, comparison_adjective_name, group_pointer_adjective_name),
-            GroupComparison(comparison_adjective_name, group_pointer_adjective_name))
+            GroupComparison(comparison_adjective_name, group_pointer_adjective_name, positive_implication=False))
         evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(other_node, node) for other_node in group)
         super().__init__(name, comparison_adjective_name, group_pointer_adjective_name, explanation, evaluator)
