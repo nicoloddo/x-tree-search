@@ -67,7 +67,7 @@ class Assumption(Explanation):
         if not definition:
             self.verbose = Proposition(assumption)
         else:
-            self.verbose = Proposition(f"{assumption} is {definition}")
+            self.verbose = Proposition(f"{assumption} is \"{definition}\"")
 
         self.minimal = Proposition("(from assumptions)")
 
