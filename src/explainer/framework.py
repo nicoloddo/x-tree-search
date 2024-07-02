@@ -12,24 +12,19 @@ class ArgumentationSettings:
         Set to 'verbose', 'minimal' or 'no'.
         The setting decides how much of the assumptions to print.
 
-        - repeat_expl_per_node:
-        Set the repeat_expl_per_node setting to False if you don't want to
+        - repeat_expl_each_node:
+        Set the repeat_expl_each_node setting to False if you don't want to
         repeat explanations for every node. Explanations of the same adjective are
         usually analogous, explaining one node can suffice to understand the others.
         (conditional explanations are by default zeroed for new nodes because
         they can change depending on the node. Non conditional explanations will 
         mostly be the same even for different nodes.)
-
-        - repeat_future_expl_same_node: 
-        Sets if an explanation should be repeated even if it was already given on that node
-        during a previous explanation.
         """        
 
         self._settings = {
             'explanation_depth': 8,
             'assumptions_verbosity': 'no',
-            'repeat_expl_per_node': True,
-            'repeat_future_expl_same_node': False
+            'repeat_expl_each_node': True
         }
 
     def __getattr__(self, name):
@@ -62,8 +57,7 @@ class ArgumentationSettings:
     _validators = {
         'explanation_depth': _validate_explanation_depth,
         'assumptions_verbosity': _validate_assumptions_verbosity,
-        'repeat_expl_per_node': _validate_boolean,
-        'repeat_future_expl_same_node': _validate_boolean
+        'repeat_expl_each_node': _validate_boolean
     }
 
     def configure(self, settings_dict):

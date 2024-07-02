@@ -146,12 +146,12 @@ class Adjective(ABC):
         # new explanation for the new node. This explanation will probably be 
         # analogous to the previous one.
         if self.current_explanation_node != self.previous_explanation_node:
-            # set the repeat_expl_per_node setting to False if you don't want to
+            # set the repeat_expl_each_node setting to False if you don't want to
             # repeat explanations for every node and one actually suffices.
             # (conditional explanations are by default zeroed for new nodes because
             # they can change depending on the node. Non conditional explanations 
             # will mostly be the same even for different nodes.)
-            if self.framework.repeat_expl_per_node or isinstance(self.explanation, ConditionalExplanation):
+            if self.framework.repeat_expl_each_node or isinstance(self.explanation, ConditionalExplanation):
                 self.initialize_explanation()
         self.previous_explanation_node = self.current_explanation_node
 
@@ -169,8 +169,6 @@ class Adjective(ABC):
 
         if antecedent is not None: # If the explanation was given
             return Implies(antecedent, consequent)
-            if self.framework.repeat_future_expl_same_node:
-                self.initialize_explanation()
         else:
             return consequent
 
