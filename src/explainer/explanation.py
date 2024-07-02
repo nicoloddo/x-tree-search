@@ -40,7 +40,7 @@ class Explanation(ABC):
         pass
 
     @abstractmethod
-    def implies(self):
+    def implies(self) -> LogicalExpression:
         """
         Generate a propositional logic explanation decontextualized.
         It should reflect in an abstract way the implication of the
@@ -49,6 +49,7 @@ class Explanation(ABC):
         Returns:
             A LogicalExpression representing the explanation.
         """
+        pass
 
 """ Assumptions """
 class Assumption(Explanation):
@@ -67,7 +68,7 @@ class Assumption(Explanation):
         """Return the assumption as a Proposition."""
         return Proposition("(assumption) " + self.description)
     
-    def implies(self):
+    def implies(self) -> LogicalExpression:
         """Return the assumption as a Proposition."""
         return Proposition("(assumption) " + self.description)
 
@@ -184,7 +185,7 @@ class Possession(Explanation):
                     adjective.explain(referred_object)) # why the referred_object has this property?
             return explanation
     
-    def implies(self, evaluation = True):
+    def implies(self, evaluation = True) -> LogicalExpression:
         """ Generates a proposition that contitutes the antecedent of an
         implication explaining why a certain adjective is attributed to
         a node. """
@@ -245,7 +246,7 @@ class Comparison(Explanation):
 
         return explanation
 
-    def implies(self):
+    def implies(self) -> LogicalExpression:
         return Proposition(f"node1 is {self.comparison_adjective_name} than node2")
 
 
@@ -296,7 +297,7 @@ class GroupComparison(Explanation):
         explanation = And(*explanations)
         return explanation
 
-    def implies(self, evaluation = True):
+    def implies(self, evaluation = True) -> LogicalExpression:
         return Proposition(f"Node {self.comparison_adjective_name if self.positive_implication else Not(self.comparison_adjective_name)} than all nodes in {self.group_pointer_adjective_name}")
 
 """ Composite Explanations """
@@ -329,7 +330,7 @@ class CompositeExplanation(Explanation):
         """
         return And(*[exp.explain(node) for exp in self.explanations])
     
-    def implies(self):
+    def implies(self) -> LogicalExpression:
         return And(*[exp.implies() for exp in self.explanations])
 
 """ Conditional Explanations """
@@ -438,7 +439,7 @@ class ConditionalExplanation(Explanation):
                         self.false_explanation.explain(node))
         return explanation
 
-    def implies(self):
+    def implies(self) -> LogicalExpression:
         explanation1 = And(
                         self.condition.implies(True), 
                         self.true_explanation.implies())
