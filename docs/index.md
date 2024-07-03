@@ -135,14 +135,14 @@ settings = {
 
 knowledgebase.configure_settings(settings)
 ```
-- explanation_depth : 
+## explanation_depth
 Sets the depth of explanations, how deep towards the assumptions it should go.
 
-- assumptions_verbosity: 
+## assumptions_verbosity
 Set to 'verbose', 'minimal' or 'no'.
 Sets how much of the assumptions to print.
 
-- repeat_explanations:
+## repeat_explanations
 Sets the repeat_explanations setting to False if you don't want to repeat explanations for every node. Explanations of the same adjective are usually analogous, explaining one node can suffice to understand the others. 
 ConditionalExplanation are by default reinitialized for new nodes because they can change depending on the node. Non conditional explanations will instead mostly be the same even for different nodes.
 
