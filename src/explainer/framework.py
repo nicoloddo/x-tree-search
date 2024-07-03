@@ -139,7 +139,7 @@ class ArgumentationFramework:
         """
         return self.adjectives[name]
 
-    def initialize_adjectives_explanations(self):
+    def _initialize_adjectives_explanations(self):
         for adjective in self.adjectives.values():
             adjective.initialize_explanation()
 
