@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Argumentation Framework API Documentation</title>
+    <title>x-tree-search Argumentation Framework API Documentation</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -198,15 +198,78 @@ knowledgebase.<span class="keyword">repeat_explanations</span> = <span class="ke
         <li><code>group_pointer_adjective_name</code>: The name of the pointer adjective that selects the group to compare with.</li>
     </ul>
 
-    <h2 id="explanations">4. Explanations</h2>
-    <p>Explanations provide reasoning for adjective assignments:</p>
+<h2 id="explanations">4. Explanations</h2>
+    <p>Explanations provide reasoning for adjective assignments. Here are the available explanation classes:</p>
+
+    <h3>Assumption</h3>
+    <pre><code><span class="class">Assumption</span>(description: str, definition: str = None)</code></pre>
+    <p>A basic explanation based on an assumption.</p>
     <ul>
-        <li><code>Assumption(description: str, definition: str = None)</code>: A basic explanation based on an assumption.</li>
-        <li><code>Possession(*args)</code>: Explains by referring to another adjective.</li>
-        <li><code>Comparison(comparison_adjective_name: str, node_pointer_adjective_name: str)</code>: Explains by comparing with another node.</li>
-        <li><code>GroupComparison(comparison_adjective_name: str, group_pointer_adjective_name: str, positive_implication: bool = True)</code>: Explains by comparing with a group of nodes.</li>
-        <li><code>ConditionalExplanation(condition: PossessionCondition, true_explanation: Explanation, false_explanation: Explanation)</code>: Provides different explanations based on a condition.</li>
-        <li><code>CompositeExplanation(*explanations: Explanation)</code>: Combines multiple explanations.</li>
+        <li><code>description</code>: A string describing the assumption.</li>
+        <li><code>definition</code>: An optional string providing additional definition (default: None).</li>
+    </ul>
+
+    <h3>Possession</h3>
+    <pre><code><span class="class">Possession</span>(*args)</code></pre>
+    <p>Explains by referring to another adjective's possession.</p>
+    <ul>
+        <li>Usage:
+            <ul>
+                <li><code>Possession(adjective_name)</code></li>
+                <li><code>Possession(pointer_adjective_name, adjective_name)</code></li>
+            </ul>
+        </li>
+        <li><code>adjective_name</code>: The name of the adjective to explain.</li>
+        <li><code>pointer_adjective_name</code>: Optional. The name of the pointer adjective that selects the object.</li>
+    </ul>
+
+    <h3>Comparison</h3>
+    <pre><code><span class="class">Comparison</span>(comparison_adjective_name: str, node_pointer_adjective_name: str)</code></pre>
+    <p>Explains by comparing with another node.</p>
+    <ul>
+        <li><code>comparison_adjective_name</code>: The name of the comparison adjective.</li>
+        <li><code>node_pointer_adjective_name</code>: The name of the pointer adjective that selects the object to compare with.</li>
+    </ul>
+
+    <h3>GroupComparison</h3>
+    <pre><code><span class="class">GroupComparison</span>(comparison_adjective_name: str, group_pointer_adjective_name: str, positive_implication: bool = True)</code></pre>
+    <p>Explains by comparing with a group of nodes.</p>
+    <ul>
+        <li><code>comparison_adjective_name</code>: The name of the comparison adjective.</li>
+        <li><code>group_pointer_adjective_name</code>: The name of the pointer adjective that selects the group to compare with.</li>
+        <li><code>positive_implication</code>: Whether the implication is positive (default: True).</li>
+    </ul>
+
+    <h3>ConditionalExplanation</h3>
+    <pre><code><span class="class">ConditionalExplanation</span>(condition: PossessionCondition, true_explanation: Explanation, false_explanation: Explanation)</code></pre>
+    <p>Provides different explanations based on a condition.</p>
+    <ul>
+        <li><code>condition</code>: A PossessionCondition object that determines which explanation to use.</li>
+        <li><code>true_explanation</code>: The explanation to use when the condition is true.</li>
+        <li><code>false_explanation</code>: The explanation to use when the condition is false.</li>
+    </ul>
+
+    <h3>CompositeExplanation</h3>
+    <pre><code><span class="class">CompositeExplanation</span>(*explanations: Explanation)</code></pre>
+    <p>Combines multiple explanations.</p>
+    <ul>
+        <li><code>*explanations</code>: Variable number of Explanation objects to be combined.</li>
+    </ul>
+
+    <h3>PossessionCondition</h3>
+    <pre><code><span class="class">PossessionCondition</span>(*args, value: Any = True)</code></pre>
+    <p>Represents a condition based on an adjective's value.</p>
+    <ul>
+        <li>Usage:
+            <ul>
+                <li><code>PossessionCondition("adjective_name")</code></li>
+                <li><code>PossessionCondition("pointer_adjective_name", "adjective_name")</code></li>
+                <li><code>PossessionCondition("pointer_adjective_name", "adjective_name", value=some_value)</code></li>
+            </ul>
+        </li>
+        <li><code>adjective_name</code>: The name of the adjective to check.</li>
+        <li><code>pointer_adjective_name</code>: Optional. The name of the pointer adjective that selects the object to check.</li>
+        <li><code>value</code>: The expected value of the adjective (default: True).</li>
     </ul>
 
     <h2 id="usage-example">5. Usage Example: Minimax Tree with Scoring</h2>
