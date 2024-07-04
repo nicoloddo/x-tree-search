@@ -31,11 +31,11 @@ class Tree(MarkovChain):
             if parent == None:
                 node_id = "0"
             else:
-                node_id = parent.id + str(len(parent.children))
+                node_id = parent.id + '_' + str(len(parent.children))
 
             super().__init__(node_id)
         
-        def __add_child(self, child, probability):
+        def _add_child(self, child, probability):
             self._MarkovNode__add_connection(child, probability)
             if len(self.connections) > 0:
                 self.is_leaf = False
@@ -76,7 +76,7 @@ class Tree(MarkovChain):
         for value in children_values:
             child = self.__add_node(parent=parent, value=value)
             probability = 1/len(children_values)
-            parent._TreeNode__add_child(child, probability)
+            parent._add_child(child, probability)
 
     def get_node(self, node_id):
         """

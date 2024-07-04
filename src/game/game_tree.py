@@ -39,6 +39,8 @@ class GameTree(Tree):
         self.game = game
         self.score = scoring_function
         self.action_space_id = action_space_id
+
+        self.root = self.__add_node(game=self.game)
         self.root.state = game.action_spaces[action_space_id]
 
     class GameTreeNode(Tree.TreeNode):
@@ -56,13 +58,25 @@ class GameTree(Tree):
             state (GameModel.ActionSpace) (derived)
             score (number) (derived)
             action (dict) (derived)
+            game
         """
-        def __init__(self, parent, value):
-            mandatory_features = ["state", "score", "action"]
-            if not all(features in value for features in mandatory_features):
-                raise ValueError(f"All mandatory features should be in the GameTreeNode value: {mandatory_features}")
+        def __init__(self, parent, value, game=None):
+            mandatory_features = ["state", "score", "action", "game"]
 
-            super().__init__(self, parent, value)
+            if not parent and not value and game: # Root node
+                value = {}
+                for feature in mandatory_features:
+                    value[feature] = None
+                value["game"] = game
+            elif not parent and not value and not game:
+                raise ValueError("You should specify the game when initializing a root node.")
+            elif not parent:
+                raise ValueError("Not root nodes must have a parent specified at initialization.")
+            else:
+                if not all(features in value for features in mandatory_features):
+                    raise ValueError(f"All mandatory features should be in the GameTreeNode value: {mandatory_features}")
+
+            super().__init__(parent, value)
 
         @property
         def state(self):
@@ -73,6 +87,9 @@ class GameTree(Tree):
         @property
         def action(self):
             return self.value["action"]
+        @property
+        def game(self):
+            return self.value["game"]
 
         @state.setter
         def state(self, value):
@@ -83,22 +100,67 @@ class GameTree(Tree):
         @action.setter
         def action(self, value):
             self.value["action"] = value
+        @game.setter
+        def game(self, value):
+            self.value["game"] = value
 
-    def expand_node(self, node_id):
+        def expand(self, game_tree):
+            state = self.state
+            action_space_id = game_tree.action_space_id
+
+            available_actions_and_states = self.game.get_available_actions_and_states(action_space_id)
+
+            children_values = []
+            for actions_and_states in available_actions_and_states:
+                action = actions_and_states["action"]
+                state = actions_and_states["state"]
+                game = actions_and_states["game"]
+                score = game_tree.score(state)
+
+                value = {"state": state, "score": score, "action": action, "game": game}
+                children_values.append(value)
+
+            game_tree.set_children(self.id, children_values)
+
+        def _expand_children(self, game_tree, count_depth, depth):
+            if count_depth >= depth:
+                return
+            
+            for child in self.children:
+                child.expand(game_tree)
+                child._expand_children(game_tree, count_depth + 1, depth)
+        
+        def expand_to_depth(self, game_tree, depth):
+            count_depth = 0
+
+            if depth > 0:
+                self.expand(game_tree) # expand root
+                count_depth += 1
+            
+            if depth > 1:
+                self._expand_children(game_tree, count_depth, depth)
+
+    def __add_node(self, parent=None, value=None, *, game=None):
+        """Overrides the add_node method to ensure GameTreeNode objects are created."""
+        new_node = self.GameTreeNode(parent, value, game)
+        self.nodes[new_node.id] = new_node
+        return new_node
+
+    def set_children(self, node_id, children_values):
+        """
+        Expands a node with a given amount of children and their values
+
+        Args:
+            node (str): The id of the node to expand with new children.
+            children_values (list of numbers): Values to assign to the children nodes.
+        """
+        parent = self.nodes[node_id]
+        for value in children_values:
+            child = self.__add_node(parent=parent, value=value)
+            probability = 1/len(children_values)
+            parent._add_child(child, probability)
+
+    def expand_node(self, node_id, depth=1):
         node = self.nodes[node_id]
 
-        state = node.state
-        state_rules_id = self.action_space_id
-
-        available_actions_and_states = self.game.get_available_actions_and_states(state, state_rules_id)
-
-        children_values = []
-        for actions_and_states in available_actions_and_states:
-            action = actions_and_states["action"]
-            state = actions_and_states["state"]
-            score = self.score(state)
-
-            value = {"state": state, "score": score, "action": action}
-            children_values.append(value)
-
-        self.set_children(node_id, children_values)
+        node.expand_to_depth(self, depth)

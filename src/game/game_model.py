@@ -147,22 +147,23 @@ class GameModel:
         """
         self.action_spaces[on].actions_enabled = False
 
-    def get_available_actions_and_states(self, action_space, rules_action_space_id):
+    def get_available_actions_and_states(self, action_space_id):
         """ 
         return (list of dict): list containing all available actions that can be performed at the current state of the action_space, and the action space after that action was performed. 
                                each dictionary is in the form {"action": action, "state": theoretical_action_space}
         """
-        available_actions_and_states = []
-        theoretical_action_space_id = "theoretical_" + rules_action_space_id
+        action_space = self.action_spaces[action_space_id]
 
+        available_actions_and_states = []
         for who, agent in enumerate(self.agents):
             for where, element in np.ndenumerate(action_space):
                 for what in action_space.available_labels_flat:
-                    if not self.__break_rules(who, where, what, action_space, rules_action_space_id, verbose=False):
+                    if not self.__break_rules(who, where, what, action_space, action_space_id, verbose=False):
                         # found available action
-                        what_before=element
-                        theoretical_action_space = self.__theoretical_apply_action(action_space, where, what)
-                        available_actions_and_states.append({"action": self.__action_to_dict(who, where, what, what_before, theoretical_action_space_id), "state": theoretical_action_space})
+                        theoretical_game = copy.deepcopy(self)
+                        action_dict = theoretical_game.action(action_space_id, who, where, what) # We already know the action will not break any rules
+
+                        available_actions_and_states.append({"action": action_dict, "state": theoretical_game.action_spaces[action_space_id], "game": theoretical_game})
         
         return available_actions_and_states
 
@@ -206,12 +207,14 @@ class GameModel:
             raise ValueError("Actions can only be done with the labels available to the given action space.")
         action_space[where] = what
     
+    """
     def __theoretical_apply_action(self, action_space, where, what):
         theoretical_action_space = copy.deepcopy(action_space)
         if what not in theoretical_action_space.available_labels_flat:
             raise ValueError("Actions can only be done with the labels available to the given action space.")
         theoretical_action_space[where] = what
         return theoretical_action_space
+    """
     
     def theoretical_unapply_actions(self, actions_to_reverse_amount):
         ''' 
@@ -295,14 +298,17 @@ class GameModel:
             raise ValueError("Rule function must accept exactly these arguments: who, where, what, game")
 
         if action_space_id == "general":
-            wrapped = lambda who, where, what: self.__wrapped_rule(rule, who, None, what, None)
+            wrapped = lambda who, where, what, game=self: game.__wrapped_rule(rule, who, None, what, None)
         else:
-            action_space = self.action_spaces[action_space_id]
-            wrapped = lambda who, where, what: self.__wrapped_rule(rule, who, action_space[tuple(where)], what, action_space)
+            wrapped = lambda who, where, what, game=self: game.__wrapped_rule(rule, who, where, what, action_space_id)
 
         self.rules[action_space_id].append({'description':rule_description, 'broken':wrapped})
     
-    def __wrapped_rule(self, rule, who, where, what, action_space):
+    def __wrapped_rule(self, rule, who, where, what, action_space_id):
+        if action_space_id:
+            action_space = self.action_spaces[action_space_id]
+            where = action_space[tuple(where)]
+            
         return rule(who, where, what, self)
     
     def __break_rules(self, who, where, what, action_space, rules_action_space_id, *, verbose=True):
@@ -327,13 +333,13 @@ class GameModel:
         # If they are allowed check rules on the action space
         try:
             for i, rule in enumerate(self.rules["general"]): # Check general rules
-                if rule['broken'](who, where, what):
+                if rule['broken'](who, where, what, self):
                     if verbose:
                         print("Broke general rule " + str(i+1) + ': ' + rule['description'])
                     return True
 
             for i, rule in enumerate(self.rules[rules_action_space_id]): # Check rules specific to that action space
-                if rule['broken'](who, where, what):
+                if rule['broken'](who, where, what, self):
                     if verbose:
                         print("Broke rule " + str(i+1) + ': ' + rule['description'])
                     return True
