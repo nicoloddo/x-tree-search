@@ -10,19 +10,16 @@ class GameTree(Tree):
 
         The game parameter must be an instance of GameModel, which includes defining agents, action spaces, and rules. Action spaces are the areas or elements where actions can be performed, such as a board in tic-tac-toe. Each action space can have modifiable elements or slots. The agents variable refers to an action space that allows agents to perform actions on other agents and modify their features. Rules constrain these action spaces by limiting the possible actions.
 
-        The scoring_function should be a callable that takes one input called state, which is used to evaluate the game states. The function must be defined to appropriately score the states of the game.
         The state is a numpy.ndarray matrix with elements belonging to the available_labels in the game.action_spaces[action_spaces_id].
 
         The action_space_id is an identifier for the action space on which to build the game tree. This specifies the area or context within the game where the actions are evaluated and performed.
 
         Args:
             game (GameModel): An instance of the GameModel class which includes agents, action spaces, and rules.
-            scoring_function (function): A callable function that takes one input (state) and returns a score evaluating that state.
             action_space_id (str): Identifier for the action space used to build the game tree.
 
         Attributes:
             game (GameModel): The game model instance.
-            score (function): The scoring function to evaluate game states.
             action_space_id (str): Identifier for the relevant action space in the game model.
 
         Raises:
@@ -33,11 +30,8 @@ class GameTree(Tree):
         super().__init__()
         if not isinstance(game, GameModel):
             raise ValueError("The game of the GameTree must be a valid GameModel object.")
-        if not callable(scoring_function):
-            raise ValueError("The scoring_function must be a callable function.")
 
         self.game = game
-        self.score = scoring_function
         self.action_space_id = action_space_id
 
         self.root = self.__add_node(game=self.game)
@@ -56,12 +50,11 @@ class GameTree(Tree):
             children (list) (derived): A list of Node instances that are the children of this node (derived property from the original MarkovNode.connections attribute)
             children_and_probs (list) (derived): List of tuples containing children of this node and the respective transition probability
             state (GameModel.ActionSpace) (derived)
-            score (number) (derived)
             action (dict) (derived)
             game
         """
         def __init__(self, parent, value, game=None):
-            mandatory_features = ["state", "score", "action", "game"]
+            mandatory_features = ["state", "action", "game"]
 
             if not parent and not value and game: # Root node
                 value = {}
@@ -82,9 +75,6 @@ class GameTree(Tree):
         def state(self):
             return self.value["state"]
         @property
-        def score(self):
-            return self.value["score"]
-        @property
         def action(self):
             return self.value["action"]
         @property
@@ -94,9 +84,6 @@ class GameTree(Tree):
         @state.setter
         def state(self, value):
             self.value["state"] = value
-        @score.setter
-        def score(self, value):
-            self.value["score"] = value
         @action.setter
         def action(self, value):
             self.value["action"] = value
@@ -115,9 +102,8 @@ class GameTree(Tree):
                 action = actions_and_states["action"]
                 state = actions_and_states["state"]
                 game = actions_and_states["game"]
-                score = game_tree.score(state)
 
-                value = {"state": state, "score": score, "action": action, "game": game}
+                value = {"state": state, "action": action, "game": game}
                 children_values.append(value)
 
             game_tree.set_children(self.id, children_values)
