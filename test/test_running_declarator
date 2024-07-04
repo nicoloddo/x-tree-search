@@ -1,0 +1,47 @@
+import games.tic_tac_toe
+from algorithms.minmax import MinMax
+from src.explainer.declarator import TreeSearchDeclarator
+
+import numpy as np
+
+def scoring_function(state):
+    """ Evaluate the Tic Tac Toe board state for the 'X' player's perspective """
+    score = 0
+    
+    # Possible lines to check (3 rows, 3 columns, 2 diagonals)
+    lines = []
+    # Rows and columns
+    for i in range(3):
+        lines.append(state[i, :])  # Row
+        lines.append(state[:, i])  # Column
+    # Diagonals
+    lines.append(np.array([state[i, i] for i in range(3)]))  # Main diagonal
+    lines.append(np.array([state[i, 2 - i] for i in range(3)]))  # Anti-diagonal
+
+    for line in lines:
+        if np.all(line == "X"):
+            score += 100  # 'X' wins
+        elif np.all(line == "O"):
+            score -= 100  # 'O' wins
+        elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
+            score += 10  # 'X' is one move away from winning
+        elif np.count_nonzero(line == "O") == 2 and np.count_nonzero(line == "free") == 1:
+            score -= 10  # 'O' is one move away from winning
+
+    return score
+
+# Initialize the game and MinMax search
+gmt = games.tic_tac_toe.TicTacToe().gmt
+search = MinMax(gmt, scoring_function)
+
+# Set up the TreeSearchDeclarator
+declarator = TreeSearchDeclarator(["algorithms.minmax", "src.game.game_tree"], search, gmt)
+
+variable_names, variable_history = declarator.trace_properties()
+
+# Print the traced variable history
+# Print the variable history
+for var in variable_names:
+    print(f"History for variable '{var}':")
+    for line_num, line_code, value in variable_history[var]:
+        print(f"  Line {line_num}: {line_code} -> {var} = {value}")
