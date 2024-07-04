@@ -6,3 +6,4 @@
 .spyproject/
 *.bat
 bookmarks/
+*.egg-info
