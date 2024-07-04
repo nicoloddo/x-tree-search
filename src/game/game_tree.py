@@ -2,7 +2,7 @@ from src.structures.tree import Tree
 from src.game.game_model import GameModel
 
 class GameTree(Tree):
-    def __init__(self, game, scoring_function, action_space_id):
+    def __init__(self, game, action_space_id):
         """
         Initializes the GameTree object which builds upon the Tree class.
 
@@ -68,7 +68,8 @@ class GameTree(Tree):
             else:
                 if not all(features in value for features in mandatory_features):
                     raise ValueError(f"All mandatory features should be in the GameTreeNode value: {mandatory_features}")
-
+            
+            self.expanded = False
             super().__init__(parent, value)
 
         @property
@@ -92,6 +93,10 @@ class GameTree(Tree):
             self.value["game"] = value
 
         def expand(self, game_tree):
+            if self.expanded:
+                return                
+            self.expanded = True
+
             state = self.state
             action_space_id = game_tree.action_space_id
 
