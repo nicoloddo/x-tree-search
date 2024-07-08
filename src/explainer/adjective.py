@@ -147,8 +147,8 @@ class Adjective(ABC):
         # Check if we already explained this adjective
         if self.adj_current_explanation_depth > 0:
             # We are. This explanation will probably be analogous to the 
-            # previous one (except for Conditional explanations).
-            if self.framework.repeat_explanations or isinstance(self.explanation, ConditionalExplanation):
+            # previous one (except for Conditional explanations and GroupComparison explanations).
+            if self.framework.repeat_explanations or isinstance(self.explanation, ConditionalExplanation) or isinstance(self.explanation, GroupComparison):
                 # If we have setted to repeat the explanation,
                 # or if this is a conditional explanation
                 self.initialize_explanation() # we reinitialize the adjective
@@ -211,8 +211,11 @@ class PointerAdjective(Adjective):
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.POINTER, explanation, definition = definition)
 
-    def proposition(self, value: str = "?", node: Any = "node") -> Proposition:
+    def proposition(self, value: Any = None, node: Any = "node") -> Proposition:
         """ Returns a proposition reflecting the pointer value """
+        if not value:
+            value = '?'
+
         proposition = Proposition(f"{node or 'node'} has {self.name} = {value or '?'}")
         return proposition
 
@@ -234,9 +237,17 @@ class NodesGroupPointerAdjective(PointerAdjective):
             composite_definition = f"[{definition}]"
         super().__init__(name, composite_definition, explanation)
     
-    def _evaluate(self, node: Any) -> Any:
-        """Evaluate the pointer adjective for a given node."""
-        return self.getter(node)
+    def proposition(self, value: Any = None, node: Any = "node") -> Proposition:
+        if not value:
+            value = '?'
+        elif type(value) is list:
+            value = [str(val) for val in value]
+        else:
+            raise ValueError(f"{self.name} NodesGroupPointerAdjective should evaluate to a list. Check your definition.")
+
+        """ Returns a proposition reflecting the pointer value """
+        proposition = Proposition(f"{node or 'node'} has {self.name} = {value or '?'}")
+        return proposition
 
 class ComparisonAdjective(Adjective):
     """Represents a ranking adjective used for comparing nodes.

@@ -310,7 +310,7 @@ class GroupComparison(Explanation):
             value_for_comparison_adjective.explain(other_node)), 
             comparison_adjective.explain(node, other_node))
             for other_node in group]
-        explanation = And(*explanations)
+        explanation = And(group_pointer_adjective.explain(node), And(*explanations))
         return explanation
 
     def implies(self, evaluation = True) -> LogicalExpression:
