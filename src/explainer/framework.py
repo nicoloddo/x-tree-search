@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 class ArgumentationSettings:
     def __init__(self):
@@ -105,6 +105,16 @@ class ArgumentationFramework:
         """
         self.adjectives[adjective.name] = adjective
         adjective.set_belonging_framework(self)
+    
+    def add_adjectives(self, adjectives: List['Adjective']):
+        """
+        Add multiple adjectives to the framework all together.
+        
+        Args:
+            adjectives: The List of Adjective objects to add.
+        """
+        for adjective in adjectives:
+            self.add_adjective(adjective)
 
     def rename_adjective(self, old_name: str, new_name: str):
         """

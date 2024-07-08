@@ -24,9 +24,9 @@ knowledgebase.add_adjective(
         definition = "node.score",
 
         explanation = ConditionalExplanation(
-            condition = PossessionCondition("leaf"),
-            true_explanation = Assumption("Leaf nodes have scores from the evaluation function"),
-            false_explanation = CompositeExplanation(
+            condition = If("leaf"),
+            explanation_if_true = Assumption("Leaf nodes have scores from the evaluation function"),
+            explanation_if_false = CompositeExplanation(
                 Assumption("Internal nodes have scores from children"),
                 Possession("backtracing child"))
         ))
@@ -49,11 +49,11 @@ knowledgebase.add_adjective(
     PointerAdjective("backtracing child",
         definition = "node.score_child",
         explanation = ConditionalExplanation(
-            condition = PossessionCondition("opponent player turn"),
-            true_explanation = CompositeExplanation(
+            condition = If("opponent player turn"),
+            explanation_if_true = CompositeExplanation(
                 Assumption("We assume the opponent will do their best move."),
                 Possession("backtracing child", "worst")),
-            false_explanation = CompositeExplanation(
+            explanation_if_false = CompositeExplanation(
                 Assumption("On our turn we take the maximum rated move."),
                 Possession("backtracing child", "best"))
         ))
@@ -266,14 +266,14 @@ Explains by comparing with a group of nodes.
 ## ConditionalExplanation
 
 ```python
-ConditionalExplanation(condition: PossessionCondition, true_explanation: Explanation, false_explanation: Explanation)
+ConditionalExplanation(condition: If, explanation_if_true: Explanation, explanation_if_false: Explanation)
 ```
 
 Provides different explanations based on a condition.
 
-- `condition`: A PossessionCondition object that determines which explanation to use.
-- `true_explanation`: The explanation to use when the condition is true.
-- `false_explanation`: The explanation to use when the condition is false.
+- `condition`: A If object that determines which explanation to use.
+- `explanation_if_true`: The explanation to use when the condition is true.
+- `explanation_if_false`: The explanation to use when the condition is false.
 
 ## CompositeExplanation
 
@@ -285,18 +285,18 @@ Combines multiple explanations.
 
 - `*explanations`: Variable number of Explanation objects to be combined.
 
-## PossessionCondition
+## If
 
 ```python
-PossessionCondition(*args, value: Any = True)
+If(*args, value: Any = True)
 ```
 
 Represents a condition based on an adjective's value.
 
 Usage:
-- `PossessionCondition("adjective_name")`
-- `PossessionCondition("pointer_adjective_name", "adjective_name")`
-- `PossessionCondition("pointer_adjective_name", "adjective_name", value=some_value)`
+- `If("adjective_name")`
+- `If("pointer_adjective_name", "adjective_name")`
+- `If("pointer_adjective_name", "adjective_name", value=some_value)`
 
 - `adjective_name`: The name of the adjective to check.
 - `pointer_adjective_name`: Optional. The name of the pointer adjective that selects the object to check.

@@ -123,9 +123,9 @@ class RankAssumption(Assumption):
         Initialize the ComparisonAssumption.
         
         Args:
-            ranking_adjective_name: The name of the ranking adjective.
-            pointer_adjective_name: The name of the pointer adjective used for comparison.
-            comparison_operator: The comparison function.
+            rank_type: The type of ranking (supported: max, min)
+            comparison_adjective_name: The name of the comparison adjective.
+            group_pointer_adjective_name: The name of the group pointer adjective among which we are ranking the node.
         """
         if rank_type == 'max':
             description = f"By definition a node is \"{name}\" if it's \"{comparison_adjective_name}\" compared to all nodes among \"{group_pointer_adjective_name}\""
@@ -350,7 +350,7 @@ class CompositeExplanation(Explanation):
         return And(*[exp.implies() for exp in self.explanations if exp is not None])
 
 """ Conditional Explanations """
-class PossessionCondition(Possession):
+class If(Possession):
     """
     Represents a condition based on an adjective's value.
     If provided with a pointer_adjective_name, the condition is based on the
@@ -412,23 +412,23 @@ class PossessionCondition(Possession):
 class ConditionalExplanation(Explanation):
     """Represents an explanation that depends on a condition."""
     
-    def __init__(self, condition: PossessionCondition, true_explanation: Explanation, false_explanation: Explanation):
+    def __init__(self, condition: If, explanation_if_true: Explanation, explanation_if_false: Explanation):
         """
         Initialize the ConditionalExplanation.
         
         Args:
             condition: The condition to evaluate.
-            true_explanation: The explanation to use when the condition is true.
-            false_explanation: The explanation to use when the condition is false.
+            explanation_if_true: The explanation to use when the condition is true.
+            explanation_if_false: The explanation to use when the condition is false.
         """
         self.condition = condition
-        self.true_explanation = true_explanation
-        self.false_explanation = false_explanation
+        self.explanation_if_true = explanation_if_true
+        self.explanation_if_false = explanation_if_false
 
     def contextualize(self):
         self.condition.set_belonging_framework(self.framework, self.explanation_of_adjective)
-        self.true_explanation.set_belonging_framework(self.framework, self.explanation_of_adjective)
-        self.false_explanation.set_belonging_framework(self.framework, self.explanation_of_adjective)
+        self.explanation_if_true.set_belonging_framework(self.framework, self.explanation_of_adjective)
+        self.explanation_if_false.set_belonging_framework(self.framework, self.explanation_of_adjective)
 
     def explain(self, node: Any) -> LogicalExpression:
         """
@@ -448,18 +448,18 @@ class ConditionalExplanation(Explanation):
         if condition_result:
             explanation = And(
                         self.condition.explain(node), 
-                        self.true_explanation.explain(node))
+                        self.explanation_if_true.explain(node))
         else:
             explanation = And(
                         self.condition.explain(node), 
-                        self.false_explanation.explain(node))
+                        self.explanation_if_false.explain(node))
         return explanation
 
     def implies(self) -> LogicalExpression:
         explanation1 = And(
                         self.condition.implies(True), 
-                        self.true_explanation.implies())
+                        self.explanation_if_true.implies())
         explanation2 = And(
                         self.condition.implies(False), 
-                        self.false_explanation.implies())
+                        self.explanation_if_false.implies())
         return Or(explanation1, explanation2)

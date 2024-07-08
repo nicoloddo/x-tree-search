@@ -176,7 +176,7 @@ class BooleanAdjective(Adjective):
         
         Args:
             name: The name of the adjective.
-            definition: The correspondant node attribute
+            definition: The correspondant node attribute (use the keyword "node" to refer to one of its elements).
             explanation: An explanation for the adjective.
         """
         explanation = explanation or PossessionAssumption(name, definition)
@@ -205,7 +205,7 @@ class PointerAdjective(Adjective):
         
         Args:
             name: The name of the adjective.
-            definition: The correspondant node attribute
+            definition: The correspondant node attribute (use the keyword "node" to refer to one of its elements).
             explanation: An explanation for the adjective.
         """
         explanation = explanation or PossessionAssumption(name, definition)
@@ -216,6 +216,24 @@ class PointerAdjective(Adjective):
         proposition = Proposition(f"{node or 'node'} has {self.name} = {value or '?'}")
         return proposition
 
+    def _evaluate(self, node: Any) -> Any:
+        """Evaluate the pointer adjective for a given node."""
+        return self.getter(node)
+
+class NodesGroupPointerAdjective(PointerAdjective):
+    """Represents a pointer adjective that references a group of objects. 
+    You can specify an object to not include from the group definition through the "excluding" parameter.
+    Example:
+        NodesGroupPointerAdjective("siblings", definition = "node.parent.children", excluding = "node")
+    """
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, *, excluding: str):
+        explanation = explanation or PossessionAssumption(name, definition + " excluding " + excluding)
+        if excluding:
+            composite_definition = f"[element for element in {definition} if element is not {excluding}]"
+        else:
+            composite_definition = f"[{definition}]"
+        super().__init__(name, composite_definition, explanation)
+    
     def _evaluate(self, node: Any) -> Any:
         """Evaluate the pointer adjective for a given node."""
         return self.getter(node)
@@ -297,17 +315,17 @@ class _RankAdjective(BooleanAdjective):
         return self.evaluator(node, comparison_adjective, group)
 
 class MaxRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, group_pointer_adjective_name: PointerAdjective):
+    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective):
         explanation = CompositeExplanation(
-            RankAssumption('max', name, comparison_adjective_name, group_pointer_adjective_name),
-            GroupComparison(comparison_adjective_name, group_pointer_adjective_name))
+            RankAssumption('max', name, comparison_adjective_name, nodes_group_pointer_adjective_name),
+            GroupComparison(comparison_adjective_name, nodes_group_pointer_adjective_name))
         evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(node, other_node) for other_node in group)
-        super().__init__(name, comparison_adjective_name, group_pointer_adjective_name, explanation, evaluator)
+        super().__init__(name, comparison_adjective_name, nodes_group_pointer_adjective_name, explanation, evaluator)
 
 class MinRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, group_pointer_adjective_name: PointerAdjective):
+    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective):
         explanation = CompositeExplanation(
-            RankAssumption('min', name, comparison_adjective_name, group_pointer_adjective_name),
-            GroupComparison(comparison_adjective_name, group_pointer_adjective_name, positive_implication=False))
+            RankAssumption('min', name, comparison_adjective_name, nodes_group_pointer_adjective_name),
+            GroupComparison(comparison_adjective_name, nodes_group_pointer_adjective_name, positive_implication=False))
         evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(other_node, node) for other_node in group)
-        super().__init__(name, comparison_adjective_name, group_pointer_adjective_name, explanation, evaluator)
+        super().__init__(name, comparison_adjective_name, nodes_group_pointer_adjective_name, explanation, evaluator)
