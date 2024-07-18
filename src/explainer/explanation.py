@@ -26,17 +26,29 @@ class Explanation(ABC):
     def contextualize(self):
         pass
 
-    @abstractmethod
-    def explain(self, node: Any) -> LogicalExpression:
+    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth = 0) -> LogicalExpression:
         """
         Generate a propositional logic explanation for the given node.
         
         Args:
             node: The node to explain.
+            other_node: Other node in case of double node explanations (e.g. comparisons)
+            explanation_depth: The amount of explanations that were given
+                                during the current explanation cycle
         
         Returns:
             A LogicalExpression representing the explanation.
         """
+        if current_explanation_depth > self.framework.explanation_depth:
+            return
+        
+        if other_node:
+            return self._explain(node, other_node)
+        else:
+            return self._explain(node)
+    
+    @abstractmethod
+    def _explain(self, node: Any) -> LogicalExpression:
         pass
 
     @abstractmethod
@@ -71,7 +83,7 @@ class Assumption(Explanation):
 
         self.minimal = Proposition("(from assumptions)")
 
-    def explain(self, node: Any) -> LogicalExpression:
+    def _explain(self, node: Any) -> LogicalExpression:
         """Return the assumption as a Proposition."""
         if self.framework.assumptions_verbosity == 'verbose':
             return self.verbose
@@ -143,7 +155,7 @@ class Possession(Explanation):
     a given pointer adjective possess a given adjective.
     """
     
-    def __init__(self, *args): #pointer_adjective_name: str = None, adjective_name: str = None):
+    def __init__(self, *args): #(pointer_adjective_name: str = None, adjective_name: str = None):
         """
         Initialize the Possession explanation.
 
@@ -171,7 +183,7 @@ class Possession(Explanation):
         else:
             raise ValueError("AdjectiveExplanation takes a max of 2 arguments")
 
-    def explain(self, node: Any) -> LogicalExpression:
+    def _explain(self, node: Any) -> LogicalExpression:
         """
         Generate an explanation by explaining the underlying possession adjectives.
         Only Assumptions don't redirect to other explanations.
@@ -238,7 +250,7 @@ class ComparisonNodesPropertyPossession(Explanation):
         """
         self.adjective_for_comparison_name = adjective_for_comparison_name
 
-    def explain(self, node: Any, other_node: Any) -> Proposition:
+    def _explain(self, node: Any, other_node: Any) -> Proposition:
         """
         Generate an explanation for the possession of a property on a node and another node to be compared to.
         
@@ -282,7 +294,7 @@ class GroupComparison(Explanation):
         self.group_pointer_adjective_name = group_pointer_adjective_name
         self.positive_implication = positive_implication
 
-    def explain(self, node: Any) -> Proposition:
+    def _explain(self, node: Any) -> Proposition:
         """
         Generate an explanation for the comparison between a node and all nodes pointed at
         by the group pointer adjective specified.
@@ -325,7 +337,7 @@ class CompositeExplanation(Explanation):
         for exp in self.explanations:
             exp.set_belonging_framework(self.framework, self.explanation_of_adjective)
 
-    def explain(self, node: Any, other_node: Any = None) -> LogicalExpression:
+    def _explain(self, node: Any, other_node: Any = None) -> LogicalExpression:
         """
         Generate an explanation by combining all sub-explanations with AND.
         
@@ -449,7 +461,7 @@ class ConditionalExplanation(Explanation):
         self.explanation_if_true.set_belonging_framework(self.framework, self.explanation_of_adjective)
         self.explanation_if_false.set_belonging_framework(self.framework, self.explanation_of_adjective)
 
-    def explain(self, node: Any) -> LogicalExpression:
+    def _explain(self, node: Any) -> LogicalExpression:
         """
         Generate an explanation based on the condition's evaluation.
         
