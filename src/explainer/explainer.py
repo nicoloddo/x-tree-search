@@ -88,3 +88,7 @@ class ArgumentativeExplainer:
         if adjective_name not in self.framework.adjectives:
             raise ValueError(f"Adjective '{adjective_name}' not found.")
         #self.tree_search_motivation = adjective_name
+
+    def configure_settings(self, settings_dict):
+        """Configure settings of the argumentation framework using a dictionary."""
+        self.framework.configure_settings(settings_dict)
