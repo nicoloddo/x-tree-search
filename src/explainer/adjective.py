@@ -160,8 +160,12 @@ class Adjective(ABC):
         if self.adj_current_explanation_depth >= self.framework.explanation_depth:
             return consequent
 
-        antecedent = self.explanation.explain(node)
-
+        # Get antecedent proposition
+        if self.type == AdjectiveType.COMPARISON:
+            antecedent = self.explanation.explain(node, other_node)
+        else:
+            antecedent = self.explanation.explain(node)
+        
         if antecedent is not None: # If the explanation was given
             return Implies(antecedent, consequent)
         else:
@@ -262,7 +266,9 @@ class ComparisonAdjective(Adjective):
             property_pointer_adjective_name: The name of the pointer adjective to use for comparison.
             comparison_operator: A function that compares two values and returns a boolean.
         """
-        explanation = ComparisonAssumption(name, property_pointer_adjective_name, operator)
+        explanation = CompositeExplanation(
+            ComparisonAssumption(name, property_pointer_adjective_name, operator),
+            ComparisonNodesPropertyPossession(property_pointer_adjective_name))
         super().__init__(name, AdjectiveType.COMPARISON, explanation, definition=DEFAULT_GETTER)
         self.property_pointer_adjective_name = property_pointer_adjective_name
 

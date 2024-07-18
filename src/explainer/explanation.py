@@ -194,14 +194,16 @@ class Possession(Explanation):
 
             if self.explanation_of_adjective == pointer_adjective:
                 # only forward the explanation without asking why this referred object
-                explanation = adjective.explain(referred_object)
+                # otherwise we would get into an infinite recursion,
+                # by trying to explain the pointer adjective by referring to it.
+                explanation = adjective.explain(referred_object) # why the referred_object has this property?
             else:
                 explanation = And(
                     pointer_adjective.explain(node), # why this referred_object?
                     adjective.explain(referred_object)) # why the referred_object has this property?
             return explanation
     
-    def implies(self, evaluation = True) -> LogicalExpression:
+    def implies(self) -> LogicalExpression:
         """ Generates a proposition that contitutes the antecedent of an
         implication explaining why a certain adjective is attributed to
         a node. """
@@ -209,61 +211,55 @@ class Possession(Explanation):
         adjective = self.framework.get_adjective(self.adjective_name)
 
         if not self.pointer_adjective_name: # the possession refers to the self node
-            return adjective.implies(evaluation)
+            return adjective.implies()
 
         else:
             pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
 
             if self.explanation_of_adjective == pointer_adjective:
                 # only forward the explanation without asking why this referred object
-                implication = adjective.implies()
+                implication = adjective.implies() # why the referred_object has this property?
             else:
                 implication = And(
                     pointer_adjective.implies(), # why this referred_object?
-                    adjective.implies(evaluation)) # why the referred_object has this property?
+                    adjective.implies()) # why the referred_object has this property?
             return implication
 
-class Comparison(Explanation):
-    """Represents an explanation provided by referring to a comparison
-    between the node and another node referenced via pointer adjective."""
+class ComparisonNodesPropertyPossession(Explanation):
+    """Represents an explanation provided by referring to the possession
+    of a specific adjective value by two nodes that are to be compared."""
     
-    def __init__(self, comparison_adjective_name: str, node_pointer_adjective_name: str):
+    def __init__(self, adjective_for_comparison_name: str):
         """
-        Initialize the Comparison Explanation.
+        Initialize the ComparisonNodesPropertyPossession Explanation.
         
         Args:
-            comparison_adjective_name: The name of the comparison adjective.
-            pointer_adjective_name: The name of the pointer adjective that selects the object.
+            adjective_for_comparison_name: The adjective name of the property to compare.
         """
-        self.comparison_adjective_name = comparison_adjective_name
-        self.node_pointer_adjective_name = node_pointer_adjective_name
+        self.adjective_for_comparison_name = adjective_for_comparison_name
 
-    def explain(self, node: Any) -> Proposition:
+    def explain(self, node: Any, other_node: Any) -> Proposition:
         """
-        Generate an explanation for the comparison between a node and its adjective reference.
+        Generate an explanation for the possession of a property on a node and another node to be compared to.
         
         Args:
-            node: The node to explain.
+            node: The main node to explain.
+            other_node: The node that is compared to.
             
         
         Returns:
-            A Proposition explaining the comparison.
+            A Proposition explaining the possession of the property values for both nodes.
         """
-        comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
-        property_for_comparison_adjective = self.framework.get_adjective(comparison_adjective.property_pointer_adjective_name)
+        adjective_for_comparison = self.framework.get_adjective(self.adjective_for_comparison_name)
 
-        node_pointer_adjective = self.framework.get_adjective(self.node_pointer_adjective_name)
-        other_node = node_pointer_adjective.evaluate(node)
-
-        explanation = Implies(And(
-            property_for_comparison_adjective.explain(node),
-            property_for_comparison_adjective.explain(other_node)), 
-            comparison_adjective.explain(node, other_node))
+        explanation = And(
+            adjective_for_comparison.explain(node),
+            adjective_for_comparison.explain(other_node))
 
         return explanation
 
     def implies(self) -> LogicalExpression:
-        return Proposition(f"node1 is {self.comparison_adjective_name} than node2")
+        return self.framework.get_adjective(self.adjective_for_comparison_name).implies()
 
 
 """ Group Comparison non-straightforward Explanation """
@@ -305,15 +301,11 @@ class GroupComparison(Explanation):
         group_pointer_adjective = self.framework.get_adjective(self.group_pointer_adjective_name)
         group = group_pointer_adjective.evaluate(node)
 
-        explanations = [Implies(And(
-            value_for_comparison_adjective.explain(node),
-            value_for_comparison_adjective.explain(other_node)), 
-            comparison_adjective.explain(node, other_node))
-            for other_node in group]
+        explanations = [comparison_adjective.explain(node, other_node) for other_node in group]
         explanation = And(group_pointer_adjective.explain(node), And(*explanations))
         return explanation
 
-    def implies(self, evaluation = True) -> LogicalExpression:
+    def implies(self) -> LogicalExpression:
         return Proposition(f"Node {self.comparison_adjective_name if self.positive_implication else Not(self.comparison_adjective_name)} than all nodes in {self.group_pointer_adjective_name}")
 
 """ Composite Explanations """
@@ -333,7 +325,7 @@ class CompositeExplanation(Explanation):
         for exp in self.explanations:
             exp.set_belonging_framework(self.framework, self.explanation_of_adjective)
 
-    def explain(self, node: Any) -> LogicalExpression:
+    def explain(self, node: Any, other_node: Any = None) -> LogicalExpression:
         """
         Generate an explanation by combining all sub-explanations with AND.
         
@@ -344,7 +336,14 @@ class CompositeExplanation(Explanation):
         Returns:
             A LogicalExpression representing the combination of all sub-explanations.
         """
-        return And(*[exp.explain(node) for exp in self.explanations if exp is not None])
+        explanations = []
+        for exp in self.explanations:
+            if exp is not None:
+                if isinstance(exp, ComparisonNodesPropertyPossession):
+                    explanations.append(exp.explain(node, other_node))
+                else:
+                    explanations.append(exp.explain(node))
+        return And(*explanations)
     
     def implies(self) -> LogicalExpression:
         return And(*[exp.implies() for exp in self.explanations if exp is not None])
@@ -385,7 +384,27 @@ class If(Possession):
         super().__init__(*args)
         self.value = value
     
-    #implies() method from Possession
+    def implies(self, evaluation = True) -> LogicalExpression:
+        """ Generates a proposition that contitutes the antecedent of an
+        implication explaining why a certain adjective is attributed to
+        a node. """
+
+        adjective = self.framework.get_adjective(self.adjective_name)
+
+        if not self.pointer_adjective_name: # the possession refers to the self node
+            return adjective.implies(evaluation)
+
+        else:
+            pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
+
+            if self.explanation_of_adjective == pointer_adjective:
+                # only forward the explanation without asking why this referred object
+                implication = adjective.implies() # why the referred_object has this property?
+            else:
+                implication = And(
+                    pointer_adjective.implies(), # why this referred_object?
+                    adjective.implies(evaluation)) # why the referred_object has this property?
+            return implication
 
     def evaluate(self, node: Any) -> bool:
         """
