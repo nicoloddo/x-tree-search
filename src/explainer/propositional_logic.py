@@ -25,12 +25,28 @@ class Proposition(LogicalExpression):
 
     def __str__(self) -> str:
         return self.name
-
-class Not(LogicalExpression):
-    """Represents the negation of a logical expression."""
+    
+class UnaryOperator(LogicalExpression):
+    def __new__(cls, expr: LogicalExpression):
+        if not expr:
+            return None
+        return super(UnaryOperator, cls).__new__(cls)
 
     def __init__(self, expr: LogicalExpression):
         self.expr = expr
+
+class NAryOperator(LogicalExpression):
+    def __new__(cls, *exprs: LogicalExpression):
+        exprs = tuple(filter(None, exprs)) # filter None expressions
+        if not exprs:
+            return None
+        return super(NAryOperator, cls).__new__(cls)
+    
+    def __init__(self, *exprs: LogicalExpression):
+        self.exprs = exprs
+
+class Not(UnaryOperator):
+    """Represents the negation of a logical expression."""
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         return not self.expr.evaluate(interpretation)
@@ -38,11 +54,8 @@ class Not(LogicalExpression):
     def __str__(self) -> str:
         return f"¬({self.expr})"
 
-class And(LogicalExpression):
+class And(NAryOperator):
     """Represents the conjunction of logical expressions."""
-
-    def __init__(self, *exprs: LogicalExpression):
-        self.exprs = exprs
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         return all(expr.evaluate(interpretation) for expr in self.exprs)
@@ -51,11 +64,8 @@ class And(LogicalExpression):
         joined = ' ∧ '.join(str(expr) for expr in self.exprs if expr is not None)
         return joined
 
-class Or(LogicalExpression):
+class Or(NAryOperator):
     """Represents the disjunction of logical expressions."""
-
-    def __init__(self, *exprs: LogicalExpression):
-        self.exprs = exprs
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         return any(expr.evaluate(interpretation) for expr in self.exprs if expr is not None)
