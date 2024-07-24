@@ -49,13 +49,6 @@ class Adjective(ABC):
         self.getter = None
         self.contextualize(definition)
 
-        """Explanations helpers"""
-        self.initialize_explanation()
-    
-    def initialize_explanation(self):
-        """Initialize the explanation helpers"""
-        self.adj_current_explanation_depth = 0
-
     def _set_getter(self, getter: Callable[[Any], Any]):
         self.getter = getter
 
@@ -127,7 +120,7 @@ class Adjective(ABC):
 
         return Implies(antecedent, consequent)
 
-    def explain(self, node: Any, other_node: Any = None) -> Implies:
+    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth = 0) -> Implies:
         """
         Provide an explanation for the adjective's value on a given node.
         
@@ -138,33 +131,13 @@ class Adjective(ABC):
         Returns:
             An Implies object representing the explanation.
         """
-        # Get consequent proposition
+        # Get propositions
         if self.type == AdjectiveType.COMPARISON:
             consequent = self.proposition(self.evaluate(node, other_node), [node, other_node])
+            antecedent = self.explanation.explain(node, other_node, current_explanation_depth=current_explanation_depth)
         else:
             consequent = self.proposition(self.evaluate(node), node)
-
-        # Check if we already explained this adjective
-        if self.adj_current_explanation_depth > 0:
-            # We are. This explanation will probably be analogous to the 
-            # previous one (except for Conditional explanations and GroupComparison explanations).
-            if self.framework.repeat_explanations or isinstance(self.explanation, ConditionalExplanation) or isinstance(self.explanation, GroupComparison):
-                # If we have setted to repeat the explanation,
-                # or if this is a conditional explanation
-                self.initialize_explanation() # we reinitialize the adjective
-            else:
-                return consequent
-
-        self.adj_current_explanation_depth += 1
-        """ Stop at maximum depth """
-        if self.adj_current_explanation_depth >= self.framework.explanation_depth:
-            return consequent
-
-        # Get antecedent proposition
-        if self.type == AdjectiveType.COMPARISON:
-            antecedent = self.explanation.explain(node, other_node)
-        else:
-            antecedent = self.explanation.explain(node)
+            antecedent = self.explanation.explain(node, current_explanation_depth=current_explanation_depth)
         
         if antecedent is not None: # If the explanation was given
             return Implies(antecedent, consequent)

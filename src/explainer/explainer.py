@@ -30,7 +30,7 @@ class ArgumentativeExplainer:
         else:
             adjective.evaluate(node, context=self)
 
-    def explain_adjective(self, node: Any, adjective_name: str, comparison_node: Any = None) -> Any:
+    def explain_adjective(self, node: Any, adjective_name: str, comparison_node: Any = None, *, explanation_depth=None) -> Any:
         """
         Generate a propositional logic explanation for why a node has a specific adjective.
         
@@ -38,6 +38,7 @@ class ArgumentativeExplainer:
             node: The node to explain.
             adjective_name: The name of the adjective to explain.
             comparison_node: The other node involved in a comparison (if it is a comparison)
+            explanation_depth: Depth of the explanation, this is temporary, to consider only for this instance.
         
         Returns:
             A Implies implication representing the explanation of the adjective's affirmation.
@@ -45,14 +46,23 @@ class ArgumentativeExplainer:
         Raises:
             KeyError: If no adjective with the given name is found.
         """
-        self.framework._initialize_adjectives_explanations()
+        # Handle temporary settings for this explanation:
+        if explanation_depth:
+            prev_explanation_depth = self.framework.settings.explanation_depth
+            self.framework.settings.explanation_depth = explanation_depth
+
+        # Get the explanation
         adjective = self.framework.get_adjective(adjective_name)
         if not comparison_node: # The adjective is not comparative
             explanation = adjective.explain(node)
         else:
             explanation = adjective.explain(node, comparison_node)
 
-        return explanation
+        # Reset settings for future explanations:
+        if explanation_depth:
+            self.framework.settings.explanation_depth = prev_explanation_depth
+
+        print(explanation)
 
 
     def query_explanation(self, node: Any, query: str) -> Any:
@@ -70,9 +80,9 @@ class ArgumentativeExplainer:
         parts = query.lower().split()
         if len(parts) >= 4 and parts[0] == "why" and parts[1] == "does":
             adjective_name = parts[-1].rstrip("?")
-            return self.explain_adjective(node, adjective_name)
+            self.explain_adjective(node, adjective_name)
         else:
-            return #Implies("Invalid query format. Please use 'Why does [node] have [adjective]?'")
+            return #print(Implies("Invalid query format. Please use 'Why does [node] have [adjective]?'"))
 
     def set_tree_search_motivation(self, getter: Callable, adjective_name: str):
         pass
