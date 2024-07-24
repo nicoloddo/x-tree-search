@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable
 
-from src.explainer.propositional_logic import LogicalExpression, Proposition, And, Or, Implies, Not
+from src.explainer.propositional_logic import LogicalExpression, Proposition, And, Or, Not
 from src.explainer.framework import ArgumentationFramework
 
 """
