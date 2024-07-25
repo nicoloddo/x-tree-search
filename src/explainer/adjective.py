@@ -120,7 +120,7 @@ class Adjective(ABC):
 
         return Implies(antecedent, consequent)
 
-    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth = 0) -> Implies:
+    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth) -> Implies:
         """
         Provide an explanation for the adjective's value on a given node.
         

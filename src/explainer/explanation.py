@@ -17,7 +17,7 @@ Only Assumptions don't, stopping the explanation inception.
 class Explanation(ABC):
     """Abstract base class for all types of explanations."""
     def __init__(self):
-        self.current_explanation_depth = 0
+        pass
     
     def set_belonging_framework(self, framework: ArgumentationFramework, adjective: 'Adjective'):
         """Sets the Argumentation framework the Explanation belongs to."""
@@ -28,7 +28,7 @@ class Explanation(ABC):
     def contextualize(self):
         pass
 
-    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth = 0) -> LogicalExpression:
+    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth = None) -> LogicalExpression:
         """
         Generate a propositional logic explanation for the given node.
         
@@ -41,7 +41,9 @@ class Explanation(ABC):
         Returns:
             A LogicalExpression representing the explanation.
         """
-        self.current_explanation_depth = current_explanation_depth
+
+        if current_explanation_depth is not None:
+            self.current_explanation_depth = current_explanation_depth
 
         if self.current_explanation_depth > self.framework.settings.explanation_depth:
             return

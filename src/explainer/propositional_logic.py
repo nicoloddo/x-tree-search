@@ -98,14 +98,15 @@ class Implies(LogicalExpression):
             self._str_settings_list[key] = value
 
     def __str__(self) -> str:
+        default_symbol = '←'
         if "first_print" in self._str_settings_list:
-            symbol = '←\n'
+            symbol = default_symbol + '\n'
         else:
-            symbol = '←'
+            symbol = default_symbol
 
         if "explanation_depth" in self._str_settings_list and "print_depth" in self._str_settings_list:
             depth = self._str_settings_list["explanation_depth"]
-            return f"Depth {depth}: [{self.consequent} {symbol} {self.antecedent}]"
+            return f"\n[{self.consequent} {default_symbol}\n!Depth {depth}: {self.antecedent}]"
         else:
             return f"[{self.consequent} {symbol} {self.antecedent}]"
         

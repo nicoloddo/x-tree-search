@@ -1,6 +1,8 @@
 from typing import Any, Callable
 from src.explainer.propositional_logic import Implies
 
+STARTING_EXPLANATION_DEPTH = 1
+
 class ExplanationSettings:
     def __init__(self):
         """
@@ -140,9 +142,9 @@ class ArgumentativeExplainer:
         # Get the explanation
         adjective = self.framework.get_adjective(adjective_name)
         if not comparison_node: # The adjective is not comparative
-            explanation = adjective.explain(node)
+            explanation = adjective.explain(node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
         else:
-            explanation = adjective.explain(node, comparison_node)
+            explanation = adjective.explain(node, comparison_node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
 
         # Give the explanation
         if isinstance(explanation, Implies):
