@@ -135,16 +135,13 @@ class Adjective(ABC):
         if self.type == AdjectiveType.COMPARISON:
             consequent = self.proposition(self.evaluate(node, other_node), [node, other_node])
             antecedent = self.explanation.explain(node, other_node, current_explanation_depth=current_explanation_depth)
-            explanation_depth = self.explanation.current_explanation_depth
         else:
             consequent = self.proposition(self.evaluate(node), node)
             antecedent = self.explanation.explain(node, current_explanation_depth=current_explanation_depth)
-            explanation_depth = self.explanation.current_explanation_depth
         
         if antecedent is not None: # If the explanation was given
             implication = Implies(antecedent, consequent)
 
-            implication._str_settings(explanation_depth = explanation_depth)
             if self.framework.settings.print_depth:
                 implication._str_settings(print_depth = self.framework.settings.print_depth)
 

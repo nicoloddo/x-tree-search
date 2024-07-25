@@ -42,8 +42,8 @@ class ExplanationSettings:
             raise AttributeError(f"'ArgumentationSettings' object has no attribute '{name}'")
 
     def _validate_explanation_depth(self, value):
-        if not isinstance(value, int) or value < 1:
-            raise ValueError("Explanation depth must be a positive integer.")
+        if not isinstance(value, int) or value < 0:
+            raise ValueError("Explanation depth must be a positive integer or 0.")
 
     def _validate_assumptions_verbosity(self, value):
         allowed_values = ['verbose', 'minimal', 'no']
@@ -132,7 +132,7 @@ class ArgumentativeExplainer:
             KeyError: If no adjective with the given name is found.
         """
         # Handle temporary settings for this explanation:
-        if explanation_depth:
+        if explanation_depth is not None:
             prev_explanation_depth = self.settings.explanation_depth
             prev_print_depth = self.settings.print_depth
 
@@ -152,7 +152,7 @@ class ArgumentativeExplainer:
         print(explanation)
         
         # Reset settings for future explanations:
-        if explanation_depth:
+        if explanation_depth is not None:
             self.settings.explanation_depth = prev_explanation_depth
             self.settings.print_depth = prev_print_depth
 

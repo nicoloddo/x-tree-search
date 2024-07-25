@@ -28,7 +28,7 @@ class Explanation(ABC):
     def contextualize(self):
         pass
 
-    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth = None) -> LogicalExpression:
+    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth) -> LogicalExpression:
         """
         Generate a propositional logic explanation for the given node.
         
@@ -42,22 +42,30 @@ class Explanation(ABC):
             A LogicalExpression representing the explanation.
         """
 
-        if current_explanation_depth is not None:
-            self.current_explanation_depth = current_explanation_depth
+        self.current_explanation_depth = current_explanation_depth
 
-        if self.current_explanation_depth > self.framework.settings.explanation_depth:
+        if current_explanation_depth > self.framework.settings.explanation_depth:
             return
         
         if other_node:
-            return self._explain(node, other_node)
+            explanation = self._explain(node, other_node)
         else:
-            return self._explain(node)
+            explanation = self._explain(node)
+        
+        if explanation is not None:
+            # We assign to this explanation the current explanation depth.
+            explanation.current_explanation_depth = current_explanation_depth
+            return explanation
+        else:
+            return
     
-    def forward_adjective_explanation(self, adjective: 'Adjective', *args):
-        return adjective.explain(*args, current_explanation_depth = self.current_explanation_depth + 1)
+    def forward_adjective_explanation(self, adjective: 'Adjective', *args, no_increment = False):
+        increment = 0 if no_increment else 1
+        return adjective.explain(*args, current_explanation_depth = self.current_explanation_depth + increment)
 
-    def forward_explanation(self, explanation, *args):
-        return explanation.explain(*args, current_explanation_depth = self.current_explanation_depth + 1)
+    def forward_explanation(self, explanation, *args, no_increment = False):
+        increment = 0 if no_increment else 1
+        return explanation.explain(*args, current_explanation_depth = self.current_explanation_depth + increment)
     
     @abstractmethod
     def _explain(self, node: Any) -> LogicalExpression:
@@ -90,11 +98,19 @@ class Assumption(Explanation):
         assumption = "(assumption) " + description
         
         if not definition:
-            self.verbose = Proposition(assumption)
+            self.verbose_string = assumption
         else:
-            self.verbose = Proposition(f"{assumption} is \"{definition}\"")
+            self.verbose_string = f"{assumption} is \"{definition}\""
 
-        self.minimal = Proposition("(from assumptions)")
+        self.minimal_string = Proposition("(from assumptions)")
+    
+    @property
+    def verbose(self):
+        return Proposition(self.verbose_string)
+    
+    @property
+    def minimal(self):
+        return Proposition(self.minimal_string)
 
     def _explain(self, node: Any) -> LogicalExpression:
         """Return the assumption as a Proposition."""
@@ -369,9 +385,9 @@ class CompositeExplanation(Explanation):
         for exp in self.explanations:
             if exp is not None:
                 if isinstance(exp, ComparisonNodesPropertyPossession):
-                    explanations.append(self.forward_explanation(exp, node, other_node))
+                    explanations.append(self.forward_explanation(exp, node, other_node, no_increment = True))
                 else:
-                    explanations.append(self.forward_explanation(exp, node))
+                    explanations.append(self.forward_explanation(exp, node, no_increment = True))
         return And(*explanations)
     
     def implies(self) -> LogicalExpression:
@@ -496,12 +512,12 @@ class ConditionalExplanation(Explanation):
 
         if condition_result:
             explanation = And(
-                        self.forward_explanation(self.condition, node), 
-                        self.forward_explanation(self.explanation_if_true, node))
+                        self.forward_explanation(self.condition, node, no_increment = True), 
+                        self.forward_explanation(self.explanation_if_true, node, no_increment = True))
         else:
             explanation = And(
-                        self.forward_explanation(self.condition, node),
-                        self.forward_explanation(self.explanation_if_false, node))
+                        self.forward_explanation(self.condition, node, no_increment = True),
+                        self.forward_explanation(self.explanation_if_false, node, no_increment = True))
         return explanation
 
     def implies(self) -> LogicalExpression:

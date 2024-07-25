@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Union, Dict
+import textwrap
 
 class LogicalExpression(ABC):
     """Abstract base class for all logical expressions."""
@@ -98,17 +99,22 @@ class Implies(LogicalExpression):
             self._str_settings_list[key] = value
 
     def __str__(self) -> str:
-        default_symbol = '←'
+        default_symbol = '←\n'
         if "first_print" in self._str_settings_list:
             symbol = default_symbol + '\n'
         else:
             symbol = default_symbol
 
-        if "explanation_depth" in self._str_settings_list and "print_depth" in self._str_settings_list:
-            depth = self._str_settings_list["explanation_depth"]
-            return f"\n[{self.consequent} {default_symbol}\n!Depth {depth}: {self.antecedent}]"
-        else:
-            return f"[{self.consequent} {symbol} {self.antecedent}]"
+        if hasattr(self.antecedent, "current_explanation_depth"):
+            depth = self.antecedent.current_explanation_depth
+            indentation = '\t' * depth
+
+            if "print_depth" in self._str_settings_list:
+                self.antecedent = f"Depth {depth}:\n{self.antecedent}"
+
+            self.antecedent = textwrap.indent(f"{self.antecedent}", indentation)
+          
+        return f"[{self.consequent} {symbol} {self.antecedent}]"
         
 
 class Iff(LogicalExpression):
