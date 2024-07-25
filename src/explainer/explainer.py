@@ -15,6 +15,7 @@ class ArgumentativeExplainer:
             framework: The ArgumentationFramework to use for explanations.
         """
         self.framework = framework
+        self.settings = self.framework.settings
         self.getters = {}
 
     def set_getter(self, adjective_name: str, getter: Callable[[Any], Any]):
