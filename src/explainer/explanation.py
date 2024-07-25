@@ -43,7 +43,7 @@ class Explanation(ABC):
         """
         self.current_explanation_depth = current_explanation_depth
 
-        if self.current_explanation_depth > self.framework.explanation_depth:
+        if self.current_explanation_depth > self.framework.settings.explanation_depth:
             return
         
         if other_node:
@@ -96,13 +96,13 @@ class Assumption(Explanation):
 
     def _explain(self, node: Any) -> LogicalExpression:
         """Return the assumption as a Proposition."""
-        if self.framework.assumptions_verbosity == 'verbose':
+        if self.framework.settings.assumptions_verbosity == 'verbose':
             return self.verbose
 
-        elif self.framework.assumptions_verbosity == 'minimal':
+        elif self.framework.settings.assumptions_verbosity == 'minimal':
             return self.minimal
 
-        elif self.framework.assumptions_verbosity == 'no':
+        elif self.framework.settings.assumptions_verbosity == 'no':
             return None
         else:
             raise ValueError("Framework has unvalid assumptions verbosity.")

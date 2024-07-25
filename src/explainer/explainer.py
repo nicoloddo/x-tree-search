@@ -1,5 +1,84 @@
 from typing import Any, Callable
+from src.explainer.propositional_logic import Implies
 
+class ExplanationSettings:
+    def __init__(self):
+        """
+        Explanation settings:
+
+        - explanation_depth : 
+        Sets the depth of explanations, how deep towards the assumptions it should go.
+
+        - assumptions_verbosity: 
+        Set to 'verbose', 'minimal' or 'no'.
+        The setting decides how much of the assumptions to print.
+
+        - print_depth:
+        Set to True or False.
+        Decided if you want to explicitly print the depth at each explanation step.
+        Useful for debugging purposes and clarify on the explanation's recursion.
+        """        
+
+        self._settings = {
+            'explanation_depth': 8,
+            'assumptions_verbosity': 'no',
+            'print_depth': False
+        }
+
+    def __getattr__(self, name):
+        if name in self._settings:
+            return self._settings[name]
+        raise AttributeError(f"'ArgumentationSettings' object has no attribute '{name}'")
+
+    def __setattr__(self, name, value):
+        if name.startswith('_'):
+            super().__setattr__(name, value)
+        elif name in self._settings:
+            self._validators[name](self, value)
+            self._settings[name] = self._actuators[name](self, value)
+        else:
+            raise AttributeError(f"'ArgumentationSettings' object has no attribute '{name}'")
+
+    def _validate_explanation_depth(self, value):
+        if not isinstance(value, int) or value < 1:
+            raise ValueError("Explanation depth must be a positive integer.")
+
+    def _validate_assumptions_verbosity(self, value):
+        allowed_values = ['verbose', 'minimal', 'no']
+        if value not in allowed_values:
+            raise ValueError(f"Assumptions verbosity must be one of: {', '.join(allowed_values)}")
+
+    def _validate_boolean(self, value):
+        if not isinstance(value, bool):
+            raise ValueError("Tried to set a Boolean setting to a non boolean value.")
+
+    _validators = {
+        'explanation_depth': _validate_explanation_depth,
+        'assumptions_verbosity': _validate_assumptions_verbosity,
+        'print_depth': _validate_boolean
+    }
+
+    def _actuate_passthrough(self, value):
+        return value
+    
+    def _actuate_print_depth(self, value):
+        return value
+    
+    _actuators = {
+        'explanation_depth': _actuate_passthrough,
+        'assumptions_verbosity': _actuate_passthrough,
+        'print_depth': _actuate_print_depth
+    }
+
+    def configure(self, settings_dict):
+        """Configure settings using a dictionary."""
+        for key, value in settings_dict.items():
+            setattr(self, key, value)
+
+    def to_dict(self):
+        """Return a dictionary representation of the settings."""
+        return self._settings.copy()
+    
 class ArgumentativeExplainer:
     """
     Generates explanations based on the argumentation framework.
@@ -14,8 +93,10 @@ class ArgumentativeExplainer:
         Args:
             framework: The ArgumentationFramework to use for explanations.
         """
+        self.settings = ExplanationSettings()
+
         self.framework = framework
-        self.settings = self.framework.settings
+        self.framework.settings = self.settings
         self.getters = {}
 
     def set_getter(self, adjective_name: str, getter: Callable[[Any], Any]):
@@ -31,7 +112,7 @@ class ArgumentativeExplainer:
         else:
             adjective.evaluate(node, context=self)
 
-    def explain_adjective(self, node: Any, adjective_name: str, comparison_node: Any = None, *, explanation_depth=None) -> Any:
+    def explain_adjective(self, node: Any, adjective_name: str, comparison_node: Any = None, *, explanation_depth = None, print_depth = False) -> Any:
         """
         Generate a propositional logic explanation for why a node has a specific adjective.
         
@@ -39,7 +120,8 @@ class ArgumentativeExplainer:
             node: The node to explain.
             adjective_name: The name of the adjective to explain.
             comparison_node: The other node involved in a comparison (if it is a comparison)
-            explanation_depth: Depth of the explanation, this is temporary, to consider only for this instance.
+            
+            kwargs: Temporary settings, to consider only for this explanation instance.
         
         Returns:
             A Implies implication representing the explanation of the adjective's affirmation.
@@ -49,8 +131,11 @@ class ArgumentativeExplainer:
         """
         # Handle temporary settings for this explanation:
         if explanation_depth:
-            prev_explanation_depth = self.framework.settings.explanation_depth
-            self.framework.settings.explanation_depth = explanation_depth
+            prev_explanation_depth = self.settings.explanation_depth
+            prev_print_depth = self.settings.print_depth
+
+            self.settings.explanation_depth = explanation_depth
+            self.settings.print_depth = print_depth
 
         # Get the explanation
         adjective = self.framework.get_adjective(adjective_name)
@@ -59,11 +144,15 @@ class ArgumentativeExplainer:
         else:
             explanation = adjective.explain(node, comparison_node)
 
+        # Give the explanation
+        if isinstance(explanation, Implies):
+            explanation._str_settings(print_first = True)
+        print(explanation)
+        
         # Reset settings for future explanations:
         if explanation_depth:
-            self.framework.settings.explanation_depth = prev_explanation_depth
-
-        print(explanation)
+            self.settings.explanation_depth = prev_explanation_depth
+            self.settings.print_depth = prev_print_depth
 
 
     def query_explanation(self, node: Any, query: str) -> Any:
@@ -101,5 +190,5 @@ class ArgumentativeExplainer:
         #self.tree_search_motivation = adjective_name
 
     def configure_settings(self, settings_dict):
-        """Configure settings of the argumentation framework using a dictionary."""
-        self.framework.configure_settings(settings_dict)
+        """Configure settings using a dictionary."""
+        self.settings.configure(settings_dict)

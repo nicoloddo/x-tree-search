@@ -36,14 +36,27 @@ class UnaryOperator(LogicalExpression):
         self.expr = expr
 
 class NAryOperator(LogicalExpression):
+    symbol = 'undefined symbol'
+
     def __new__(cls, *exprs: LogicalExpression):
-        exprs = tuple(filter(None, exprs)) # filter None expressions
-        if not exprs:
+        filtered_exprs = tuple(filter(None, exprs)) # filter None expressions
+        if not filtered_exprs:
             return None
-        return super(NAryOperator, cls).__new__(cls)
+        instance = super(NAryOperator, cls).__new__(cls)
+        instance.exprs = filtered_exprs
+        return instance
     
     def __init__(self, *exprs: LogicalExpression):
-        self.exprs = exprs
+        pass # we set the exprs in the __new__ after filtering
+
+    def __str__(self) -> str:
+        if len(self.exprs) > 2 or not all(isinstance(expr, Proposition) for expr in self.exprs):
+            joining_string = '\n ' + self.symbol + ' '
+        else:
+            joining_string = ' ' + self.symbol + ' '
+        
+        joined = joining_string.join(str(expr) for expr in self.exprs)
+        return joined
 
 class Not(UnaryOperator):
     """Represents the negation of a logical expression."""
@@ -56,23 +69,17 @@ class Not(UnaryOperator):
 
 class And(NAryOperator):
     """Represents the conjunction of logical expressions."""
+    symbol = '∧'
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         return all(expr.evaluate(interpretation) for expr in self.exprs)
 
-    def __str__(self) -> str:
-        joined = ' ∧ '.join(str(expr) for expr in self.exprs if expr is not None)
-        return joined
-
 class Or(NAryOperator):
     """Represents the disjunction of logical expressions."""
+    symbol = '||'
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         return any(expr.evaluate(interpretation) for expr in self.exprs if expr is not None)
-
-    def __str__(self) -> str:
-        joined = '\n ∨ '.join(str(expr) for expr in self.exprs)
-        return joined
 
 class Implies(LogicalExpression):
     """Represents the implication between two logical expressions."""
@@ -81,11 +88,27 @@ class Implies(LogicalExpression):
         self.antecedent = antecedent
         self.consequent = consequent
 
+        self._str_settings_list = {}
+
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         return (not self.antecedent.evaluate(interpretation)) or self.consequent.evaluate(interpretation)
 
+    def _str_settings(self, **kwargs):
+        for key, value in kwargs.items():
+            self._str_settings_list[key] = value
+
     def __str__(self) -> str:
-        return f"[{self.antecedent} → {self.consequent}]\n"
+        if "first_print" in self._str_settings_list:
+            symbol = '←\n'
+        else:
+            symbol = '←'
+
+        if "explanation_depth" in self._str_settings_list and "print_depth" in self._str_settings_list:
+            depth = self._str_settings_list["explanation_depth"]
+            return f"Depth {depth}: [{self.consequent} {symbol} {self.antecedent}]"
+        else:
+            return f"[{self.consequent} {symbol} {self.antecedent}]"
+        
 
 class Iff(LogicalExpression):
     """Represents the biconditional (if and only if) between two logical expressions."""
