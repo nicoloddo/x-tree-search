@@ -17,7 +17,7 @@ Only Assumptions don't, stopping the explanation inception.
 class Explanation(ABC):
     """Abstract base class for all types of explanations."""
     def __init__(self):
-        pass
+        self.explanation_tactics = {}
     
     def set_belonging_framework(self, framework: ArgumentationFramework, adjective: 'Adjective'):
         """Sets the Argumentation framework the Explanation belongs to."""
@@ -27,6 +27,12 @@ class Explanation(ABC):
     
     def contextualize(self):
         pass
+
+    def add_explanation_tactic(self, tactic):
+        self.explanation_tactics[tactic.name] = tactic
+
+    def del_explanation_tactic(self, tactic_name):
+        del self.explanation_tactics[tactic_name]
 
     def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth) -> LogicalExpression:
         """
@@ -362,18 +368,21 @@ class GroupComparison(Explanation):
         by the group pointer adjective specified.
         
         Args:
-            node: The node to explain.
-            
+            node: The node to explain.            
         
         Returns:
             A Proposition explaining the comparison.
         """
 
         comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
-        value_for_comparison_adjective = self.framework.get_adjective(comparison_adjective.property_pointer_adjective_name)
 
         group_pointer_adjective = self.framework.get_adjective(self.group_pointer_adjective_name)
         group = group_pointer_adjective.evaluate(node)
+
+        # Apply tactics
+        if "OnlyRelevantComparisons" in self.explanation_tactics:
+            value_for_comparison_adjective = self.framework.get_adjective(comparison_adjective.property_pointer_adjective_name)
+            group = self.explanation_tactics["OnlyRelevantComparisons"].apply(group, value_for_comparison_adjective)
 
         to_forward_explanations = [(comparison_adjective, node, other_node) for other_node in group]
         to_forward_explanations.append((group_pointer_adjective, node))

@@ -156,6 +156,13 @@ class ArgumentativeExplainer:
             self.settings.explanation_depth = prev_explanation_depth
             self.settings.print_depth = prev_print_depth
 
+    def add_explanation_tactic(self, adjective_name: str, tactic: 'Tactic'):
+        adjective = self.framework.get_adjective(adjective_name)
+        adjective.explanation.add_explanation_tactic(tactic)
+
+    def del_explanation_tactic(self, adjective_name: str, tactic_class_name: str):
+        adjective = self.framework.get_adjective(adjective_name)
+        adjective.explanation.del_explanation_tactic(tactic_class_name)
 
     def query_explanation(self, node: Any, query: str) -> Any:
         pass
