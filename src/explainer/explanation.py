@@ -28,20 +28,15 @@ class Explanation(ABC):
     def contextualize(self):
         pass
 
-    def add_explanation_tactic(self, tactic):
-        self.explanation_tactics[tactic.name] = tactic
-
-    def del_explanation_tactic(self, tactic_name):
-        del self.explanation_tactics[tactic_name]
-
-    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth) -> LogicalExpression:
+    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics={}, current_explanation_depth) -> LogicalExpression:
         """
         Generate a propositional logic explanation for the given node.
         
         Args:
             node: The node to explain.
             other_node: Other node in case of double node explanations (e.g. comparisons)
-            explanation_depth: The amount of explanations that were given
+            explanation_tactics: Optional explanation tactics to be handled
+            current_explanation_depth: The amount of explanations that were given
                                 during the current explanation cycle
         
         Returns:
@@ -49,6 +44,7 @@ class Explanation(ABC):
         """
 
         self.current_explanation_depth = current_explanation_depth
+        self.explanation_tactics = explanation_tactics
 
         if current_explanation_depth > self.framework.settings.explanation_depth:
             return
@@ -69,7 +65,7 @@ class Explanation(ABC):
         increment = 0 if no_increment else 1
         #if isinstance(obj, Adjective):
             #return adjective.explain(*args, current_explanation_depth = self.current_explanation_depth + increment)
-        return obj.explain(*args, current_explanation_depth = self.current_explanation_depth + increment)
+        return obj.explain(*args, explanation_tactics = self.explanation_tactics, current_explanation_depth = self.current_explanation_depth + increment)
     
     def forward_multiple_explanations(self, *forward_explanations, no_increment=False):
         """
@@ -89,10 +85,11 @@ class Explanation(ABC):
         """        
         increment = 0 if no_increment else 1
         forward_explanation_depth = self.current_explanation_depth + increment
+        explanation_tactics = self.explanation_tactics
         
         explanations = []
         for obj, *args in forward_explanations:            
-            explanation = obj.explain(*args, current_explanation_depth=forward_explanation_depth)
+            explanation = obj.explain(*args, explanation_tactics = explanation_tactics, current_explanation_depth=forward_explanation_depth)
             explanations.append(explanation)
         
         return explanations

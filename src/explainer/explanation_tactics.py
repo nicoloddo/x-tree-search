@@ -9,8 +9,8 @@ class Tactic:
 class OnlyRelevantComparisons(Tactic):
     """When explaining a GroupComparison, only explain
     the comparison between relevant objects."""
-    top_n = None
-    bottom_n = None
+    top_n = 'err'
+    bottom_n = 'err'
     
     def __init__(self, *, mode: str):
         super().__init__(self.__class__.__name__)
@@ -21,7 +21,7 @@ class OnlyRelevantComparisons(Tactic):
             characters_before_n = len("top_")
             n = self.mode[characters_before_n:]
             if n.isdigit() and int(n) > 0:
-                self.top_n = n
+                self.top_n = int(n)
             else:
                 raise ValueError("A top_n mode should have an integer greater than 0.")
             

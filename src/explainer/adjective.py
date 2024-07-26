@@ -44,6 +44,7 @@ class Adjective(ABC):
         self.name = name
         self.type = adjective_type
         self.explanation = explanation
+        self.explanation_tactics = {}
         self.framework = None
         self.definition = definition
         self.getter = None
@@ -64,6 +65,12 @@ class Adjective(ABC):
         """Sets the Argumentation framework the Adjective belongs to."""
         self.framework = framework
         self.explanation.set_belonging_framework(framework, self)
+
+    def add_explanation_tactic(self, tactic):
+        self.explanation_tactics[tactic.name] = tactic
+
+    def del_explanation_tactic(self, tactic_name):
+        del self.explanation_tactics[tactic_name]
 
     def evaluate(self, *args, **kwargs) -> Any:
         """
@@ -120,7 +127,7 @@ class Adjective(ABC):
 
         return Implies(antecedent, consequent)
 
-    def explain(self, node: Any, other_node: Any = None, *, current_explanation_depth) -> Implies:
+    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics=None, current_explanation_depth) -> Implies:
         """
         Provide an explanation for the adjective's value on a given node.
         
@@ -131,13 +138,16 @@ class Adjective(ABC):
         Returns:
             An Implies object representing the explanation.
         """
+        if explanation_tactics is None:
+            explanation_tactics = self.explanation_tactics
+
         # Get propositions
         if self.type == AdjectiveType.COMPARISON:
             consequent = self.proposition(self.evaluate(node, other_node), [node, other_node])
-            antecedent = self.explanation.explain(node, other_node, current_explanation_depth=current_explanation_depth)
+            antecedent = self.explanation.explain(node, other_node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
         else:
             consequent = self.proposition(self.evaluate(node), node)
-            antecedent = self.explanation.explain(node, current_explanation_depth=current_explanation_depth)
+            antecedent = self.explanation.explain(node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
         
         if antecedent is not None: # If the explanation was given
             implication = Implies(antecedent, consequent)
