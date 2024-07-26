@@ -58,15 +58,39 @@ class Explanation(ABC):
             return explanation
         else:
             return
-    
-    def forward_adjective_explanation(self, adjective: 'Adjective', *args, no_increment = False):
-        increment = 0 if no_increment else 1
-        return adjective.explain(*args, current_explanation_depth = self.current_explanation_depth + increment)
 
-    def forward_explanation(self, explanation, *args, no_increment = False):
+    def forward_explanation(self, obj, *args, no_increment = False):
         increment = 0 if no_increment else 1
-        return explanation.explain(*args, current_explanation_depth = self.current_explanation_depth + increment)
+        #if isinstance(obj, Adjective):
+            #return adjective.explain(*args, current_explanation_depth = self.current_explanation_depth + increment)
+        return obj.explain(*args, current_explanation_depth = self.current_explanation_depth + increment)
     
+    def forward_multiple_explanations(self, *forward_explanations, no_increment=False):
+        """
+        Handle multiple forward explanations with variable arguments and return an array of explanations.
+        Make sure to use this forwarding method since it will keep the current_explanation depth
+        consistent among the multiple explanations.
+
+        Args:
+        *forward_explanations: Variable number of tuples. Each tuple should contain:
+                    (obj, *args) with
+                    obj: is the Adjective or Explanation object from which to forward the explanation,
+                    *args: are the arguments to pass to object.explain.
+        no_increment: Boolean, if True, doesn't increment the explanation depth.
+
+        Returns:
+        list: An array of explanations returned by each obj.explain call.
+        """        
+        increment = 0 if no_increment else 1
+        forward_explanation_depth = self.current_explanation_depth + increment
+        
+        explanations = []
+        for obj, *args in forward_explanations:            
+            explanation = obj.explain(*args, current_explanation_depth=forward_explanation_depth)
+            explanations.append(explanation)
+        
+        return explanations
+
     @abstractmethod
     def _explain(self, node: Any) -> LogicalExpression:
         pass
@@ -228,7 +252,7 @@ class Possession(Explanation):
         adjective = self.framework.get_adjective(self.adjective_name)
 
         if not self.pointer_adjective_name: # the possession refers to the self node
-            return self.forward_adjective_explanation(adjective, node)
+            explanation = self.forward_explanation(adjective, node)
 
         else:
             pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
@@ -238,12 +262,15 @@ class Possession(Explanation):
                 # only forward the explanation without asking why this referred object
                 # otherwise we would get into an infinite recursion,
                 # by trying to explain the pointer adjective by referring to it.
-                explanation = self.forward_adjective_explanation(adjective, referred_object) # why the referred_object has this property?
+                explanation = self.forward_explanation(adjective, referred_object) # why the referred_object has this property?
             else:
-                explanation = And(
-                    self.forward_adjective_explanation(pointer_adjective, node), # why this referred_object?
-                    self.forward_adjective_explanation(adjective, referred_object)) # why the referred_object has this property?
-            return explanation
+                explanations = self.forward_multiple_explanations(
+                    (pointer_adjective, node), # why this referred_object?
+                    (adjective, referred_object) # why the referred_object has this property?
+                )
+                explanation = And(*explanations)
+        
+        return explanation
     
     def implies(self) -> LogicalExpression:
         """ Generates a proposition that contitutes the antecedent of an
@@ -295,9 +322,12 @@ class ComparisonNodesPropertyPossession(Explanation):
         """
         adjective_for_comparison = self.framework.get_adjective(self.adjective_for_comparison_name)
 
-        explanation = And(
-            self.forward_adjective_explanation(adjective_for_comparison, node),
-            self.forward_adjective_explanation(adjective_for_comparison, other_node))
+        explanations = self.forward_multiple_explanations(
+                    (adjective_for_comparison, node),
+                    (adjective_for_comparison, other_node)
+                )
+        
+        explanation = And(*explanations)
 
         return explanation
 
@@ -345,8 +375,12 @@ class GroupComparison(Explanation):
         group_pointer_adjective = self.framework.get_adjective(self.group_pointer_adjective_name)
         group = group_pointer_adjective.evaluate(node)
 
-        explanations = [self.forward_adjective_explanation(comparison_adjective, node, other_node) for other_node in group]
-        explanation = And(self.forward_adjective_explanation(group_pointer_adjective, node), And(*explanations))
+        to_forward_explanations = [(comparison_adjective, node, other_node) for other_node in group]
+        to_forward_explanations.append((group_pointer_adjective, node))
+        explanations = self.forward_multiple_explanations(*to_forward_explanations)
+        base_explanation = explanations.pop() # pop the group_pointer_adjective explanation
+                
+        explanation = And(base_explanation, And(*explanations))
         return explanation
 
     def implies(self) -> LogicalExpression:
@@ -381,13 +415,14 @@ class CompositeExplanation(Explanation):
         Returns:
             A LogicalExpression representing the combination of all sub-explanations.
         """
-        explanations = []
+        to_forward_explanations = []
         for exp in self.explanations:
             if exp is not None:
                 if isinstance(exp, ComparisonNodesPropertyPossession):
-                    explanations.append(self.forward_explanation(exp, node, other_node, no_increment = True))
+                    to_forward_explanations.append((exp, node, other_node))
                 else:
-                    explanations.append(self.forward_explanation(exp, node, no_increment = True))
+                    to_forward_explanations.append((exp, node))
+        explanations = self.forward_multiple_explanations(*to_forward_explanations, no_increment = True)
         return And(*explanations)
     
     def implies(self) -> LogicalExpression:
@@ -511,13 +546,20 @@ class ConditionalExplanation(Explanation):
         condition_result = self.condition.evaluate(node)
 
         if condition_result:
-            explanation = And(
-                        self.forward_explanation(self.condition, node, no_increment = True), 
-                        self.forward_explanation(self.explanation_if_true, node, no_increment = True))
+            explanations = self.forward_multiple_explanations(
+                    (self.condition, node),
+                    (self.explanation_if_true, node),
+                    no_increment = True
+                )
+            explanation = And(*explanations)
         else:
-            explanation = And(
-                        self.forward_explanation(self.condition, node, no_increment = True),
-                        self.forward_explanation(self.explanation_if_false, node, no_increment = True))
+            explanations = self.forward_multiple_explanations(
+                    (self.condition, node),
+                    (self.explanation_if_false, node),
+                    no_increment = True
+                )
+            explanation = And(*explanations)
+
         return explanation
 
     def implies(self) -> LogicalExpression:
