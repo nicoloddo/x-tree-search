@@ -4,8 +4,8 @@ from typing import Any, Callable
 from src.explainer.propositional_logic import Proposition, Not, Implies
 from src.explainer.explanation import *
 from src.explainer.framework import ArgumentationFramework
-from src.common.validators import validate_getter, validate_comparison_operator
-from src.explainer.utils import apply_explanation_tactics
+from src.explainer.common.validators import validate_getter, validate_comparison_operator
+from src.explainer.common.utils import apply_explanation_tactics
 
 """
 Adjectives constitute predicates by getting attributed to a node.

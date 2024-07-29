@@ -3,7 +3,7 @@ from .simple_explanations import Possession
 
 from src.explainer.propositional_logic import LogicalExpression, And, Or
 
-from src.explainer.utils import apply_explanation_tactics
+from src.explainer.common.utils import apply_explanation_tactics
 
 from typing import Any
 

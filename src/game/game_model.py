@@ -1,6 +1,6 @@
 MAX_ENVIRONMENT_SIZE_TO_PRINT = 30
 
-from src.common.utils import join_arrays_respective_elements, flatten_list
+from src.game.utils import join_arrays_respective_elements, flatten_list
 
 import numpy as np
 import inspect
