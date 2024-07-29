@@ -66,7 +66,7 @@ class Adjective(ABC):
     def set_belonging_framework(self, framework: ArgumentationFramework):
         """Sets the Argumentation framework the Adjective belongs to."""
         self.framework = framework
-        self.refer_to_nodes_as = self.framework.settings.refer_to_nodes_as
+        self.refer_to_nodes_as = self.framework.refer_to_nodes_as
         self.explanation.contextualize(self)
 
     def add_explanation_tactic(self, tactic):
@@ -114,7 +114,7 @@ class Adjective(ABC):
         the return of the evaluate() method to produce a consequent proposition
         in the explain() method.
         """
-        self.refer_to_nodes_as = self.framework.settings.refer_to_nodes_as
+        self.refer_to_nodes_as = self.framework.refer_to_nodes_as
         proposition = self._proposition(*args)
         apply_explanation_tactics(self, "proposition", explanation_tactics, proposition)
         return proposition

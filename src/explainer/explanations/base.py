@@ -16,7 +16,7 @@ class Explanation(ABC):
         """Sets the Argumentation framework the Explanation belongs to."""
         self.explanation_of_adjective = adjective
         self.framework = adjective.framework
-        self.refer_to_nodes_as = self.framework.settings.refer_to_nodes_as
+        self.refer_to_nodes_as = self.framework.refer_to_nodes_as
         self._contextualize()
     
     def _contextualize(self, *args, **kwargs):

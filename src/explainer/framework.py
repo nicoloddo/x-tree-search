@@ -5,11 +5,16 @@ from src.explainer.explanation_settings import ExplanationSettings
 class ArgumentationFramework:
     """Manages adjectives and their relationships in the argumentation framework."""
     
-    def __init__(self):
-        """Initialize the ArgumentationFramework."""
+    def __init__(self, *, refer_to_nodes_as):
+        """Initialize the ArgumentationFramework.
+        
+        Args:
+            refer_to_nodes_as: How to refer to nodes when printing explanations, e.g.: node, move, position, ..."""
+        
         self.adjectives: Dict[str, 'Adjective'] = {}
         self.tree_search_motivation: str = ""
         self.settings = ExplanationSettings()
+        self.refer_to_nodes_as = refer_to_nodes_as
     
     def set_settings(self, settings):
         self.settings = settings
