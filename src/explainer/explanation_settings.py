@@ -3,8 +3,8 @@ class ExplanationSettings:
         """
         Explanation settings:
 
-        - refer_to_nodes_as :
-        How to refer to nodes when printing explanations, e.g.: node, move, position, ...
+        - framework :
+        The name of the framework to use in the explanations.
 
         - explanation_depth : 
         Sets the depth of explanations, how deep towards the assumptions it should go.
@@ -20,7 +20,7 @@ class ExplanationSettings:
         """        
 
         self._settings = {
-            'refer_to_nodes_as' : 'node',
+            'framework' : None,
             'explanation_depth': 8,
             'assumptions_verbosity': 'if_asked',
             'print_depth': False
@@ -58,7 +58,7 @@ class ExplanationSettings:
             raise ValueError("Tried to set a String setting to a non string value.")
 
     _validators = {
-        'refer_to_nodes_as': _validate_string,
+        'framework': _validate_string,
         'explanation_depth': _validate_explanation_depth,
         'assumptions_verbosity': _validate_assumptions_verbosity,
         'print_depth': _validate_boolean
@@ -71,7 +71,7 @@ class ExplanationSettings:
         return value
     
     _actuators = {
-        'refer_to_nodes_as': _actuate_passthrough,
+        'framework': _actuate_passthrough,
         'explanation_depth': _actuate_passthrough,
         'assumptions_verbosity': _actuate_passthrough,
         'print_depth': _actuate_print_depth

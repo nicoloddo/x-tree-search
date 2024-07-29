@@ -143,3 +143,5 @@ class ArgumentativeExplainer:
     def configure_settings(self, settings_dict):
         """Configure settings using a dictionary."""
         self.settings.configure(settings_dict)
+        
+        self.select_framework(self.settings.framework)
