@@ -74,6 +74,7 @@ class OnlyRelevantComparisons(Tactic):
     the comparison between relevant objects."""
     top_n = 'err' # we set to 'err' because with None, sorted() would still work.
     bottom_n = 'err'
+    show_n = 'err'
     eval_tactic = None
     
     def __init__(self, *, mode: str):
@@ -84,9 +85,10 @@ class OnlyRelevantComparisons(Tactic):
     def set_mode(self):
         if self.mode.startswith("top_"):
             characters_before_n = len("top_")
-            n = self.mode[characters_before_n:]
-            if n.isdigit() and int(n) > 0:
-                self.top_n = int(n)
+            self.show_n = self.mode[characters_before_n:]
+            n = int(self.show_n)
+            if self.show_n.isdigit() and n > 0:
+                self.top_n = n
             else:
                 raise ValueError("A top_n mode should have an integer greater than 0.")
             
@@ -94,8 +96,9 @@ class OnlyRelevantComparisons(Tactic):
             
         elif self.mode.startswith("bottom_"):
             characters_before_n = len("bottom_")
-            n = self.mode[characters_before_n:]
-            if n.isdigit() and int(n) > 0:
+            self.show_n = self.mode[characters_before_n:]
+            n = int(self.show_n)
+            if self.show_n.isdigit() and n > 0:
                 self.bottom_n = n
             else:
                 raise ValueError("A bottom_n mode should have an integer greater than 0.")
@@ -111,7 +114,7 @@ class OnlyRelevantComparisons(Tactic):
         return [NodesGroupPointerAdjective]
 
     def apply_on_proposition(self, proposition):
-        proposition.expr += f" (only showing relevant {self.mode})"
+        proposition.expr += f" (only showing relevant {self.show_n})"
 
     def apply_on_evaluation(self, group):
         comparison_adjective_name = self.tactic_of_adjective.comparison_adjective_name
