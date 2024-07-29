@@ -4,6 +4,8 @@ from typing import Any
 from src.explainer.propositional_logic import LogicalExpression
 
 class Explanation(ABC):
+    refer_to_nodes_as = None
+
     """Abstract base class for all types of explanations."""
     def __init__(self):
         self.explanation_tactics = {}
@@ -14,6 +16,7 @@ class Explanation(ABC):
         """Sets the Argumentation framework the Explanation belongs to."""
         self.explanation_of_adjective = adjective
         self.framework = adjective.framework
+        self.refer_to_nodes_as = self.framework.settings.refer_to_nodes_as
         self._contextualize()
     
     def _contextualize(self, *args, **kwargs):

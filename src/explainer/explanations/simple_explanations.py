@@ -6,9 +6,8 @@ from typing import Any
 
 """ Assumptions """
 class Assumption(Explanation):
-    """Represents an explanation based on an assumption."""
-    
-    def __init__(self, description: str, definition: str = None):
+    """Represents an explanation based on an assumption."""    
+    def __init__(self, description: str = None):
         super().__init__()
         """
         Initialize the Assumption.
@@ -16,24 +15,28 @@ class Assumption(Explanation):
         Args:
             description: A string describing the assumption.
         """
-        assumption = "(assumption) " + description
-        
-        if not definition:
-            self.verbose_string = assumption
-        else:
-            self.verbose_string = f"{assumption} is \"{definition}\""
 
-        self.minimal_string = Proposition("(from assumptions)")
+        self.description = description
+    
+    def build_description():
+        return
     
     @property
     def verbose(self):
-        return Proposition(self.verbose_string)
+        if self.description is not None:
+            verbose_string = "(assumption) " + self.description
+        else:
+            verbose_string = "(assumption) " + self.build_description()
+
+        return Proposition(verbose_string)
     
     @property
     def minimal(self):
-        return Proposition(self.minimal_string)
+        return Proposition("(from assumptions)")
 
     def _explain(self, node: Any) -> LogicalExpression:
+        self.refer_to_nodes_as = self.framework.settings.refer_to_nodes_as
+
         """Return the assumption as a Proposition."""
         if self.framework.settings.assumptions_verbosity == 'verbose':
             return self.verbose
@@ -60,15 +63,22 @@ class Assumption(Explanation):
 class PossessionAssumption(Assumption):
     """Represents the assumption underlying a boolean adjective attribution."""
     
-    def __init__(self, adjective_name: str, definition: str):
+    def __init__(self, adjective_name: str, definition: str = None):
         """
         Initialize the ComparisonAssumption.
         
         Args:
             adjective_name: The name of the boolean adjective.
         """
-        description = f"Definition of \"{adjective_name}\""
-        super().__init__(description, definition)
+        self.adjective_name = adjective_name
+        self.definition = definition
+        super().__init__()
+
+    def build_description(self):
+        if self.definition is not None:
+            return f"Definition of \"{self.adjective_name}\" is {self.definition}"
+        else:
+            return f"Definition of \"{self.adjective_name}\""
 
 class ComparisonAssumption(Assumption):
     """Represents the assumption underlying the comparison between two nodes."""
@@ -82,8 +92,13 @@ class ComparisonAssumption(Assumption):
             pointer_adjective_name: The name of the pointer adjective used for comparison.
             comparison_operator: The comparison function.
         """
-        description = f"By definition, node1 is \"{comparison_adjective_name}\" than node2 if node1 {pointer_adjective_name} {operator} node2 {pointer_adjective_name}"
-        super().__init__(description)
+        self.comparison_adjective_name = comparison_adjective_name
+        self.pointer_adjective_name = pointer_adjective_name
+        self.operator = operator
+        super().__init__()
+    
+    def build_description(self):
+        return f"By definition, {self.refer_to_nodes_as}1 is \"{self.comparison_adjective_name}\" than {self.refer_to_nodes_as}2 if {self.refer_to_nodes_as}1 {self.pointer_adjective_name} {self.operator} {self.refer_to_nodes_as}2 {self.pointer_adjective_name}"
 
 class RankAssumption(Assumption):
     """Represents the assumption underlying the comparison between two nodes."""
@@ -96,14 +111,21 @@ class RankAssumption(Assumption):
             comparison_adjective_name: The name of the comparison adjective.
             group_pointer_adjective_name: The name of the group pointer adjective among which we are ranking the node.
         """
-        if rank_type == 'max':
-            description = f"By definition a node is \"{name}\" if it's \"{comparison_adjective_name}\" compared to all nodes among \"{group_pointer_adjective_name}\""
-        elif rank_type == 'min':
-            negate = Not('\"' + comparison_adjective_name + '\"')
-            description = f"By definition a node is \"{name}\" if it's {negate} compared to all nodes among \"{group_pointer_adjective_name}\""
+        self.rank_type = rank_type
+        self.name = name
+        self.comparison_adjective_name = comparison_adjective_name
+        self.group_pointer_adjective_name = group_pointer_adjective_name
+
+        super().__init__()
+    
+    def build_description(self):
+        if self.rank_type == 'max':
+            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's \"{self.comparison_adjective_name}\" compared to all {self.refer_to_nodes_as}(s) among \"{self.group_pointer_adjective_name}\""
+        elif self.rank_type == 'min':
+            negate = Not('\"' + self.comparison_adjective_name + '\"')
+            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's {negate} compared to all {self.refer_to_nodes_as}(s) among \"{self.group_pointer_adjective_name}\""
         else:
             raise ValueError("RankAssumption of unknown type.")
-        super().__init__(description)
 
 """ Straightforward Explanations """
 class Possession(Explanation):

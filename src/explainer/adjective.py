@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable
-    
+
 from src.explainer.propositional_logic import Proposition, Not, Implies
 from src.explainer.explanation import *
 from src.explainer.framework import ArgumentationFramework
@@ -29,6 +29,7 @@ class AdjectiveType:
 
 class Adjective(ABC):
     """Abstract base class for all types of adjectives."""
+    refer_to_nodes_as = None
     
     def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, *, definition: str):
         """
@@ -65,6 +66,7 @@ class Adjective(ABC):
     def set_belonging_framework(self, framework: ArgumentationFramework):
         """Sets the Argumentation framework the Adjective belongs to."""
         self.framework = framework
+        self.refer_to_nodes_as = self.framework.settings.refer_to_nodes_as
         self.explanation.contextualize(self)
 
     def add_explanation_tactic(self, tactic):
@@ -112,6 +114,7 @@ class Adjective(ABC):
         the return of the evaluate() method to produce a consequent proposition
         in the explain() method.
         """
+        self.refer_to_nodes_as = self.framework.settings.refer_to_nodes_as
         proposition = self._proposition(*args)
         apply_explanation_tactics(self, "proposition", explanation_tactics, proposition)
         return proposition
@@ -184,7 +187,7 @@ class BooleanAdjective(Adjective):
 
     def _proposition(self, evaluation: bool = True, node: Any = "node") -> Proposition:
         """ Returns a proposition reflecting the adjective """
-        proposition = Proposition(f"{node or 'node'} is {self.name}")
+        proposition = Proposition(f"{node or self.refer_to_nodes_as} is {self.name}")
         if evaluation == False:
             return Not(proposition)
         else:
@@ -216,7 +219,7 @@ class PointerAdjective(Adjective):
         if not value:
             value = '?'
 
-        proposition = Proposition(f"{node or 'node'} has {self.name} = {value or '?'}")
+        proposition = Proposition(f"{node or self.refer_to_nodes_as} has {self.name} = {value or '?'}")
         return proposition
 
     def _evaluate(self, node: Any) -> Any:
@@ -246,7 +249,7 @@ class NodesGroupPointerAdjective(PointerAdjective):
             raise ValueError(f"{self.name} NodesGroupPointerAdjective should evaluate to a list. Check your definition.")
 
         """ Returns a proposition reflecting the pointer value """
-        proposition = Proposition(f"{node or 'node'} has {self.name} = {value or '?'}")
+        proposition = Proposition(f"{node or self.refer_to_nodes_as} has {self.name} = {value or '?'}")
         return proposition
 
 class ComparisonAdjective(Adjective):

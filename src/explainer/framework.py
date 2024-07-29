@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+from src.explainer.explanation_settings import ExplanationSettings
+
 class ArgumentationFramework:
     """Manages adjectives and their relationships in the argumentation framework."""
     
@@ -7,6 +9,10 @@ class ArgumentationFramework:
         """Initialize the ArgumentationFramework."""
         self.adjectives: Dict[str, 'Adjective'] = {}
         self.tree_search_motivation: str = ""
+        self.settings = ExplanationSettings()
+    
+    def set_settings(self, settings):
+        self.settings = settings
 
     def add_adjective(self, adjective: 'Adjective'):
         """
