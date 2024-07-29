@@ -120,10 +120,10 @@ class RankAssumption(Assumption):
     
     def build_description(self):
         if self.rank_type == 'max':
-            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's \"{self.comparison_adjective_name}\" compared to all {self.refer_to_nodes_as}(s) among \"{self.group_pointer_adjective_name}\""
+            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's \"{self.comparison_adjective_name}\" than all \"{self.group_pointer_adjective_name}\""
         elif self.rank_type == 'min':
             negate = Not('\"' + self.comparison_adjective_name + '\"')
-            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's {negate} compared to all {self.refer_to_nodes_as}(s) among \"{self.group_pointer_adjective_name}\""
+            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's {negate} than all \"{self.group_pointer_adjective_name}\""
         else:
             raise ValueError("RankAssumption of unknown type.")
 
