@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from src.explainer.adjective import MaxRankAdjective, MinRankAdjective, NodesGroupPointerAdjective
+from src.explainer.adjective import PointerAdjective
 
 class Tactic(ABC):
     """Abstract base class for all types of explanation tactics.
@@ -77,6 +78,14 @@ class OnlyRelevantComparisons(Tactic):
     show_n = 'err'
     eval_tactic = None
     
+    @property
+    def allowed_attached_to_adjectives(self):
+        return [MaxRankAdjective, MinRankAdjective]
+    
+    @property
+    def allowed_applied_to_adjectives(self):
+        return [NodesGroupPointerAdjective]
+    
     def __init__(self, *, mode: str):
         super().__init__(self.__class__.__name__)
         self.mode = mode
@@ -105,14 +114,6 @@ class OnlyRelevantComparisons(Tactic):
             
             self.eval_tactic = self.relevant_bottom_n
 
-    @property
-    def allowed_attached_to_adjectives(self):
-        return [MaxRankAdjective, MinRankAdjective]
-    
-    @property
-    def allowed_applied_to_adjectives(self):
-        return [NodesGroupPointerAdjective]
-
     def apply_on_proposition(self, proposition):
         proposition.expr += f" (only showing relevant {self.show_n})"
 
@@ -128,3 +129,17 @@ class OnlyRelevantComparisons(Tactic):
     
     def relevant_bottom_n(self, group, value_for_comparison_adjective):
         return sorted(group, key=lambda obj: value_for_comparison_adjective.evaluate(obj), reverse=False)[:self.bottom_n]
+    
+class SkipQuantitativeExplanations(Tactic):
+    """When explaining a quantitative PointerAdjective, skip its statement
+    and pass directly to the explanation of the PointerAdjective instead."""
+    @property
+    def allowed_attached_to_adjectives(self):
+        return [PointerAdjective]
+    
+    @property
+    def allowed_applied_to_adjectives(self):
+        return [PointerAdjective]
+
+    def __init__(self, *, mode: str):
+        super().__init__(self.__class__.__name__)
