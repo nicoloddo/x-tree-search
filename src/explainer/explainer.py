@@ -12,7 +12,7 @@ class ArgumentativeExplainer:
     to print the nodes correctly.
     """
     
-    def __init__(self, framework: 'ArgumentationFramework'):
+    def __init__(self):
         """
         Initialize the ArgumentativeExplainer.
         
@@ -21,9 +21,27 @@ class ArgumentativeExplainer:
         """
         self.settings = ExplanationSettings()
 
-        self.framework = framework
-        self.framework.set_settings(self.settings)
+        self.framework = None
+        self.frameworks = {}
+
         self.getters = {}
+
+    def add_framework(self, framework_name: str, framework: 'ArgumentationFramework'):
+        """
+        Add a framework to explain the tree search.
+        """
+        self.frameworks[framework_name] = framework
+        framework.set_settings(self.settings)
+
+        if len(self.frameworks) == 1: 
+            # If this was the first added framework, select it automatically
+            self.framework = self.frameworks[framework_name]
+    
+    def select_framework(self, framework_name: str):
+        """
+        Selects the framework to use for the explanations
+        """
+        self.framework = self.frameworks[framework_name]
 
     def set_getter(self, adjective_name: str, getter: Callable[[Any], Any]):
         """Overrides the getter function setted during the adjective declaration.
