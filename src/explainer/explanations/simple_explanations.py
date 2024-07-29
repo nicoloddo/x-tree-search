@@ -43,6 +43,13 @@ class Assumption(Explanation):
 
         elif self.framework.settings.assumptions_verbosity == 'no':
             return None
+        
+        elif self.framework.settings.assumptions_verbosity == 'if_asked':
+            if self.current_explanation_depth == 1:
+                return self.verbose
+            else:
+                return None
+
         else:
             raise ValueError("Framework has unvalid assumptions verbosity.")
     

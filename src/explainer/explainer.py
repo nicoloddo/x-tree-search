@@ -12,7 +12,7 @@ class ExplanationSettings:
         Sets the depth of explanations, how deep towards the assumptions it should go.
 
         - assumptions_verbosity: 
-        Set to 'verbose', 'minimal' or 'no'.
+        Set to 'verbose', 'minimal', 'no' or 'if_asked.
         The setting decides how much of the assumptions to print.
 
         - print_depth:
@@ -23,7 +23,7 @@ class ExplanationSettings:
 
         self._settings = {
             'explanation_depth': 8,
-            'assumptions_verbosity': 'no',
+            'assumptions_verbosity': 'if_asked',
             'print_depth': False
         }
 
@@ -46,7 +46,7 @@ class ExplanationSettings:
             raise ValueError("Explanation depth must be a positive integer or 0.")
 
     def _validate_assumptions_verbosity(self, value):
-        allowed_values = ['verbose', 'minimal', 'no']
+        allowed_values = ['verbose', 'minimal', 'no', 'if_asked']
         if value not in allowed_values:
             raise ValueError(f"Assumptions verbosity must be one of: {', '.join(allowed_values)}")
 
