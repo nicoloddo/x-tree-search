@@ -18,14 +18,14 @@ class LogicalExpression(ABC):
 class Proposition(LogicalExpression):
     """Represents a basic proposition in propositional logic."""
 
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self, expr: str):
+        self.expr = expr
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        return interpretation.get(self.name, False)
+        return interpretation.get(self.expr, False)
 
     def __str__(self) -> str:
-        return self.name
+        return self.expr
     
 class UnaryOperator(LogicalExpression):
     def __new__(cls, expr: LogicalExpression):

@@ -5,6 +5,7 @@ from src.explainer.propositional_logic import Proposition, Not, Implies
 from src.explainer.explanation import *
 from src.explainer.framework import ArgumentationFramework
 from src.common.validators import validate_getter, validate_comparison_operator
+from src.explainer.utils import apply_explanation_tactics
 
 """
 Adjectives constitute predicates by getting attributed to a node.
@@ -64,15 +65,16 @@ class Adjective(ABC):
     def set_belonging_framework(self, framework: ArgumentationFramework):
         """Sets the Argumentation framework the Adjective belongs to."""
         self.framework = framework
-        self.explanation.set_belonging_framework(framework, self)
+        self.explanation.contextualize(self)
 
     def add_explanation_tactic(self, tactic):
+        tactic.contextualize(self)
         self.explanation_tactics[tactic.name] = tactic
 
     def del_explanation_tactic(self, tactic_name):
         del self.explanation_tactics[tactic_name]
 
-    def evaluate(self, *args, **kwargs) -> Any:
+    def evaluate(self, *args, explanation_tactics = None) -> Any:
         """
         Evaluate the adjective.
         If args are passed, evaluate in context.
@@ -80,24 +82,22 @@ class Adjective(ABC):
         
         Args:
             *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
         
         Returns:
             The value of the adjective for the given node.
         """
-        if len(kwargs) > 0:
-            raise SyntaxError("Keyword arguments are not allowed in Adjective.evaluate().")
         if not args[0]: # We are evaluating not in context
             return None
         else:
-            return self._evaluate(*args, *kwargs)
+            evaluation = self._evaluate(*args)
+        apply_explanation_tactics(self, "evaluation", explanation_tactics, evaluation)
+        return evaluation
 
     @abstractmethod
     def _evaluate(self, *args, **kwargs) -> Any:
         pass
 
-    @abstractmethod
-    def proposition(self, *args, **kwargs) -> Proposition:
+    def proposition(self, *args, explanation_tactics = None) -> Proposition:
         """
         Create a Proposition object representing this adjective.
         
@@ -112,6 +112,12 @@ class Adjective(ABC):
         the return of the evaluate() method to produce a consequent proposition
         in the explain() method.
         """
+        proposition = self._proposition(*args)
+        apply_explanation_tactics(self, "proposition", explanation_tactics, proposition)
+        return proposition
+    
+    @abstractmethod
+    def _proposition(self, *args, **kwargs) -> Proposition:
         pass
 
     def implies(self, evaluation = None) -> Implies:
@@ -127,7 +133,7 @@ class Adjective(ABC):
 
         return Implies(antecedent, consequent)
 
-    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics=None, current_explanation_depth) -> Implies:
+    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics = None, current_explanation_depth) -> Implies:
         """
         Provide an explanation for the adjective's value on a given node.
         
@@ -143,10 +149,12 @@ class Adjective(ABC):
 
         # Get propositions
         if self.type == AdjectiveType.COMPARISON:
-            consequent = self.proposition(self.evaluate(node, other_node), [node, other_node])
+            evaluation = self.evaluate(node, other_node, explanation_tactics=explanation_tactics)
+            consequent = self.proposition(evaluation, [node, other_node], explanation_tactics=explanation_tactics)
             antecedent = self.explanation.explain(node, other_node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
         else:
-            consequent = self.proposition(self.evaluate(node), node)
+            evaluation = self.evaluate(node, explanation_tactics=explanation_tactics)
+            consequent = self.proposition(evaluation, node, explanation_tactics=explanation_tactics)
             antecedent = self.explanation.explain(node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
         
         if antecedent is not None: # If the explanation was given
@@ -174,7 +182,7 @@ class BooleanAdjective(Adjective):
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.STATIC, explanation, definition = definition)
 
-    def proposition(self, evaluation: bool = True, node: Any = "node") -> Proposition:
+    def _proposition(self, evaluation: bool = True, node: Any = "node") -> Proposition:
         """ Returns a proposition reflecting the adjective """
         proposition = Proposition(f"{node or 'node'} is {self.name}")
         if evaluation == False:
@@ -203,7 +211,7 @@ class PointerAdjective(Adjective):
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.POINTER, explanation, definition = definition)
 
-    def proposition(self, value: Any = None, node: Any = "node") -> Proposition:
+    def _proposition(self, value: Any = None, node: Any = "node") -> Proposition:
         """ Returns a proposition reflecting the pointer value """
         if not value:
             value = '?'
@@ -229,7 +237,7 @@ class NodesGroupPointerAdjective(PointerAdjective):
             composite_definition = f"[{definition}]"
         super().__init__(name, composite_definition, explanation)
     
-    def proposition(self, value: Any = None, node: Any = "node") -> Proposition:
+    def _proposition(self, value: Any = None, node: Any = "node") -> Proposition:
         if not value:
             value = '?'
         elif type(value) is list:
@@ -268,7 +276,7 @@ class ComparisonAdjective(Adjective):
 
         self.operator = operator
 
-    def proposition(self, evaluation: bool = True, node: Any = ["node1", "node2"]) -> Proposition:
+    def _proposition(self, evaluation: bool = True, node: Any = ["node1", "node2"]) -> Proposition:
         """ Returns a proposition reflecting the comparison """
         proposition = Proposition(f"{node[0] or 'node1'} is {self.name} than {node[1] or 'node1'}")
         if evaluation == False:
