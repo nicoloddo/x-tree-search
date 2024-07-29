@@ -56,7 +56,7 @@ class ArgumentativeExplainer:
         else:
             adjective.evaluate(node, context=self)
 
-    def explain_adjective(self, node: Any, adjective_name: str, comparison_node: Any = None, *, explanation_depth = None, print_depth = False) -> Any:
+    def explain_adjective(self, node: Any, adjective_name: str, comparison_node: Any = None, *, with_framework = None, explanation_depth = None, print_depth = None) -> Any:
         """
         Generate a propositional logic explanation for why a node has a specific adjective.
         
@@ -74,12 +74,19 @@ class ArgumentativeExplainer:
             KeyError: If no adjective with the given name is found.
         """
         # Handle temporary settings for this explanation:
+        if with_framework is not None:
+            prev_framework = self.settings.with_framework
+            self.settings.with_framework = with_framework
+            self.select_framework(with_framework)
+
         if explanation_depth is not None:
             prev_explanation_depth = self.settings.explanation_depth
-            prev_print_depth = self.settings.print_depth
-
             self.settings.explanation_depth = explanation_depth
+
+        if print_depth is not None:
+            prev_print_depth = self.settings.print_depth
             self.settings.print_depth = print_depth
+
 
         # Get the explanation
         adjective = self.framework.get_adjective(adjective_name)
@@ -94,15 +101,23 @@ class ArgumentativeExplainer:
         print(explanation)
         
         # Reset settings for future explanations:
+        if with_framework is not None:
+            self.settings.with_framework = prev_framework
+            self.select_framework(prev_framework)
+
         if explanation_depth is not None:
             self.settings.explanation_depth = prev_explanation_depth
+
+        if print_depth is not None:
             self.settings.print_depth = prev_print_depth
 
-    def add_explanation_tactic(self, adjective_name: str, tactic: 'Tactic'):
-        adjective = self.framework.get_adjective(adjective_name)
+    def add_explanation_tactic(self, adjective_name: str, tactic: 'Tactic', *, to_framework: str):
+        framework = self.frameworks[to_framework]
+        adjective = framework.get_adjective(adjective_name)
         adjective.add_explanation_tactic(tactic)
 
-    def del_explanation_tactic(self, adjective_name: str, tactic_class_name: str):
+    def del_explanation_tactic(self, adjective_name: str, tactic_class_name: str, *, to_framework: str):
+        framework = self.frameworks[to_framework]
         adjective = self.framework.get_adjective(adjective_name)
         adjective.del_explanation_tactic(tactic_class_name)
 
@@ -144,5 +159,5 @@ class ArgumentativeExplainer:
         """Configure settings using a dictionary."""
         self.settings.configure(settings_dict)
 
-        if 'framework' in settings_dict:
-            self.select_framework(self.settings.framework)
+        if 'with_framework' in settings_dict:
+            self.select_framework(self.settings.with_framework)
