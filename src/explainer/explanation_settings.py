@@ -3,7 +3,7 @@ class ExplanationSettings:
         """
         Explanation settings:
 
-        - framework :
+        - with_framework :
         The name of the framework to use in the explanations.
 
         - explanation_depth : 
@@ -20,7 +20,7 @@ class ExplanationSettings:
         """        
 
         self._settings = {
-            'framework' : None,
+            'with_framework' : None,
             'explanation_depth': 8,
             'assumptions_verbosity': 'if_asked',
             'print_depth': False
@@ -58,7 +58,7 @@ class ExplanationSettings:
             raise ValueError("Tried to set a String setting to a non string value.")
 
     _validators = {
-        'framework': _validate_string,
+        'with_framework': _validate_string,
         'explanation_depth': _validate_explanation_depth,
         'assumptions_verbosity': _validate_assumptions_verbosity,
         'print_depth': _validate_boolean
@@ -71,7 +71,7 @@ class ExplanationSettings:
         return value
     
     _actuators = {
-        'framework': _actuate_passthrough,
+        'with_framework': _actuate_passthrough,
         'explanation_depth': _actuate_passthrough,
         'assumptions_verbosity': _actuate_passthrough,
         'print_depth': _actuate_print_depth
