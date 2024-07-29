@@ -35,7 +35,7 @@ class Assumption(Explanation):
         return Proposition("(from assumptions)")
 
     def _explain(self, node: Any) -> LogicalExpression:
-        self.refer_to_nodes_as = self.framework.settings.refer_to_nodes_as
+        self.refer_to_nodes_as = self.framework.refer_to_nodes_as
 
         """Return the assumption as a Proposition."""
         if self.framework.settings.assumptions_verbosity == 'verbose':
