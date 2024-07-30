@@ -1,4 +1,8 @@
 from abc import ABC, abstractmethod
+from typing import List
+
+from src.explainer.adjective import Adjective
+from src.explainer.framework import ArgumentationFramework
 
 from src.explainer.adjective import MaxRankAdjective, MinRankAdjective, NodesGroupPointerAdjective
 from src.explainer.adjective import PointerAdjective
@@ -7,43 +11,33 @@ class Tactic(ABC):
     """Abstract base class for all types of explanation tactics.
     Explanation tactics affect how adjective evaluate(), proposition() and explain(),
     the latter by affecting also Explanation.explain().
-    Each tactic affects specific Adjectives and Explanations and you can find how they
-    are affected by searching for the tactics if inside the Adjective or Explanation.
+    Each tactic can affect specific Adjectives and Explanations or the whole Framework.
+
+    Tactics are called from adjectives during their explanation.
     
     The methods of apply need to directly modify the arguments, not return."""
     def __init__(self, name):
         self.name = name
         self.framework = None
-        self.tactic_of_adjective = None
+        self.tactic_of_object = None
 
     def set_belonging_framework(self, framework):
         self.framework = framework
 
-    def contextualize(self, adjective: 'Adjective'):
+    @abstractmethod
+    def contextualize(self, belonging_object: 'Adjective'):
         """Sets the Argumentation framework the Explanation belongs to."""
-        self.tactic_of_adjective = adjective
-        self.framework = adjective.framework
-        self._contextualize()
-        
-        self.validate_context()
-    
-    def _contextualize(self, *args, **kwargs):
         pass
 
-    @property
     @abstractmethod
-    def attachable_to_adjectives(self):
-        pass
-
     def validate_context(self):
-        for allowed_adjective in self.attachable_to_adjectives:
-            if isinstance(self.tactic_of_adjective, allowed_adjective):
-                return True        
-        raise ValueError(f"{self.__class__.__name__} can only be ATTACHED to adjectives among {self.attachable_to_adjectives}.")
+        pass
 
     @property
     @abstractmethod
-    def acted_upon_from_adjectives(self):
+    # List of adjectives from which the tactic is performed.
+    # Examples below.
+    def acted_upon_from_adjectives(self) -> List:
         pass
 
     def validate_apply(self, calling_adjective):
@@ -80,7 +74,58 @@ class Tactic(ABC):
     def apply_on_explanation(self, *args, **kwargs):
         return
 
-class OnlyRelevantComparisons(Tactic):
+class SpecificTactic(Tactic):
+    """Specific Tactics are allowed to start only from a selected adjective explanation."""
+    @property
+    @abstractmethod
+    def allowed_in_explanations_starting_from_adjectives(self) -> List:
+    # List of adjectives to which explanation the tactic will be applied from.
+    # The tactic will be applied only if the explanation is starting from one of those.
+    # Examples below.
+        pass
+
+    def contextualize(self, adjective: Adjective):
+        """Sets the Argumentation framework the Explanation belongs to."""
+        self.tactic_of_object = adjective
+        self.tactic_of_adjective = self.tactic_of_object
+
+        self.framework = adjective.framework
+        self._contextualize()
+        
+        self.validate_context()
+    
+    def _contextualize(self, *args, **kwargs):
+        pass
+
+    def validate_context(self):
+        for allowed_adjective in self.allowed_in_explanations_starting_from_adjectives:
+            if isinstance(self.tactic_of_adjective, allowed_adjective):
+                return True        
+        raise ValueError(f"{self.__class__.__name__} can only be ATTACHED to adjectives among {self.allowed_in_explanations_starting_from_adjectives}.")
+    
+class GeneralTactic(Tactic):
+    """General Tactics are allowed to start from any adjective explanation."""
+    @property
+    def allowed_in_explanations_starting_from_adjectives(self) -> List:
+    # List of adjectives to which explanation the tactic will be applied from.
+        return [] # It will not be used as we override validate_context
+    
+    def contextualize(self, framework: ArgumentationFramework):
+        """Sets the Argumentation framework the Explanation belongs to."""
+        self.tactic_of_object = framework
+        self.tactic_of_framework = self.tactic_of_object
+        
+        self.framework = framework
+        self._contextualize()
+        
+        self.validate_context()
+    
+    def validate_context(self):
+        if isinstance(self.tactic_of_object, ArgumentationFramework):
+            return True
+        raise ValueError(f"{self.__class__.__name__} can only be ATTACHED to a whole framework. Do not specify an adjective.")
+    
+class OnlyRelevantComparisons(SpecificTactic):
     """When explaining a GroupComparison, only explain
     the comparison between relevant objects."""
     top_n = 'err' # we set to 'err' because with None, sorted() would still work.
@@ -89,7 +134,7 @@ class OnlyRelevantComparisons(Tactic):
     eval_tactic = None
     
     @property
-    def attachable_to_adjectives(self):
+    def allowed_in_explanations_starting_from_adjectives(self):
         return [MaxRankAdjective, MinRankAdjective]
     
     @property
@@ -141,18 +186,15 @@ class OnlyRelevantComparisons(Tactic):
 
         group[:] = self.eval_tactic(group, value_for_comparison_adjective) # slice assignment to modify in place the group
     
-class SkipQuantitativeExplanations(Tactic):
+class SkipQuantitativeExplanations(GeneralTactic):
     """When explaining a quantitative PointerAdjective, skip its statement
     and pass directly to the explanation of the PointerAdjective instead."""
-    @property
-    def attachable_to_adjectives(self):
-        return [PointerAdjective]
     
     @property
     def acted_upon_from_adjectives(self):
         return [PointerAdjective]
 
-    def __init__(self, *, mode: str):
+    def __init__(self):
         super().__init__(self.__class__.__name__)
 
     # apply    

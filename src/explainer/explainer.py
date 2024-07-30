@@ -111,15 +111,21 @@ class ArgumentativeExplainer:
         if print_depth is not None:
             self.settings.print_depth = prev_print_depth
 
-    def add_explanation_tactic(self, adjective_name: str, tactic: 'Tactic', *, to_framework: str):
+    def add_explanation_tactic(self, tactic: 'Tactic', *, to_adjective: str = '', to_framework: str):
         framework = self.frameworks[to_framework]
-        adjective = framework.get_adjective(adjective_name)
-        adjective.add_explanation_tactic(tactic)
+        if to_adjective == '':
+            framework.add_explanation_tactic(tactic)
+        else:
+            adjective = framework.get_adjective(to_adjective)
+            adjective.add_explanation_tactic(tactic)
 
-    def del_explanation_tactic(self, adjective_name: str, tactic_class_name: str, *, to_framework: str):
+    def del_explanation_tactic(self, tactic_class_name: str, *, to_adjective: str = '', to_framework: str):
         framework = self.frameworks[to_framework]
-        adjective = self.framework.get_adjective(adjective_name)
-        adjective.del_explanation_tactic(tactic_class_name)
+        if to_adjective == '':
+            framework.del_explanation_tactic(tactic_class_name)
+        else:
+            adjective = framework.get_adjective(to_adjective)
+            adjective.del_explanation_tactic(tactic_class_name)
 
     def query_explanation(self, node: Any, query: str) -> Any:
         pass

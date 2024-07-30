@@ -43,6 +43,8 @@ class Adjective(ABC):
             framework: The Argumentation framework the Adjective belongs to.
             getter: The getter function for the Adjective to be evaluated with an existing node.
         """
+        if name == '':
+            raise ValueError("The name of Adjectives needs to have at least one character.")
         self.name = name
         self.type = adjective_type
         self.explanation = explanation
@@ -137,7 +139,7 @@ class Adjective(ABC):
             An Implies object representing the explanation.
         """
         if explanation_tactics is None:
-            explanation_tactics = self.explanation_tactics
+            explanation_tactics = self.explanation_tactics + self.framework.general_explanation_tactics
 
         # Get propositions
         if self.type == AdjectiveType.COMPARISON:

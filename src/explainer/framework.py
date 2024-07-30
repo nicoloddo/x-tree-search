@@ -15,6 +15,7 @@ class ArgumentationFramework:
         self.tree_search_motivation: str = ""
         self.settings = ExplanationSettings()
         self.refer_to_nodes_as = refer_to_nodes_as
+        self.general_explanation_tactics = {}
     
     def set_settings(self, settings):
         self.settings = settings
@@ -71,6 +72,13 @@ class ArgumentationFramework:
             KeyError: If no adjective with the given name is found.
         """
         return self.adjectives[name]
+    
+    def add_explanation_tactic(self, tactic):
+        tactic.contextualize(self)
+        self.general_explanation_tactics[tactic.name] = tactic
+
+    def del_explanation_tactic(self, tactic_name):
+        del self.general_explanation_tactics[tactic_name]
 
     def __str__(self):
         propositions = [adjective.proposition().__str__() for adjective in self.adjectives.values()]
