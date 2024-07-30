@@ -1,3 +1,20 @@
+def _validate_explanation_depth(value):
+    if not isinstance(value, int) or value < 0:
+        raise ValueError("Explanation depth must be a positive integer or 0.")
+
+def _validate_assumptions_verbosity(value):
+    allowed_values = ['verbose', 'minimal', 'no', 'if_asked']
+    if value not in allowed_values:
+        raise ValueError(f"Assumptions verbosity must be one of: {', '.join(allowed_values)}")
+
+def _validate_boolean(value):
+    if not isinstance(value, bool):
+        raise ValueError("Tried to set a Boolean setting to a non boolean value.")
+
+def _validate_string(value):
+    if not isinstance(value, str):
+        raise ValueError("Tried to set a String setting to a non string value.")
+
 class ExplanationSettings:
     def __init__(self):
         """
@@ -23,8 +40,28 @@ class ExplanationSettings:
             'with_framework' : None,
             'explanation_depth': 8,
             'assumptions_verbosity': 'if_asked',
-            'print_depth': False
+            'print_depth': False,
+            'print_implicit_assumptions': True
         }
+
+    _validators = {
+        'with_framework': _validate_string,
+        'explanation_depth': _validate_explanation_depth,
+        'assumptions_verbosity': _validate_assumptions_verbosity,
+        'print_depth': _validate_boolean,
+        'print_implicit_assumptions': _validate_boolean
+    }
+
+    def _actuate_passthrough(self, value):
+        return value
+    
+    _actuators = {
+        'with_framework': _actuate_passthrough,
+        'explanation_depth': _actuate_passthrough,
+        'assumptions_verbosity': _actuate_passthrough,
+        'print_depth': _actuate_passthrough,
+        'print_implicit_assumptions': _actuate_passthrough
+    }
 
     def __getattr__(self, name):
         if name in self._settings:
@@ -35,47 +72,10 @@ class ExplanationSettings:
         if name.startswith('_'):
             super().__setattr__(name, value)
         elif name in self._settings:
-            self._validators[name](self, value)
+            self._validators[name](value)
             self._settings[name] = self._actuators[name](self, value)
         else:
             raise AttributeError(f"'ArgumentationSettings' object has no attribute '{name}'")
-
-    def _validate_explanation_depth(self, value):
-        if not isinstance(value, int) or value < 0:
-            raise ValueError("Explanation depth must be a positive integer or 0.")
-
-    def _validate_assumptions_verbosity(self, value):
-        allowed_values = ['verbose', 'minimal', 'no', 'if_asked']
-        if value not in allowed_values:
-            raise ValueError(f"Assumptions verbosity must be one of: {', '.join(allowed_values)}")
-
-    def _validate_boolean(self, value):
-        if not isinstance(value, bool):
-            raise ValueError("Tried to set a Boolean setting to a non boolean value.")
-    
-    def _validate_string(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Tried to set a String setting to a non string value.")
-
-    _validators = {
-        'with_framework': _validate_string,
-        'explanation_depth': _validate_explanation_depth,
-        'assumptions_verbosity': _validate_assumptions_verbosity,
-        'print_depth': _validate_boolean
-    }
-
-    def _actuate_passthrough(self, value):
-        return value
-    
-    def _actuate_print_depth(self, value):
-        return value
-    
-    _actuators = {
-        'with_framework': _actuate_passthrough,
-        'explanation_depth': _actuate_passthrough,
-        'assumptions_verbosity': _actuate_passthrough,
-        'print_depth': _actuate_print_depth
-    }
 
     def configure(self, settings_dict):
         """Configure settings using a dictionary."""
