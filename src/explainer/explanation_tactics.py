@@ -29,14 +29,14 @@ class Tactic(ABC):
     
     @property
     @abstractmethod
-    def allowed_attached_to_adjectives(self):
+    def attachable_to_adjectives(self):
         pass
 
     def validate_context(self):
-        for allowed_adjective in self.allowed_attached_to_adjectives:
+        for allowed_adjective in self.attachable_to_adjectives:
             if isinstance(self.tactic_of_adjective, allowed_adjective):
                 return True        
-        raise ValueError(f"{self.__class__.__name__} can only be ATTACHED to adjectives among {self.allowed_attached_to_adjectives}.")
+        raise ValueError(f"{self.__class__.__name__} can only be ATTACHED to adjectives among {self.attachable_to_adjectives}.")
     
     def _contextualize(self, *args, **kwargs):
         pass
@@ -60,15 +60,15 @@ class Tactic(ABC):
     
     @property
     @abstractmethod
-    def allowed_applied_to_adjectives(self):
+    def acted_upon_from_adjectives(self):
         pass
 
     def validate_apply(self, calling_adjective):
-        for allowed_adjective in self.allowed_applied_to_adjectives:
+        for allowed_adjective in self.acted_upon_from_adjectives:
             if isinstance(calling_adjective, allowed_adjective):
                 return True
         return False  
-        #raise ValueError(f"{self.__class__.__name__} can only be APPLIED to adjectives among {self.allowed_applied_to_adjectives}.")
+        #raise ValueError(f"{self.__class__.__name__} can only be APPLIED to adjectives among {self.acted_upon_from_adjectives}.")
 
 class OnlyRelevantComparisons(Tactic):
     """When explaining a GroupComparison, only explain
@@ -79,11 +79,11 @@ class OnlyRelevantComparisons(Tactic):
     eval_tactic = None
     
     @property
-    def allowed_attached_to_adjectives(self):
+    def attachable_to_adjectives(self):
         return [MaxRankAdjective, MinRankAdjective]
     
     @property
-    def allowed_applied_to_adjectives(self):
+    def acted_upon_from_adjectives(self):
         return [NodesGroupPointerAdjective]
     
     def __init__(self, *, mode: str):
@@ -134,11 +134,11 @@ class SkipQuantitativeExplanations(Tactic):
     """When explaining a quantitative PointerAdjective, skip its statement
     and pass directly to the explanation of the PointerAdjective instead."""
     @property
-    def allowed_attached_to_adjectives(self):
+    def attachable_to_adjectives(self):
         return [PointerAdjective]
     
     @property
-    def allowed_applied_to_adjectives(self):
+    def acted_upon_from_adjectives(self):
         return [PointerAdjective]
 
     def __init__(self, *, mode: str):
