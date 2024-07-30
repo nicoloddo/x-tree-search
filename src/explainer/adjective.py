@@ -155,9 +155,12 @@ class Adjective(ABC):
             if self.framework.settings.print_depth:
                 implication._str_settings(print_depth = self.framework.settings.print_depth)
 
-            return implication
+            explanation = implication
         else:
-            return consequent
+            explanation = consequent
+        
+        apply_explanation_tactics(self, "explanation", explanation_tactics, explanation)
+        return explanation
         
     def implies(self, evaluation = None) -> Implies:
         """ Returns an implication that leads from the explanation to 

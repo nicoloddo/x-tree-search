@@ -27,6 +27,9 @@ class Tactic(ABC):
         
         self.validate_context()
     
+    def _contextualize(self, *args, **kwargs):
+        pass
+
     @property
     @abstractmethod
     def attachable_to_adjectives(self):
@@ -37,9 +40,18 @@ class Tactic(ABC):
             if isinstance(self.tactic_of_adjective, allowed_adjective):
                 return True        
         raise ValueError(f"{self.__class__.__name__} can only be ATTACHED to adjectives among {self.attachable_to_adjectives}.")
-    
-    def _contextualize(self, *args, **kwargs):
+
+    @property
+    @abstractmethod
+    def acted_upon_from_adjectives(self):
         pass
+
+    def validate_apply(self, calling_adjective):
+        for allowed_adjective in self.acted_upon_from_adjectives:
+            if isinstance(calling_adjective, allowed_adjective):
+                return True
+        return False  
+        #raise ValueError(f"{self.__class__.__name__} can only be APPLIED to adjectives among {self.acted_upon_from_adjectives}.")
 
     def apply(self, calling_adjective, scope, *args, **kwargs) -> None:
         if not self.validate_apply(calling_adjective):
@@ -58,17 +70,15 @@ class Tactic(ABC):
         else:
             raise ValueError(f"Something went wrong when selecting the {self.name} tactic's scope.")
     
-    @property
-    @abstractmethod
-    def acted_upon_from_adjectives(self):
-        pass
+    # Apply functions to override for the tactic to be used
+    def apply_on_proposition(self, *args, **kwargs):
+        return
 
-    def validate_apply(self, calling_adjective):
-        for allowed_adjective in self.acted_upon_from_adjectives:
-            if isinstance(calling_adjective, allowed_adjective):
-                return True
-        return False  
-        #raise ValueError(f"{self.__class__.__name__} can only be APPLIED to adjectives among {self.acted_upon_from_adjectives}.")
+    def apply_on_evaluation(self, *args, **kwargs):
+        return
+
+    def apply_on_explanation(self, *args, **kwargs):
+        return
 
 class OnlyRelevantComparisons(Tactic):
     """When explaining a GroupComparison, only explain
@@ -113,7 +123,14 @@ class OnlyRelevantComparisons(Tactic):
                 raise ValueError("A bottom_n mode should have an integer greater than 0.")
             
             self.eval_tactic = self.relevant_bottom_n
+    
+    def relevant_top_n(self, group, value_for_comparison_adjective):
+        return sorted(group, key=lambda obj: value_for_comparison_adjective.evaluate(obj), reverse=True)[:self.top_n]
+    
+    def relevant_bottom_n(self, group, value_for_comparison_adjective):
+        return sorted(group, key=lambda obj: value_for_comparison_adjective.evaluate(obj), reverse=False)[:self.bottom_n]
 
+    # apply
     def apply_on_proposition(self, proposition):
         proposition.expr += f" (only showing relevant {self.show_n})"
 
@@ -123,12 +140,6 @@ class OnlyRelevantComparisons(Tactic):
         value_for_comparison_adjective = self.framework.get_adjective(comparison_adjective.property_pointer_adjective_name)
 
         group[:] = self.eval_tactic(group, value_for_comparison_adjective) # slice assignment to modify in place the group
-        
-    def relevant_top_n(self, group, value_for_comparison_adjective):
-        return sorted(group, key=lambda obj: value_for_comparison_adjective.evaluate(obj), reverse=True)[:self.top_n]
-    
-    def relevant_bottom_n(self, group, value_for_comparison_adjective):
-        return sorted(group, key=lambda obj: value_for_comparison_adjective.evaluate(obj), reverse=False)[:self.bottom_n]
     
 class SkipQuantitativeExplanations(Tactic):
     """When explaining a quantitative PointerAdjective, skip its statement
@@ -143,3 +154,7 @@ class SkipQuantitativeExplanations(Tactic):
 
     def __init__(self, *, mode: str):
         super().__init__(self.__class__.__name__)
+
+    # apply    
+    def apply_on_explanation(self, explanation):
+        return
