@@ -84,7 +84,6 @@ class If(Possession):
 
         adjective = self.framework.get_adjective(self.adjective_name)
         evaluation = adjective.evaluate(obj_under_evaluation) == self.value
-        apply_explanation_tactics(self, "evaluation", explanation_tactics, evaluation)
         return evaluation
 
 class ConditionalExplanation(Explanation):
