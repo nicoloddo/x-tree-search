@@ -286,7 +286,6 @@ class ComparisonAdjective(Adjective):
         # Construct and return the lambda function
         self.comparison_operator = eval(f"lambda x, y: x {operator} y")
             
-
         self.operator = operator
 
     def _proposition(self, evaluation: bool = True, node: Any = ["node1", "node2"]) -> Proposition:
@@ -308,8 +307,13 @@ class ComparisonAdjective(Adjective):
         Returns:
             A boolean indicating how node1 compares to node2 with the given operator.
         """
-        value1 = getattr(node1, self.property_pointer_adjective_name)
-        value2 = getattr(node2, self.property_pointer_adjective_name)
+        property_pointer_adjective = self.framework.get_adjective(self.property_pointer_adjective_name)
+
+        if not isinstance(property_pointer_adjective, QuantitativePointerAdjective):
+            raise SyntaxError(f"ComparisonAdjective has been linked to a non quantitative adjective {property_pointer_adjective.name}.")
+        
+        value1 = property_pointer_adjective.evaluate(node1)
+        value2 = property_pointer_adjective.evaluate(node2)
         return self.comparison_operator(value1, value2)
 
 class _RankAdjective(BooleanAdjective):
@@ -326,7 +330,7 @@ class _RankAdjective(BooleanAdjective):
             comparison_adjective:
             group_pointer_adjective:
         """
-        explanation = explanation or BooleanAdjectiveAssumption(name)
+        explanation = explanation or PossessionAssumption(name)
         super().__init__(name, explanation=explanation)
         self.comparison_adjective_name = comparison_adjective_name
         self.group_pointer_adjective_name = group_pointer_adjective_name
