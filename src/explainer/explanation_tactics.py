@@ -87,15 +87,9 @@ class SpecificTactic(Tactic):
     def contextualize(self, adjective: Adjective):
         """Sets the Argumentation framework the Explanation belongs to."""
         self.tactic_of_object = adjective
-        self.tactic_of_adjective = self.tactic_of_object
-
-        self.framework = adjective.framework
-        self._contextualize()
-        
+        self.tactic_of_adjective = adjective
+        self.framework = adjective.framework        
         self.validate_context()
-    
-    def _contextualize(self, *args, **kwargs):
-        pass
 
     def validate_context(self):
         for allowed_adjective in self.allowed_in_explanations_starting_from_adjectives:
@@ -113,10 +107,8 @@ class GeneralTactic(Tactic):
     def contextualize(self, framework: ArgumentationFramework):
         """Sets the Argumentation framework the Explanation belongs to."""
         self.tactic_of_object = framework
-        self.tactic_of_framework = self.tactic_of_object
-        
+        self.tactic_of_framework = framework
         self.framework = framework
-        self._contextualize()
         
         self.validate_context()
     

@@ -139,7 +139,7 @@ class Adjective(ABC):
             An Implies object representing the explanation.
         """
         if explanation_tactics is None:
-            explanation_tactics = self.explanation_tactics + self.framework.general_explanation_tactics
+            explanation_tactics = {**self.explanation_tactics, **self.framework.general_explanation_tactics}
 
         # Get propositions
         if self.type == AdjectiveType.COMPARISON:
