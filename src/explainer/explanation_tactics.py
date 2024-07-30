@@ -41,7 +41,7 @@ class Tactic(ABC):
     def _contextualize(self, *args, **kwargs):
         pass
 
-    def apply(self, scope, calling_adjective, *args, **kwargs) -> None:
+    def apply(self, calling_adjective, scope, *args, **kwargs) -> None:
         if not self.validate_apply(calling_adjective):
             return
 
