@@ -114,7 +114,7 @@ class Implies(LogicalExpression):
 
             self.antecedent = textwrap.indent(f"{self.antecedent}", indentation)
           
-        return f"[{self.consequent} {symbol} {self.antecedent}]"
+        return f"{self.consequent} {symbol} {self.antecedent}"
         
 
 class Iff(LogicalExpression):
