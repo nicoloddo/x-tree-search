@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Any
 import textwrap
 
 class LogicalExpression(ABC):
     """Abstract base class for all logical expressions."""
 
-    @abstractmethod
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         """Evaluate the logical expression given an interpretation."""
         pass
@@ -15,17 +14,45 @@ class LogicalExpression(ABC):
         """Return a string representation of the logical expression."""
         pass
 
+class Postulate(LogicalExpression):
+    """Represents an undefeasible fact."""
+    def __init__(self, expr):
+        self.expr = expr
+    
+    def __str__(self) -> str:
+        return self.expr
+    
 class Proposition(LogicalExpression):
     """Represents a basic proposition in propositional logic."""
 
-    def __init__(self, expr: str):
+    def __init__(self, obj_name, expr: str, evaluation: Any = None):
+        self.obj_name = obj_name
         self.expr = expr
+        
+        if evaluation is None:
+            evaluation = '?'
+        elif type(evaluation) is list:
+            evaluation = ', '.join([str(val) for val in evaluation])
+
+        self.evaluation = evaluation
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        return interpretation.get(self.expr, False)
+        return self.evaluation
+    
+    def add_tag(self, tag: str):
+        self.tag = tag
 
     def __str__(self) -> str:
-        return self.expr
+        if self.evaluation is not None:
+            if isinstance(self.evaluation, bool):
+                string_end = f"is {self.expr}"
+            else:
+                string_end = f"has {self.expr} = {self.evaluation}"
+        to_string = f"{self.obj_name} {string_end}"
+
+        if hasattr(self, "tag"):
+            to_string += f" ({self.tag})"
+        return to_string
     
 class UnaryOperator(LogicalExpression):
     def __new__(cls, expr: LogicalExpression):
@@ -116,7 +143,6 @@ class Implies(LogicalExpression):
           
         return f"{self.consequent} {symbol} {self.antecedent}"
         
-
 class Iff(LogicalExpression):
     """Represents the biconditional (if and only if) between two logical expressions."""
 
@@ -129,57 +155,3 @@ class Iff(LogicalExpression):
 
     def __str__(self) -> str:
         return f"({self.left} ↔ {self.right})"
-
-def simplify(expr: LogicalExpression) -> LogicalExpression:
-    """
-    Simplify a logical expression using basic logical equivalences.
-    This is a basic implementation and doesn't cover all possible simplifications.
-    """
-    if isinstance(expr, (Proposition, Not)):
-        return expr
-    elif isinstance(expr, And):
-        simplified = [simplify(e) for e in expr.exprs]
-        simplified = [e for e in simplified if not (isinstance(e, And) and len(e.exprs) == 0)]
-        if len(simplified) == 0:
-            return Proposition("True")
-        elif len(simplified) == 1:
-            return simplified[0]
-        else:
-            return And(*simplified)
-    elif isinstance(expr, Or):
-        simplified = [simplify(e) for e in expr.exprs]
-        simplified = [e for e in simplified if not (isinstance(e, Or) and len(e.exprs) == 0)]
-        if len(simplified) == 0:
-            return Proposition("False")
-        elif len(simplified) == 1:
-            return simplified[0]
-        else:
-            return Or(*simplified)
-    elif isinstance(expr, Implies):
-        return Implies(simplify(expr.antecedent), simplify(expr.consequent))
-    elif isinstance(expr, Iff):
-        return Iff(simplify(expr.left), simplify(expr.right))
-    else:
-        return expr
-
-# Example usage
-def main():
-    p = Proposition("p")
-    q = Proposition("q")
-    r = Proposition("r")
-
-    # Example: (p ∧ q) → (p ∨ r)
-    complex_expr = Implies(And(p, q), Or(p, r))
-    print(f"Complex expression: {complex_expr}")
-
-    # Evaluate the expression
-    interpretation = {"p": True, "q": False, "r": True}
-    result = complex_expr.evaluate(interpretation)
-    print(f"Evaluation result: {result}")
-
-    # Simplify an expression
-    simplified = simplify(And(p, Or(q, And(r, Not(r)))))
-    print(f"Simplified expression: {simplified}")
-
-if __name__ == "__main__":
-    main()

@@ -219,7 +219,7 @@ class OnlyRelevantComparisons(SpecificTactic):
 
     # apply
     def apply_on_proposition(self, proposition):
-        proposition.expr += f" (only showing relevant {self.show_n})"
+        proposition.add_tag(f"(only showing relevant {self.show_n})")
         return proposition
 
     def apply_on_evaluation(self, group):

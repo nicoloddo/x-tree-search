@@ -194,7 +194,7 @@ class BooleanAdjective(Adjective):
 
     def _proposition(self, evaluation: bool = True, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the adjective """
-        proposition = Proposition(f"{node or self.refer_to_nodes_as} is {self.name}")
+        proposition = Proposition(node or self.refer_to_nodes_as, self.name, evaluation)
         if evaluation == False:
             return Not(proposition)
         else:
@@ -221,12 +221,9 @@ class PointerAdjective(Adjective):
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.POINTER, explanation, definition = definition)
 
-    def _proposition(self, value: Any = None, node: Any = None) -> Proposition:
+    def _proposition(self, evaluation: Any = None, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the pointer value """
-        if value is None:
-            value = '?'
-
-        proposition = Proposition(f"{node or self.refer_to_nodes_as} has {self.name} = {value or '?'}")
+        proposition = Proposition(node or self.refer_to_nodes_as, self.name, evaluation)
         return proposition
 
     def _evaluate(self, node: Any) -> Any:
@@ -250,16 +247,12 @@ class NodesGroupPointerAdjective(PointerAdjective):
             composite_definition = f"[{definition}]"
         super().__init__(name, composite_definition, explanation)
     
-    def _proposition(self, value: Any = None, node: Any = None) -> Proposition:
-        if not value:
-            value = '?'
-        elif type(value) is list:
-            value = ', '.join([str(val) for val in value])
-        else:
+    def _proposition(self, evaluation: Any = None, node: Any = None) -> Proposition:
+        if evaluation is not None and type(evaluation) is not list:
             raise ValueError(f"{self.name} NodesGroupPointerAdjective should evaluate to a list. Check your definition.")
 
         """ Returns a proposition reflecting the pointer value """
-        proposition = Proposition(f"{node or self.refer_to_nodes_as} has {self.name} = {value or '?'}")
+        proposition = Proposition(node or self.refer_to_nodes_as, self.name, evaluation)
         return proposition
 
 class ComparisonAdjective(Adjective):
@@ -288,9 +281,12 @@ class ComparisonAdjective(Adjective):
             
         self.operator = operator
 
-    def _proposition(self, evaluation: bool = True, node: Any = ["node1", "node2"]) -> Proposition:
+    def _proposition(self, evaluation: bool = True, nodes: Any = None) -> Proposition:
         """ Returns a proposition reflecting the comparison """
-        proposition = Proposition(f"{node[0] or 'node1'} is {self.name} than {node[1] or 'node1'}")
+        if nodes == None:
+            nodes = [f"{self.refer_to_nodes_as}1", f"{self.refer_to_nodes_as}2"]
+        proposition = Proposition(nodes[0], f"{self.name} than {nodes[1]}", evaluation)
+
         if evaluation == False:
             return Not(proposition)
         else:

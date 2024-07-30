@@ -1,6 +1,6 @@
 from .base import Explanation
 
-from src.explainer.propositional_logic import LogicalExpression, Proposition, Not, And
+from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, Not, And
 
 from typing import Any
 
@@ -29,11 +29,11 @@ class Assumption(Explanation):
         else:
             verbose_string = "(assumption) " + self.build_description()
 
-        return Proposition(verbose_string)
+        return Postulate(verbose_string)
     
     @property
     def minimal(self):
-        return Proposition("(from assumptions)")
+        return Postulate("(from assumptions)")
 
     def _explain(self, node: Any) -> LogicalExpression:
         self.refer_to_nodes_as = self.framework.refer_to_nodes_as
@@ -313,7 +313,7 @@ class GroupComparison(Explanation):
         return explanation
 
     def implies(self) -> LogicalExpression:
-        return Proposition(f"Node {self.comparison_adjective_name if self.positive_implication else Not(self.comparison_adjective_name)} than all nodes in {self.group_pointer_adjective_name}")
+        return Postulate(f"Node {self.comparison_adjective_name if self.positive_implication else Not(self.comparison_adjective_name)} than all nodes in {self.group_pointer_adjective_name}")
 
 """ Composite Explanations """
 class CompositeExplanation(Explanation):
