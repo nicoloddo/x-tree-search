@@ -52,6 +52,7 @@ class Adjective(ABC):
         self.getter = None
         self.contextualize(definition)
 
+    # Utility methods
     def _set_getter(self, getter: Callable[[Any], Any]):
         self.getter = getter
 
@@ -76,6 +77,7 @@ class Adjective(ABC):
     def del_explanation_tactic(self, tactic_name):
         del self.explanation_tactics[tactic_name]
 
+    # evaluate, proposition, implies, explain
     def evaluate(self, *args, explanation_tactics = None) -> Any:
         """
         Evaluate the adjective.
@@ -123,19 +125,6 @@ class Adjective(ABC):
     def _proposition(self, *args, **kwargs) -> Proposition:
         pass
 
-    def implies(self, evaluation = None) -> Implies:
-        """ Returns an implication that leads from the explanation to 
-        the adjective. This is like an explanation but not contextualized
-        onto a specific node. """
-        antecedent = self.explanation.implies()
-
-        if self.type == AdjectiveType.COMPARISON:
-            consequent = self.proposition(evaluation, [None, None])
-        else:
-            consequent = self.proposition(evaluation, None)
-
-        return Implies(antecedent, consequent)
-
     def explain(self, node: Any, other_node: Any = None, *, explanation_tactics = None, current_explanation_depth) -> Implies:
         """
         Provide an explanation for the adjective's value on a given node.
@@ -169,6 +158,19 @@ class Adjective(ABC):
             return implication
         else:
             return consequent
+        
+    def implies(self, evaluation = None) -> Implies:
+        """ Returns an implication that leads from the explanation to 
+        the adjective. This is like an explanation but not contextualized
+        onto a specific node. """
+        antecedent = self.explanation.implies()
+
+        if self.type == AdjectiveType.COMPARISON:
+            consequent = self.proposition(evaluation, [None, None])
+        else:
+            consequent = self.proposition(evaluation, None)
+
+        return Implies(antecedent, consequent)
 
 class BooleanAdjective(Adjective):
     """Represents a boolean adjective."""
