@@ -192,7 +192,7 @@ class BooleanAdjective(Adjective):
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.STATIC, explanation, definition = definition)
 
-    def _proposition(self, evaluation: bool = True, node: Any = "node") -> Proposition:
+    def _proposition(self, evaluation: bool = True, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the adjective """
         proposition = Proposition(f"{node or self.refer_to_nodes_as} is {self.name}")
         if evaluation == False:
@@ -221,9 +221,9 @@ class PointerAdjective(Adjective):
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.POINTER, explanation, definition = definition)
 
-    def _proposition(self, value: Any = None, node: Any = "node") -> Proposition:
+    def _proposition(self, value: Any = None, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the pointer value """
-        if not value:
+        if value is None:
             value = '?'
 
         proposition = Proposition(f"{node or self.refer_to_nodes_as} has {self.name} = {value or '?'}")
@@ -250,7 +250,7 @@ class NodesGroupPointerAdjective(PointerAdjective):
             composite_definition = f"[{definition}]"
         super().__init__(name, composite_definition, explanation)
     
-    def _proposition(self, value: Any = None, node: Any = "node") -> Proposition:
+    def _proposition(self, value: Any = None, node: Any = None) -> Proposition:
         if not value:
             value = '?'
         elif type(value) is list:
