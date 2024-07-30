@@ -4,6 +4,7 @@ import textwrap
 
 class LogicalExpression(ABC):
     """Abstract base class for all logical expressions."""
+    print_mode = 'logic'
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         """Evaluate the logical expression given an interpretation."""
@@ -30,24 +31,32 @@ class Proposition(LogicalExpression):
         self.expr = expr
         
         if evaluation is None:
-            evaluation = '?'
+            self.evaluation = '?'
         elif type(evaluation) is list:
-            evaluation = ', '.join([str(val) for val in evaluation])
-
-        self.evaluation = evaluation
-
-    def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        return self.evaluation
+            self.evaluation = ', '.join([str(val) for val in evaluation])
+        else:
+            self.evaluation = evaluation
     
     def add_tag(self, tag: str):
         self.tag = tag
 
     def __str__(self) -> str:
-        if self.evaluation is not None:
-            if isinstance(self.evaluation, bool):
+        if isinstance(self.evaluation, bool):
+            if self.evaluation:
                 string_end = f"is {self.expr}"
             else:
+                if self.print_mode == 'logic':
+                    negation = f"¬({self.expr})"
+                elif self.print_mode == 'verbal':
+                    negation = f"not {self.expr}"
+
+                string_end = f"is {negation}"
+        else:
+            if self.print_mode == 'logic':
                 string_end = f"has {self.expr} = {self.evaluation}"
+            elif self.print_mode == 'verbal':
+                string_end = f"has as {self.expr} {self.evaluation}"
+
         to_string = f"{self.obj_name} {string_end}"
 
         if hasattr(self, "tag"):
@@ -78,26 +87,23 @@ class NAryOperator(LogicalExpression):
         pass # we set the exprs in the __new__ after filtering
 
     def __str__(self) -> str:
+        if self.print_mode == 'logic':
+            operator_string = self.symbol
+        elif self.print_mode == 'verbal':
+            operator_string = self.verbal
+
         if len(self.exprs) > 2 or not all(isinstance(expr, Proposition) for expr in self.exprs):
-            joining_string = '\n ' + self.symbol + ' '
+            joining_string = '\n' + operator_string + ' '
         else:
-            joining_string = ' ' + self.symbol + ' '
+            joining_string = ' ' + operator_string + ' '
         
         joined = joining_string.join(str(expr) for expr in self.exprs)
         return joined
 
-class Not(UnaryOperator):
-    """Represents the negation of a logical expression."""
-
-    def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        return not self.expr.evaluate(interpretation)
-
-    def __str__(self) -> str:
-        return f"¬({self.expr})"
-
 class And(NAryOperator):
     """Represents the conjunction of logical expressions."""
     symbol = '∧'
+    verbal = 'and'
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         return all(expr.evaluate(interpretation) for expr in self.exprs)
@@ -105,12 +111,15 @@ class And(NAryOperator):
 class Or(NAryOperator):
     """Represents the disjunction of logical expressions."""
     symbol = '||'
+    verbal = 'or'
 
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         return any(expr.evaluate(interpretation) for expr in self.exprs if expr is not None)
 
 class Implies(LogicalExpression):
     """Represents the implication between two logical expressions."""
+    symbol = '←'
+    verbal = 'because'
 
     def __init__(self, antecedent: LogicalExpression, consequent: LogicalExpression):
         self.antecedent = antecedent
@@ -126,11 +135,18 @@ class Implies(LogicalExpression):
             self._str_settings_list[key] = value
 
     def __str__(self) -> str:
-        default_symbol = '←\n'
+
+        if self.print_mode == 'logic':
+            operator_string = self.symbol
+        elif self.print_mode == 'verbal':
+            operator_string = self.verbal
+
+        operator_string = operator_string + '\n'
+
         if "first_print" in self._str_settings_list:
-            symbol = default_symbol + '\n'
+            symbol = operator_string + '\n'
         else:
-            symbol = default_symbol
+            symbol = operator_string
 
         if hasattr(self.antecedent, "current_explanation_depth"):
             depth = self.antecedent.current_explanation_depth
@@ -142,16 +158,3 @@ class Implies(LogicalExpression):
             self.antecedent = textwrap.indent(f"{self.antecedent}", indentation)
           
         return f"{self.consequent} {symbol} {self.antecedent}"
-        
-class Iff(LogicalExpression):
-    """Represents the biconditional (if and only if) between two logical expressions."""
-
-    def __init__(self, left: LogicalExpression, right: LogicalExpression):
-        self.left = left
-        self.right = right
-
-    def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        return self.left.evaluate(interpretation) == self.right.evaluate(interpretation)
-
-    def __str__(self) -> str:
-        return f"({self.left} ↔ {self.right})"

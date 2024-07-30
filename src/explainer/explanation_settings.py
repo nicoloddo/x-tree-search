@@ -1,3 +1,5 @@
+from src.explainer.propositional_logic import LogicalExpression
+
 def _validate_explanation_depth(value):
     if not isinstance(value, int) or value < 0:
         raise ValueError("Explanation depth must be a positive integer or 0.")
@@ -14,6 +16,11 @@ def _validate_boolean(value):
 def _validate_string(value):
     if not isinstance(value, str):
         raise ValueError("Tried to set a String setting to a non string value.")
+
+def _validate_print_mode(value):
+    allowed_values = ['logic', 'verbal']
+    if value not in allowed_values:
+        raise ValueError(f"Print mode must be one of: {', '.join(allowed_values)}")
 
 class ExplanationSettings:
     def __init__(self):
@@ -41,7 +48,8 @@ class ExplanationSettings:
             'explanation_depth': 8,
             'assumptions_verbosity': 'if_asked',
             'print_depth': False,
-            'print_implicit_assumptions': True
+            'print_implicit_assumptions': True,
+            'print_mode': 'logic'
         }
 
     _validators = {
@@ -49,18 +57,24 @@ class ExplanationSettings:
         'explanation_depth': _validate_explanation_depth,
         'assumptions_verbosity': _validate_assumptions_verbosity,
         'print_depth': _validate_boolean,
-        'print_implicit_assumptions': _validate_boolean
+        'print_implicit_assumptions': _validate_boolean,
+        'print_mode': _validate_print_mode
     }
 
     def _actuate_passthrough(self, value):
         return value
+    
+    def _actuate_print_mode(self, value):
+        LogicalExpression.print_mode = value
+        self._actuate_passthrough(value)
     
     _actuators = {
         'with_framework': _actuate_passthrough,
         'explanation_depth': _actuate_passthrough,
         'assumptions_verbosity': _actuate_passthrough,
         'print_depth': _actuate_passthrough,
-        'print_implicit_assumptions': _actuate_passthrough
+        'print_implicit_assumptions': _actuate_passthrough,
+        'print_mode': _actuate_print_mode
     }
 
     def __getattr__(self, name):

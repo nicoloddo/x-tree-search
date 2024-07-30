@@ -1,6 +1,6 @@
 from .base import Explanation
 
-from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, Not, And
+from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And
 
 from typing import Any
 
@@ -127,8 +127,7 @@ class RankAssumption(Assumption):
         if self.rank_type == 'max':
             return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's \"{self.comparison_adjective_name}\" than all \"{self.group_pointer_adjective_name}\""
         elif self.rank_type == 'min':
-            negate = Not('\"' + self.comparison_adjective_name + '\"')
-            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's {negate} than all \"{self.group_pointer_adjective_name}\""
+            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's not \"{self.comparison_adjective_name}\" than all \"{self.group_pointer_adjective_name}\""
         else:
             raise ValueError("RankAssumption of unknown type.")
 
@@ -313,7 +312,8 @@ class GroupComparison(Explanation):
         return explanation
 
     def implies(self) -> LogicalExpression:
-        return Postulate(f"Node {self.comparison_adjective_name if self.positive_implication else Not(self.comparison_adjective_name)} than all nodes in {self.group_pointer_adjective_name}")
+        is_what = self.comparison_adjective_name if self.positive_implication else f"not {self.comparison_adjective_name}"
+        return Postulate(f"Node {is_what} than all nodes in {self.group_pointer_adjective_name}")
 
 """ Composite Explanations """
 class CompositeExplanation(Explanation):

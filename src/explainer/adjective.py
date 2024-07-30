@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable
 
-from src.explainer.propositional_logic import Proposition, Not, Implies
+from src.explainer.propositional_logic import Proposition, Implies
 from src.explainer.explanation import *
 from src.explainer.framework import ArgumentationFramework
 from src.explainer.common.validators import validate_getter, validate_comparison_operator
@@ -195,10 +195,7 @@ class BooleanAdjective(Adjective):
     def _proposition(self, evaluation: bool = True, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the adjective """
         proposition = Proposition(node or self.refer_to_nodes_as, self.name, evaluation)
-        if evaluation == False:
-            return Not(proposition)
-        else:
-            return proposition
+        return proposition
 
     def _evaluate(self, node: Any) -> bool:
         """Evaluate the boolean adjective for a given node."""
@@ -287,10 +284,7 @@ class ComparisonAdjective(Adjective):
             nodes = [f"{self.refer_to_nodes_as}1", f"{self.refer_to_nodes_as}2"]
         proposition = Proposition(nodes[0], f"{self.name} than {nodes[1]}", evaluation)
 
-        if evaluation == False:
-            return Not(proposition)
-        else:
-            return proposition
+        return proposition
 
     def _evaluate(self, node1: Any, node2: Any) -> bool:
         """
