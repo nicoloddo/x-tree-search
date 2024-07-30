@@ -7,7 +7,7 @@ from typing import Any
 """ Assumptions """
 class Assumption(Explanation):
     """Represents an explanation based on an assumption."""    
-    def __init__(self, description: str = None):
+    def __init__(self, description: str = None, *, implicit = False):
         super().__init__()
         """
         Initialize the Assumption.
@@ -17,6 +17,7 @@ class Assumption(Explanation):
         """
 
         self.description = description
+        self.implicit_bool = implicit
     
     def build_description():
         return
@@ -38,6 +39,10 @@ class Assumption(Explanation):
         self.refer_to_nodes_as = self.framework.refer_to_nodes_as
 
         """Return the assumption as a Proposition."""
+        if not self.framework.settings.print_implicit_assumptions:
+            if self.implicit_bool:
+                return None
+            
         if self.framework.settings.assumptions_verbosity == 'verbose':
             return self.verbose
 
@@ -72,7 +77,7 @@ class PossessionAssumption(Assumption):
         """
         self.adjective_name = adjective_name
         self.definition = definition
-        super().__init__()
+        super().__init__(implicit = True)
 
     def build_description(self):
         if self.definition is not None:
@@ -95,7 +100,7 @@ class ComparisonAssumption(Assumption):
         self.comparison_adjective_name = comparison_adjective_name
         self.pointer_adjective_name = pointer_adjective_name
         self.operator = operator
-        super().__init__()
+        super().__init__(implicit = True)
     
     def build_description(self):
         return f"By definition, {self.refer_to_nodes_as}1 is \"{self.comparison_adjective_name}\" than {self.refer_to_nodes_as}2 if {self.refer_to_nodes_as}1 {self.pointer_adjective_name} {self.operator} {self.refer_to_nodes_as}2 {self.pointer_adjective_name}"
@@ -116,7 +121,7 @@ class RankAssumption(Assumption):
         self.comparison_adjective_name = comparison_adjective_name
         self.group_pointer_adjective_name = group_pointer_adjective_name
 
-        super().__init__()
+        super().__init__(implicit = True)
     
     def build_description(self):
         if self.rank_type == 'max':
