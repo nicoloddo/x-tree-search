@@ -96,7 +96,7 @@ class Adjective(ABC):
             return None
         else:
             evaluation = self._evaluate(*args)
-        apply_explanation_tactics(self, "evaluation", explanation_tactics, evaluation)
+        evaluation = apply_explanation_tactics(self, "evaluation", explanation_tactics, evaluation)
         return evaluation
 
     @abstractmethod
@@ -120,7 +120,7 @@ class Adjective(ABC):
         """
         self.refer_to_nodes_as = self.framework.refer_to_nodes_as
         proposition = self._proposition(*args)
-        apply_explanation_tactics(self, "proposition", explanation_tactics, proposition)
+        proposition = apply_explanation_tactics(self, "proposition", explanation_tactics, proposition)
         return proposition
     
     @abstractmethod
@@ -161,7 +161,7 @@ class Adjective(ABC):
         else:
             explanation = consequent
         
-        apply_explanation_tactics(self, "explanation", explanation_tactics, explanation)
+        explanation = apply_explanation_tactics(self, "explanation", explanation_tactics, explanation)
         return explanation
         
     def implies(self, evaluation = None) -> Implies:
@@ -232,6 +232,9 @@ class PointerAdjective(Adjective):
     def _evaluate(self, node: Any) -> Any:
         """Evaluate the pointer adjective for a given node."""
         return self.getter(node)
+
+class QuantitativePointerAdjective(PointerAdjective):
+    pass
 
 class NodesGroupPointerAdjective(PointerAdjective):
     """Represents a pointer adjective that references a group of objects. 

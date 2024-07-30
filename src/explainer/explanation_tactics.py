@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import List
+from src.explainer.common.utils import return_arguments
+
+from src.explainer.propositional_logic import Implies
 
 from src.explainer.adjective import Adjective
 from src.explainer.framework import ArgumentationFramework
 
 from src.explainer.adjective import MaxRankAdjective, MinRankAdjective, NodesGroupPointerAdjective
-from src.explainer.adjective import PointerAdjective
+from src.explainer.adjective import QuantitativePointerAdjective
 
 class Tactic(ABC):
     """Abstract base class for all types of explanation tactics.
@@ -13,9 +16,8 @@ class Tactic(ABC):
     the latter by affecting also Explanation.explain().
     Each tactic can affect specific Adjectives and Explanations or the whole Framework.
 
-    Tactics are called from adjectives during their explanation.
-    
-    The methods of apply need to directly modify the arguments, not return."""
+    Tactics are called from adjectives during their explanation."""
+
     def __init__(self, name):
         self.name = name
         self.framework = None
@@ -47,32 +49,35 @@ class Tactic(ABC):
         return False  
         #raise ValueError(f"{self.__class__.__name__} can only be APPLIED to adjectives among {self.acted_upon_from_adjectives}.")
 
-    def apply(self, calling_adjective, scope, *args, **kwargs) -> None:
+    def apply(self, calling_adjective, scope, *args) -> None:
         if not self.validate_apply(calling_adjective):
-            return
+            return return_arguments(*args)
 
         allowed_scopes = ["proposition", "evaluation", "explanation"]
         if scope not in allowed_scopes:
             raise ValueError("The scope of application of a tactic must be among " + str(allowed_scopes))
         
         if scope == "proposition":
-            self.apply_on_proposition(*args, **kwargs)
+            result = self.apply_on_proposition(*args)
         elif scope == "evaluation":
-            self.apply_on_evaluation(*args, **kwargs)
+            result = self.apply_on_evaluation(*args)
         elif scope == "explanation":
-            self.apply_on_explanation(*args, **kwargs)
+            result = self.apply_on_explanation(*args)
         else:
             raise ValueError(f"Something went wrong when selecting the {self.name} tactic's scope.")
+
+        return result
     
-    # Apply functions to override for the tactic to be used
-    def apply_on_proposition(self, *args, **kwargs):
-        return
+    # Apply functions 
+    # Override if you want the tactic to be used
+    def apply_on_proposition(self, proposition):
+        return proposition 
 
-    def apply_on_evaluation(self, *args, **kwargs):
-        return
+    def apply_on_evaluation(self, evaluation):
+        return evaluation
 
-    def apply_on_explanation(self, *args, **kwargs):
-        return
+    def apply_on_explanation(self, explanation):
+        return explanation
 
 class SpecificTactic(Tactic):
     """Specific Tactics are allowed to start only from a selected adjective explanation."""
@@ -170,25 +175,30 @@ class OnlyRelevantComparisons(SpecificTactic):
     # apply
     def apply_on_proposition(self, proposition):
         proposition.expr += f" (only showing relevant {self.show_n})"
+        return proposition
 
     def apply_on_evaluation(self, group):
         comparison_adjective_name = self.tactic_of_adjective.comparison_adjective_name
         comparison_adjective = self.framework.get_adjective(comparison_adjective_name)
         value_for_comparison_adjective = self.framework.get_adjective(comparison_adjective.property_pointer_adjective_name)
 
-        group[:] = self.eval_tactic(group, value_for_comparison_adjective) # slice assignment to modify in place the group
+        group = self.eval_tactic(group, value_for_comparison_adjective)
+        return group
     
 class SkipQuantitativeExplanations(GeneralTactic):
-    """When explaining a quantitative PointerAdjective, skip its statement
+    """When explaining a QuantitativePointerAdjective, skip its statement
     and pass directly to the explanation of the PointerAdjective instead."""
     
     @property
     def acted_upon_from_adjectives(self):
-        return [PointerAdjective]
+        return [QuantitativePointerAdjective]
 
     def __init__(self):
         super().__init__(self.__class__.__name__)
 
     # apply    
     def apply_on_explanation(self, explanation):
-        return
+        if isinstance(explanation, Implies):
+            return explanation.antecedent
+        else:
+            return None
