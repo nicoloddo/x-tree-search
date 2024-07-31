@@ -156,5 +156,10 @@ class Implies(LogicalExpression):
                 self.antecedent = f"Depth {depth}:\n{self.antecedent}"
 
             self.antecedent = textwrap.indent(f"{self.antecedent}", indentation)
-          
-        return f"{self.consequent} {symbol} {self.antecedent}"
+
+        if self.print_mode == 'logic':
+            to_string = f"{self.consequent} {symbol} {self.antecedent}"
+        elif self.print_mode == 'verbal':
+            to_string = f"{self.consequent} ({symbol} {self.antecedent})"
+
+        return to_string
