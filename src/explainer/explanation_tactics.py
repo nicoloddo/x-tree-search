@@ -296,7 +296,12 @@ class SkipConditionStatement(GeneralTactic):
             not_an_implication = True
 
         if isinstance(antecedent, Proposition):
-            explanation = explanation.consequent # The whole antecedent is the condition
+            # The whole antecedent is the condition statement
+            if not_an_implication:
+                explanation = None
+            else:
+                explanation = explanation.consequent 
+                
         elif isinstance(antecedent, And): 
             antecedent.exprs = tuple(antecedent.exprs[1:]) # The first expression is the condition statement.
         else:
