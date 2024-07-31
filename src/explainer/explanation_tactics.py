@@ -20,7 +20,14 @@ class Tactic(ABC):
 
     Tactics are called from adjectives during their explanation."""
 
-    def __init__(self, name, use_on_adjectives = []):
+    """Requirements are a list of other tactics instantiations that are required for one tactic to work.
+    Add them during the __init__ by calling the required tactic constructor.
+    You should append a list with the class as first item and the args as second in a tuple.
+    e.g. self.requirements.append([Tactic, (mode)])
+    An example can be found at SubstituteQuantitativeExplanations."""
+    requirements = [] 
+
+    def __init__(self, name, *, use_on_adjectives: List[str] = [], except_on_adjectives: List[str] = []):
         """
         The tactic name will automatically be assigned by children classes.
 
@@ -30,6 +37,7 @@ class Tactic(ABC):
         """
         self.name = name
         self.use_on_adjectives = use_on_adjectives
+        self.except_on_adjectives = except_on_adjectives
         self.framework = None
         self.tactic_of_object = None
 
@@ -96,8 +104,11 @@ class Tactic(ABC):
             allowed_adjective = True
         else:
             for allowed in self.use_on_adjectives:
-                if isinstance(calling_adjective.name, allowed):
+                if calling_adjective.name == allowed:
                     allowed_adjective = True
+        for not_allowed in self.except_on_adjectives:
+            if calling_adjective.name == not_allowed:
+                allowed_adjective = False
 
         if len(self.allowed_on_explanation_types) == 0:
             allowed_explanation_type = True
@@ -278,6 +289,8 @@ class SubstituteQuantitativeExplanations(GeneralTactic):
         return [ComparisonAdjective]
 
     def __init__(self, substitution_statement):
+        self.requirements.append([SkipQuantitativeExplanations, ()])
+        
         self.substitution_statement = Postulate('\t' + substitution_statement)
         super().__init__(self.__class__.__name__)
 
@@ -300,9 +313,9 @@ class SkipConditionStatement(GeneralTactic):
     def allowed_on_explanation_parts(self) -> List:
         return ['whole']
 
-    def __init__(self, *, use_on_adjectives: List = []):
+    def __init__(self, *, use_on_adjectives: List[str] = [], except_on_adjectives: List[str] = []):
         """Leave use_on_adjectives blank if you want to use it on all adjectives."""
-        super().__init__(self.__class__.__name__, use_on_adjectives)
+        super().__init__(self.__class__.__name__, use_on_adjectives=use_on_adjectives, except_on_adjectives=except_on_adjectives)
 
     # apply    
     def apply_on_explanation(self, explanation):

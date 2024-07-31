@@ -75,9 +75,20 @@ class Adjective(ABC):
     def add_explanation_tactic(self, tactic):
         tactic.contextualize(self)
         self.explanation_tactics[tactic.name] = tactic
+    
+    def add_explanation_tactics(self, tactics):
+        for tactic in tactics:
+            self.add_explanation_tactic(tactic)
 
     def del_explanation_tactic(self, tactic_name):
         del self.explanation_tactics[tactic_name]
+    
+    def del_explanation_tactics(self, tactic_names):
+        for tactic_name in tactic_names:
+            self.del_explanation_tactic(tactic_name)
+        
+    def get_explanation_tactic(self, tactic_name):
+        return self.explanation_tactics[tactic_name]
 
     # evaluate, proposition, implies, explain
     def evaluate(self, *args, explanation_tactics = None) -> Any:

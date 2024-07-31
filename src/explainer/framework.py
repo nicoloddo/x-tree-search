@@ -77,9 +77,20 @@ class ArgumentationFramework:
         tactic.contextualize(self)
         self.general_explanation_tactics[tactic.name] = tactic
 
+    def add_explanation_tactics(self, tactics):
+        for tactic in tactics:
+            self.add_explanation_tactic(tactic)
+
     def del_explanation_tactic(self, tactic_name):
         del self.general_explanation_tactics[tactic_name]
+    
+    def del_explanation_tactics(self, tactic_names):
+        for tactic_name in tactic_names:
+            self.del_explanation_tactic(tactic_name)
 
+    def get_explanation_tactic(self, tactic_name):
+        return self.general_explanation_tactics[tactic_name]
+    
     def __str__(self):
         propositions = [adjective.proposition().__str__() for adjective in self.adjectives.values()]
         implications = [adjective.implies().__str__() for adjective in self.adjectives.values()]
