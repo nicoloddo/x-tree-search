@@ -158,10 +158,12 @@ class Adjective(ABC):
                 implication._str_settings(print_depth = self.framework.settings.print_depth)
 
             explanation = implication
+            explanation_part = 'whole'
         else:
             explanation = consequent
+            explanation_part = 'consequent'
         
-        explanation = apply_explanation_tactics(self, "explanation", explanation_tactics, explanation)
+        explanation = apply_explanation_tactics(self, "explanation", explanation_tactics, explanation, explanation_part=explanation_part)
         return explanation
         
     def implies(self, evaluation = None) -> Implies:

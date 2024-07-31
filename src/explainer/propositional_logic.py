@@ -79,6 +79,8 @@ class NAryOperator(LogicalExpression):
         filtered_exprs = tuple(filter(None, exprs)) # filter None expressions
         if not filtered_exprs:
             return None
+        if len(filtered_exprs) == 1:
+            return filtered_exprs[0]
         instance = super(NAryOperator, cls).__new__(cls)
         instance.exprs = filtered_exprs
         return instance

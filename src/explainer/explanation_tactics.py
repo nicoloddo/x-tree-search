@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, List
 from src.explainer.common.utils import return_arguments
 
-from src.explainer.propositional_logic import Implies, And
+from src.explainer.propositional_logic import Proposition, Implies, And
 
 from src.explainer.adjective import Adjective
 from src.explainer.framework import ArgumentationFramework
@@ -61,11 +61,28 @@ class Tactic(ABC):
     # Examples below.
     def allowed_on_explanation_types(self) -> List:
         return []
+    
+    all_possible_explanation_parts = ['whole', 'consequent'] 
+    @property
+    # List of explanation parts onto which the tactic can be applied.
+    # Do not override if you want to be able to constrain this tactic
+    # to specific parst of the explanation (or return an empty array).
+    # Allowed parts are: whole, antecedent, consequent. 
+    # Override in any other occasion.
+    # Examples below.
+    def allowed_on_explanation_parts(self) -> List:
+        return self.all_possible_explanation_parts
 
-    def validate_apply(self, calling_adjective):
+    def validate_apply(self, calling_adjective, scope, explanation_part):
+        allowed_explanation_part = True if scope != 'explanation' else False 
+        # No need to check explanation part if the scope is not explanation
+
         allowed_adjective_type = False
         allowed_adjective = False
         allowed_explanation_type = False
+
+        if scope=='explanation' and explanation_part in self.allowed_on_explanation_parts:
+            allowed_explanation_part = True
 
         if len(self.exec_from_adjective_types) == 0:
             allowed_adjective_type = True
@@ -88,19 +105,22 @@ class Tactic(ABC):
                 if isinstance(calling_adjective.explanation, allowed_type):
                     allowed_explanation_type = True
         
-        return allowed_adjective_type and allowed_explanation_type and allowed_adjective
+        return allowed_explanation_part and allowed_adjective_type and allowed_explanation_type and allowed_adjective
     
 
-    def apply(self, calling_adjective, scope, *args) -> Any:
+    def apply(self, calling_adjective, scope, explanation_part, *args) -> Any:
         if all(arg is None for arg in args):
             return return_arguments(*args)
 
-        if not self.validate_apply(calling_adjective):
+        if not self.validate_apply(calling_adjective, scope, explanation_part):
             return return_arguments(*args)
 
         allowed_scopes = ["proposition", "evaluation", "explanation"]
         if scope not in allowed_scopes:
             raise ValueError("The scope of application of a tactic must be among " + str(allowed_scopes))
+
+        if scope == 'explanation' and explanation_part not in self.all_possible_explanation_parts:
+            raise ValueError("The explanation part of application of a tactic must be among " + str(self.all_possible_explanation_parts))
         
         if scope == "proposition":
             result = self.apply_on_proposition(*args)
@@ -255,6 +275,10 @@ class SkipConditionStatement(GeneralTactic):
     @property
     def allowed_on_explanation_types(self) -> List:
         return [ConditionalExplanation]
+    
+    @property
+    def allowed_on_explanation_parts(self) -> List:
+        return ['whole']
 
     def __init__(self, *, use_on_adjectives: List = []):
         """Leave use_on_adjectives blank if you want to use it on all adjectives."""
@@ -264,13 +288,18 @@ class SkipConditionStatement(GeneralTactic):
     def apply_on_explanation(self, explanation):
         if isinstance(explanation, Implies):
             antecedent = explanation.antecedent
-            antecedent.exprs = tuple(antecedent.exprs[1:]) # The first expression is the condition statement.
-            return explanation
-        elif isinstance(explanation, And): 
+            not_an_implication = False
+        else:
             # we already have the antecedent, in occasions for example in which the consequent was cutted off
             # e.g. quantitative explanation with skipping tactic
             antecedent = explanation
+            not_an_implication = True
+
+        if isinstance(antecedent, Proposition):
+            explanation = explanation.consequent # The whole antecedent is the condition
+        elif isinstance(antecedent, And): 
             antecedent.exprs = tuple(antecedent.exprs[1:]) # The first expression is the condition statement.
-            return explanation
         else:
-            raise ValueError("Something went wrong with the SkipConditionStatement tactic: the explanation antecedent (ConditionalExplanation) should be an And expression but it is not.")
+            raise ValueError("Something went wrong with the SkipConditionStatement tactic: the explanation antecedent (ConditionalExplanation) was neither an And nor a Propositon.")
+        
+        return explanation
