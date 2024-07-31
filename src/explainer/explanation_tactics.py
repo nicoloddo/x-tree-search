@@ -2,13 +2,14 @@ from abc import ABC, abstractmethod
 from typing import Any, List
 from src.explainer.common.utils import return_arguments
 
-from src.explainer.propositional_logic import Proposition, Implies, And
+from src.explainer.propositional_logic import Postulate, Proposition, Implies, And
 
 from src.explainer.adjective import Adjective
 from src.explainer.framework import ArgumentationFramework
 
 from src.explainer.adjective import MaxRankAdjective, MinRankAdjective, NodesGroupPointerAdjective
 from src.explainer.adjective import QuantitativePointerAdjective
+from src.explainer.adjective import ComparisonAdjective
 from src.explainer.explanation import ConditionalExplanation
 
 class Tactic(ABC):
@@ -267,6 +268,25 @@ class SkipQuantitativeExplanations(GeneralTactic):
             return explanation.antecedent
         else:
             return None
+
+class SubstituteQuantitativeExplanations(GeneralTactic):
+    """When explaining a QuantitativePointerAdjective, skip its statement
+    and pass directly to the explanation of the PointerAdjective instead."""
+    
+    @property
+    def exec_from_adjective_types(self):
+        return [ComparisonAdjective]
+
+    def __init__(self, substitution_statement):
+        self.substitution_statement = Postulate('\t' + substitution_statement)
+        super().__init__(self.__class__.__name__)
+
+    # apply    
+    def apply_on_explanation(self, explanation):
+        if isinstance(explanation, Implies):
+            explanation.antecedent = Implies(explanation.antecedent, self.substitution_statement)
+        
+        return explanation
         
 class SkipConditionStatement(GeneralTactic):
     """When explaining a QuantitativePointerAdjective, skip its statement
@@ -292,6 +312,7 @@ class SkipConditionStatement(GeneralTactic):
         else:
             # we already have the antecedent, in occasions for example in which the consequent was cutted off
             # e.g. quantitative explanation with skipping tactic
+            # notice that it cannot be the consequent because we only allow 'whole' explanations
             antecedent = explanation
             not_an_implication = True
 
@@ -301,7 +322,7 @@ class SkipConditionStatement(GeneralTactic):
                 explanation = None
             else:
                 explanation = explanation.consequent 
-                
+
         elif isinstance(antecedent, And): 
             antecedent.exprs = tuple(antecedent.exprs[1:]) # The first expression is the condition statement.
         else:

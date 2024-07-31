@@ -7,7 +7,7 @@ from typing import Any
 """ Assumptions """
 class Assumption(Explanation):
     """Represents an explanation based on an assumption."""    
-    def __init__(self, description: str = None, *, implicit = False):
+    def __init__(self, description: str = None, *, implicit = False, necessary = False):
         super().__init__()
         """
         Initialize the Assumption.
@@ -18,6 +18,7 @@ class Assumption(Explanation):
 
         self.description = description
         self.implicit_bool = implicit
+        self.necessary_bool = necessary
     
     def build_description():
         return
@@ -39,27 +40,31 @@ class Assumption(Explanation):
         self.refer_to_nodes_as = self.framework.refer_to_nodes_as
 
         """Return the assumption as a Proposition."""
-        if not self.framework.settings.print_implicit_assumptions:
-            if self.implicit_bool:
+        if self.necessary_bool:
+            return self.verbose
+        
+        else:
+            if not self.framework.settings.print_implicit_assumptions:
+                if self.implicit_bool:
+                    return None
+                
+            if self.framework.settings.assumptions_verbosity == 'verbose':
+                return self.verbose
+
+            elif self.framework.settings.assumptions_verbosity == 'minimal':
+                return self.minimal
+
+            elif self.framework.settings.assumptions_verbosity == 'no':
                 return None
             
-        if self.framework.settings.assumptions_verbosity == 'verbose':
-            return self.verbose
+            elif self.framework.settings.assumptions_verbosity == 'if_asked':
+                if self.current_explanation_depth == 1:
+                    return self.verbose
+                else:
+                    return None
 
-        elif self.framework.settings.assumptions_verbosity == 'minimal':
-            return self.minimal
-
-        elif self.framework.settings.assumptions_verbosity == 'no':
-            return None
-        
-        elif self.framework.settings.assumptions_verbosity == 'if_asked':
-            if self.current_explanation_depth == 1:
-                return self.verbose
             else:
-                return None
-
-        else:
-            raise ValueError("Framework has unvalid assumptions verbosity.")
+                raise ValueError("Framework has unvalid assumptions verbosity.")
     
     def implies(self) -> LogicalExpression:
         """Return the assumption as a Proposition."""
