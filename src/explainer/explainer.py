@@ -2,6 +2,7 @@ from typing import Any, Callable
 from src.explainer.propositional_logic import Implies
 
 from src.explainer.explanation_settings import ExplanationSettings
+from src.explainer.common.exceptions import CannotBeEvaluated
 
 STARTING_EXPLANATION_DEPTH = 1
     
@@ -73,6 +74,7 @@ class ArgumentativeExplainer:
         Raises:
             KeyError: If no adjective with the given name is found.
         """
+
         # Handle temporary settings for this explanation:
         if with_framework is not None:
             prev_framework = self.settings.with_framework
@@ -89,11 +91,14 @@ class ArgumentativeExplainer:
 
 
         # Get the explanation
-        adjective = self.framework.get_adjective(adjective_name)
-        if not comparison_node: # The adjective is not comparative
-            explanation = adjective.explain(node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
-        else:
-            explanation = adjective.explain(node, comparison_node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
+        try:
+            adjective = self.framework.get_adjective(adjective_name)
+            if not comparison_node: # The adjective is not comparative
+                explanation = adjective.explain(node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
+            else:
+                explanation = adjective.explain(node, comparison_node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
+        except CannotBeEvaluated:
+            return
 
         # Give the explanation
         if isinstance(explanation, Implies):

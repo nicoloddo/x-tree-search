@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable
 
+from src.explainer.common.exceptions import CannotBeEvaluated
+
 from src.explainer.propositional_logic import Proposition, Implies
 from src.explainer.explanation import *
 from src.explainer.framework import ArgumentationFramework
@@ -17,9 +19,6 @@ node <adjective> than node2 (RankingAdjective)
 """
 
 DEFAULT_GETTER = "node.no_getter_provided"
-
-class FrameworkAssumption:
-    pass
 
 class AdjectiveType:
     """Enum for different types of adjectives."""
@@ -106,7 +105,11 @@ class Adjective(ABC):
         if not args[0]: # We are evaluating not in context
             return None
         else:
-            evaluation = self._evaluate(*args)
+            try:
+                evaluation = self._evaluate(*args)
+            except AttributeError:
+                print(f"The adjective \"{self.name}\" cannot be evaluated for this {self.framework.refer_to_nodes_as}.")
+                raise CannotBeEvaluated(f"The adjective \"{self.name}\" cannot be evaluated for this {self.framework.refer_to_nodes_as}.")        
         evaluation = apply_explanation_tactics(self, "evaluation", explanation_tactics, evaluation)
         return evaluation
 
