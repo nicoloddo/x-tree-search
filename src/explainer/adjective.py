@@ -71,20 +71,14 @@ class Adjective(ABC):
         self.refer_to_nodes_as = self.framework.refer_to_nodes_as
         self.explanation.contextualize(self)
 
-    def add_explanation_tactic(self, tactic):
-        tactic.contextualize(self)
-        self.explanation_tactics[tactic.name] = tactic
-    
-    def add_explanation_tactics(self, tactics):
+    def _add_explanation_tactics(self, tactics):
         for tactic in tactics:
-            self.add_explanation_tactic(tactic)
-
-    def del_explanation_tactic(self, tactic_name):
-        del self.explanation_tactics[tactic_name]
+            tactic.contextualize(self)
+            self.explanation_tactics[tactic.name] = tactic
     
-    def del_explanation_tactics(self, tactic_names):
+    def _del_explanation_tactics(self, tactic_names):
         for tactic_name in tactic_names:
-            self.del_explanation_tactic(tactic_name)
+            del self.explanation_tactics[tactic_name]
         
     def get_explanation_tactic(self, tactic_name):
         return self.explanation_tactics[tactic_name]

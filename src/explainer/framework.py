@@ -73,20 +73,41 @@ class ArgumentationFramework:
         """
         return self.adjectives[name]
     
-    def add_explanation_tactic(self, tactic):
-        tactic.contextualize(self)
-        self.general_explanation_tactics[tactic.name] = tactic
+    def add_explanation_tactic(self, tactic: 'Tactic', *, to_adjective: str = ''):
+        tactics_to_add = [tactic]
+        for requirement in tactic.requirements:
+            tactics_to_add.append(requirement[0](*requirement[1]))
 
-    def add_explanation_tactics(self, tactics):
+        if to_adjective == '':
+            self._add_explanation_tactics(tactics_to_add)
+        else:
+            adjective = self.get_adjective(to_adjective)
+            adjective._add_explanation_tactics(tactics_to_add)
+
+    def del_explanation_tactic(self, tactic_class_name: str, *, to_adjective: str = ''):
+        if to_adjective == '':
+            tactic = self.get_explanation_tactic(tactic_class_name)
+        else:
+            adjective = self.get_adjective(to_adjective)
+            tactic = adjective.get_explanation_tactic(tactic_class_name)
+
+        tactics_to_delete_names = [tactic_class_name]
+        for requirement in tactic.requirements:
+            tactics_to_delete_names.append(requirement.name)
+
+        if to_adjective == '':
+            self._del_explanation_tactics(tactics_to_delete_names)
+        else:
+            adjective._del_explanation_tactics(tactics_to_delete_names)
+
+    def _add_explanation_tactics(self, tactics):
         for tactic in tactics:
-            self.add_explanation_tactic(tactic)
-
-    def del_explanation_tactic(self, tactic_name):
-        del self.general_explanation_tactics[tactic_name]
+            tactic.contextualize(self)
+            self.general_explanation_tactics[tactic.name] = tactic
     
-    def del_explanation_tactics(self, tactic_names):
+    def _del_explanation_tactics(self, tactic_names):
         for tactic_name in tactic_names:
-            self.del_explanation_tactic(tactic_name)
+            del self.general_explanation_tactics[tactic_name]
 
     def get_explanation_tactic(self, tactic_name):
         return self.general_explanation_tactics[tactic_name]

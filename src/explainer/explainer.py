@@ -133,7 +133,7 @@ class ArgumentativeExplainer:
         for requirement in tactic.requirements:
             tactics_to_add.append(requirement[0](*requirement[1]))
 
-        perform_on.add_explanation_tactics(tactics_to_add)
+        perform_on._add_explanation_tactics(tactics_to_add)
 
     def del_explanation_tactic(self, tactic_class_name: str, *, to_adjective: str = '', to_framework: str):
         framework = self.frameworks[to_framework]
@@ -149,7 +149,7 @@ class ArgumentativeExplainer:
         for requirement in tactic.requirements:
             tactics_to_delete_names.append(requirement.name)
 
-        perform_on.del_explanation_tactics(tactics_to_delete_names)
+        perform_on._del_explanation_tactics(tactics_to_delete_names)
 
     def query_explanation(self, node: Any, query: str) -> Any:
         pass
