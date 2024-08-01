@@ -18,14 +18,7 @@ class Tactic(ABC):
     the latter by affecting also Explanation.explain().
     Each tactic can affect specific Adjectives and Explanations or the whole Framework.
 
-    Tactics are called from adjectives during their explanation."""
-
-    """Requirements are a list of other tactics instantiations that are required for one tactic to work.
-    Add them during the __init__ by calling the required tactic constructor.
-    You should append a list with the class as first item and the args as second in a tuple.
-    e.g. self.requirements.append([Tactic, (mode)])
-    An example can be found at SubstituteQuantitativeExplanations."""
-    requirements = [] 
+    Tactics are called from adjectives during their explanation.""" 
 
     def __init__(self, name, *, use_on_adjectives: List[str] = [], except_on_adjectives: List[str] = []):
         """
@@ -40,6 +33,13 @@ class Tactic(ABC):
         self.except_on_adjectives = except_on_adjectives
         self.framework = None
         self.tactic_of_object = None
+
+        """Requirements are a list of other tactics instantiations that are required for one tactic to work.
+        Add them during the __init__ by calling the required tactic constructor.
+        You should append a list with the class as first item and the args as second in a tuple.
+        e.g. self.requirements.append([Tactic, (mode)])
+        An example can be found at SubstituteQuantitativeExplanations."""
+        self.requirements = []
 
     def set_belonging_framework(self, framework):
         self.framework = framework
@@ -288,11 +288,11 @@ class SubstituteQuantitativeExplanations(GeneralTactic):
     def exec_from_adjective_types(self):
         return [ComparisonAdjective]
 
-    def __init__(self, substitution_statement):
-        self.requirements.append([SkipQuantitativeExplanations, ()])
-        
+    def __init__(self, substitution_statement):        
         self.substitution_statement = Postulate('\t' + substitution_statement)
         super().__init__(self.__class__.__name__)
+
+        self.requirements.append([SkipQuantitativeExplanations, ()])
 
     # apply    
     def apply_on_explanation(self, explanation):
