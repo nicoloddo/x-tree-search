@@ -97,7 +97,12 @@ class ArgumentativeExplainer:
                 explanation = adjective.explain(node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
             else:
                 explanation = adjective.explain(node, comparison_node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
-        except CannotBeEvaluated:
+        except CannotBeEvaluated as e:
+            print(f"The adjective \"{adjective_name}\" cannot be evaluated on the {self.framework.refer_to_nodes_as} {node}.")
+            if adjective_name == e.adjective_name:
+                return
+            else:
+                print(f"That is because {e.message}")
             return
 
         # Give the explanation

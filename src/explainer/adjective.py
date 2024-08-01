@@ -102,14 +102,13 @@ class Adjective(ABC):
         Returns:
             The value of the adjective for the given node.
         """
-        if not args[0]: # We are evaluating not in context
+        if args[0] is None: # We are evaluating not in context
             return None
         else:
             try:
                 evaluation = self._evaluate(*args)
             except AttributeError:
-                print(f"The adjective \"{self.name}\" cannot be evaluated for this {self.framework.refer_to_nodes_as}.")
-                raise CannotBeEvaluated(f"The adjective \"{self.name}\" cannot be evaluated for this {self.framework.refer_to_nodes_as}.")        
+                raise CannotBeEvaluated(self.name, args, self.framework.refer_to_nodes_as)        
         evaluation = apply_explanation_tactics(self, "evaluation", explanation_tactics, evaluation)
         return evaluation
 
