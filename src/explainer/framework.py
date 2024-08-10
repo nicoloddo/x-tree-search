@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple, Optional
 
 from src.explainer.explanation_settings import ExplanationSettings
 
@@ -72,6 +72,25 @@ class ArgumentationFramework:
             KeyError: If no adjective with the given name is found.
         """
         return self.adjectives[name]
+    
+    def add_explanation_tactics_to_adjective(self, to_adjective:str, tactics: List['Tactic']):
+        """Adds explanation tactics to a specified adjective."""
+        tactic_tuples = []
+        for tactic in tactics:
+            tactic_tuples.append((tactic, to_adjective))
+
+        self.add_explanation_tactics(tactic_tuples)
+    
+    def add_explanation_tactics(self, tactics: List['Tactic' | Tuple['Tactic', str]]):
+        """Adds explanation tactics from a list of tactics or tuple of tactic and adjective to add it to."""
+        for tactic_input in tactics:
+            if isinstance(tactic_input, tuple):
+                tactic = tactic_input[0]
+                to_adjective = tactic_input[1]
+                self.add_explanation_tactic(tactic, to_adjective=to_adjective)
+            else:
+                tactic = tactic_input
+                self.add_explanation_tactic(tactic)
     
     def add_explanation_tactic(self, tactic: 'Tactic', *, to_adjective: str = ''):
         tactics_to_add = [tactic]
