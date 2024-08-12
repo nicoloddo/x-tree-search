@@ -7,6 +7,7 @@ import inspect
 import copy
 
 class GameModel:
+    verbose = True
     def __init__(self, agents_number, default_agent_features, additional_agent_features, agent_features_descriptions="No description was given.", game_name=""):
         """
         Initializes the GameModel. You need to define the agent features only.
@@ -60,34 +61,35 @@ class GameModel:
         self.action_is_violation_if(lambda who, where, what, game: game.ended, "general", rule_description="Nothing is allowed if the game is ended.") # Default rule
 
 
-        print(f"""
-        You can add spaces on which to perform actions with the function add_action_space(dimensions, default_labels, additional_labels, dimensions_description).
-        For example most games need a board. By default there is the agent space, allowing for actions onto the agents features.
-        You can disable actions on an action space with 
+        if self.verbose:
+            print(f"""
+            You can add spaces on which to perform actions with the function add_action_space(dimensions, default_labels, additional_labels, dimensions_description).
+            For example most games need a board. By default there is the agent space, allowing for actions onto the agents features.
+            You can disable actions on an action space with 
 
-        You can use the method gm.action_is_violation_if(rule, rule_description) to express rules for the game.\n
-        Use help(gm.action_is_violation_if) for help on how to define rules.
-        The rule: "Nothing is allowed if the game is ended." is defined by default, to delete it use gm.delete_rule(1).
-        Use gm.print_rules() to see all the rules that have been setted.
-        
-        Use gm.set_endgame(callable_function(game)) to define based on what dynamics your game should end.
-        The callable function should have one only input parameter, which represents the game itself, 
-        which can be used to refer to anything inside its model, this include:
-                - action_spaces = the action spaces belonging to the game, incuding any added one and their features
-                - agents = the agents involved in the game and their features
-                - actions = previous actions performed
-                - started = if the game has started
-                - ended = if the game has ended
-        Example: 
-            def three_elements_in_row(game):
-                board = game.action_spaces["board"]
-                # Check rows for winning condition
-                for row in board:
-                    if row[0] == row[1] == row[2] != 'free':
-                        return True
-                # If no winner, return False
-                return False
-        \n""")
+            You can use the method gm.action_is_violation_if(rule, rule_description) to express rules for the game.\n
+            Use help(gm.action_is_violation_if) for help on how to define rules.
+            The rule: "Nothing is allowed if the game is ended." is defined by default, to delete it use gm.delete_rule(1).
+            Use gm.print_rules() to see all the rules that have been setted.
+            
+            Use gm.set_endgame(callable_function(game)) to define based on what dynamics your game should end.
+            The callable function should have one only input parameter, which represents the game itself, 
+            which can be used to refer to anything inside its model, this include:
+                    - action_spaces = the action spaces belonging to the game, incuding any added one and their features
+                    - agents = the agents involved in the game and their features
+                    - actions = previous actions performed
+                    - started = if the game has started
+                    - ended = if the game has ended
+            Example: 
+                def three_elements_in_row(game):
+                    board = game.action_spaces["board"]
+                    # Check rows for winning condition
+                    for row in board:
+                        if row[0] == row[1] == row[2] != 'free':
+                            return True
+                    # If no winner, return False
+                    return False
+            \n""")
 
     ''' Actions spaces'''
     def add_action_space(self, action_space_id, dimensions, default_labels, additional_labels, dimensions_descriptions="No description was given."):
