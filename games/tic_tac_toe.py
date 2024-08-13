@@ -49,8 +49,9 @@ class TicTacToe(Game):
         gmt = GameTree(self.gm, "board")
         return gmt
     
-    def act(self, player, move) -> None:
-        coordinates = move
+    def act(self, action) -> None:
+        player = action['who']
+        coordinates = action['where']
 
         if player == 0:
             sign = 'X'
@@ -63,3 +64,6 @@ class TicTacToe(Game):
 
         if performed:
             print(self.model.action_spaces["board"])
+    
+    def user_move(self, player, coordinates):
+        self.act({'who': player, 'where': coordinates})
