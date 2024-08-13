@@ -27,6 +27,8 @@ class Tree(MarkovChain):
             self.parent = parent
             self.value = value    
             self.is_leaf = True
+            self.children_and_probs = []
+            self.children = []
 
             if parent == None:
                 node_id = "0"
@@ -39,16 +41,16 @@ class Tree(MarkovChain):
             self._MarkovNode__add_connection(child, probability)
             if len(self.connections) > 0:
                 self.is_leaf = False
+            self.update_children_and_probs()
         
-        @property
-        def children_and_probs(self):
-            """Returns a list of tuples containing children of this node and the respective transition probability"""
-            return self.connections.items()
+        def update_children_and_probs(self):
+            """Updates the list of tuples containing children of this node and the respective transition probability"""
+            self.children_and_probs = self.connections.items()
+            self.update_children()
 
-        @property
-        def children(self):
-            """Returns a list of children nodes of this node"""
-            return [t[0] for t in self.children_and_probs] # Extract the first item of the tuple, which is the pointer to the child node
+        def update_children(self):
+            """Updates the list of children nodes of this node"""
+            self.children = [t[0] for t in self.children_and_probs] # Extract the first item of the tuple, which is the pointer to the child node
 
         @property
         def id(self):
