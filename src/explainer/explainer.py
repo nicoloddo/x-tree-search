@@ -44,6 +44,28 @@ class ArgumentativeExplainer:
         """
         self.framework = self.frameworks[framework_name]
 
+    def available_frameworks(self):
+        for framework in self.frameworks.keys():
+            print(framework)
+
+    def __getitem__(self, key):
+        """
+        Allow accessing frameworks using square bracket notation.
+
+        Args:
+            key: The name of the framework to access.
+
+        Returns:
+            The framework associated with the given key.
+
+        Raises:
+            KeyError: If the framework name is not found.
+        """
+        try:
+            return self.frameworks[key]
+        except KeyError:
+            raise KeyError(f"Framework '{key}' not found in ArgumentativeExplainer")
+
     def set_getter(self, adjective_name: str, getter: Callable[[Any], Any]):
         """Overrides the getter function setted during the adjective declaration.
         Be aware that no safeness checks are performed when setting the getter directly."""
@@ -91,25 +113,31 @@ class ArgumentativeExplainer:
 
 
         # Get the explanation
+        to_raise_later = None
         try:
             adjective = self.framework.get_adjective(adjective_name)
             if not comparison_node: # The adjective is not comparative
                 explanation = adjective.explain(node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
             else:
                 explanation = adjective.explain(node, comparison_node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
+
+            # Give the explanation
+            if isinstance(explanation, Implies):
+                explanation._str_settings(print_first = True)
+            print(explanation)
+
         except CannotBeEvaluated as e:
             print(f"The adjective \"{adjective_name}\" cannot be evaluated on the {self.framework.refer_to_nodes_as} {node}.")
-            if adjective_name == e.adjective_name:
-                return
-            else:
+            if adjective_name != e.adjective_name:
                 print(f"That is because {e.message}")
-            return
 
-        # Give the explanation
-        if isinstance(explanation, Implies):
-            explanation._str_settings(print_first = True)
-        print(explanation)
+        except Exception as e:
+            to_raise_later = e
+            print(f"An unexpected error occurred while generating the explanation: {str(e)}")
         
+        # IMPORTANT: DO NOT STOP THE EXEC OF THIS METHOD BEFORE RESETTING THE SETTINGS,
+        # AVOID return AND UNCATCHED EXCEPTIONS BEFORE THE NEXT BLOCK.
+
         # Reset settings for future explanations:
         if with_framework is not None:
             self.settings.with_framework = prev_framework
@@ -120,6 +148,10 @@ class ArgumentativeExplainer:
 
         if print_depth is not None:
             self.settings.print_depth = prev_print_depth
+
+        # Raise unexpected exception
+        if to_raise_later is not None:
+            raise to_raise_later
 
     def add_explanation_tactic(self, tactic: 'Tactic', *, to_adjective: str = '', to_framework: str):
         framework = self.frameworks[to_framework]
