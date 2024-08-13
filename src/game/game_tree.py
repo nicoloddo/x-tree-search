@@ -36,6 +36,10 @@ class GameTree(Tree):
 
         self.root = self.__add_node(game=self.game)
         self.root.state = game.action_spaces[action_space_id]
+    
+    def get_current_state(self):
+        """Returns the current node state."""
+        return self.root 
 
     class GameTreeNode(Tree.TreeNode):
         """
@@ -92,7 +96,7 @@ class GameTree(Tree):
         def game(self, value):
             self.value["game"] = value
 
-        def expand(self, game_tree):
+        def expand(self, game_tree, with_constraints=None):
             if self.expanded:
                 return                
             self.expanded = True
@@ -100,7 +104,7 @@ class GameTree(Tree):
             state = self.state
             action_space_id = game_tree.action_space_id
 
-            available_actions_and_states = self.game.get_available_actions_and_states(action_space_id)
+            available_actions_and_states = self.game.get_available_actions_and_states(action_space_id, with_constraints)
 
             children_values = []
             for actions_and_states in available_actions_and_states:
@@ -121,11 +125,11 @@ class GameTree(Tree):
                 child.expand(game_tree)
                 child._expand_children(game_tree, count_depth + 1, depth)
         
-        def expand_to_depth(self, game_tree, depth):
+        def expand_to_depth(self, game_tree, depth, with_constraints):
             count_depth = 0
 
             if depth > 0:
-                self.expand(game_tree) # expand root
+                self.expand(game_tree, with_constraints) # expand first
                 count_depth += 1
             
             if depth > 1:
@@ -151,7 +155,7 @@ class GameTree(Tree):
             probability = 1/len(children_values)
             parent._add_child(child, probability)
 
-    def expand_node(self, node_id, depth=1):
+    def expand_node(self, node_id, *, depth=1, with_constraints=None):
         node = self.nodes[node_id]
 
-        node.expand_to_depth(self, depth)
+        node.expand_to_depth(self, depth, with_constraints)

@@ -149,17 +149,36 @@ class GameModel:
         """
         self.action_spaces[on].actions_enabled = False
 
-    def get_available_actions_and_states(self, action_space_id):
+    def get_available_actions_and_states(self, action_space_id, constraints={}):
         """ 
+        Param:
+            action_space_id: the id of the action space of which we need to return the available actions.
+            constraint (Dict): 
+
         return (list of dict): list containing all available actions that can be performed at the current state of the action_space, and the action space after that action was performed. 
                                each dictionary is in the form {"action": action, "state": theoretical_action_space}
         """
+        if constraints is None:
+            constraints = {}
+            
         action_space = self.action_spaces[action_space_id]
 
         available_actions_and_states = []
         for who, agent in enumerate(self.agents):
+            if 'who' in constraints:
+                if who != constraints['who']:
+                    continue
+
             for where, element in np.ndenumerate(action_space):
+                if 'where' in constraints:
+                    if where != constraints['where']:
+                        continue
+
                 for what in action_space.available_labels_flat:
+                    if 'what' in constraints:
+                        if what != constraints['what']:
+                            continue
+
                     if not self.__break_rules(who, where, what, action_space, action_space_id, verbose=False):
                         # found available action
                         theoretical_game = copy.deepcopy(self)
