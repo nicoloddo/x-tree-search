@@ -61,6 +61,8 @@ class GameAgent:
         self.id = agent_id
 
     async def play(self, game):
+        await asyncio.sleep(0.5)
+
         # Use the search algorithm to determine the best move
         tree = game.tree
 
@@ -76,7 +78,7 @@ class GameAgent:
         
         # Apply the move to the game
         if action is not None:
-            game.act(action)
+            await asyncio.to_thread(game.act, action)
 
 class User:
     def __init__(self, *, agent_id, ask_what=True, ask_where=True):
@@ -85,6 +87,8 @@ class User:
         self.ask_where = ask_where
 
     async def play(self, game):
+        await asyncio.sleep(0.5)
+
         who = self.id
 
         if self.ask_what:
@@ -113,7 +117,7 @@ class User:
             where = ''
         
         action = {'who': who, 'where': where, 'what': what}
-        game.act(action)
+        await asyncio.to_thread(game.act, action)
 
     async def async_input(self, prompt: str) -> str:
         loop = asyncio.get_event_loop()
