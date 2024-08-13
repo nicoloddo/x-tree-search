@@ -45,10 +45,6 @@ class TicTacToe(Game):
 
         return gm
     
-    def _game_tree_definition(self) -> GameTree:
-        gmt = GameTree(self.gm, "board")
-        return gmt
-    
     def act(self, action) -> None:
         player = action['who']
         coordinates = action['where']
@@ -64,6 +60,3 @@ class TicTacToe(Game):
 
         if performed:
             print(self.model.action_spaces["board"])
-    
-    def user_move(self, player, coordinates):
-        self.act({'who': player, 'where': coordinates})
