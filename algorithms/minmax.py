@@ -35,14 +35,15 @@ class MinMax:
     Attributes:
         scoring_function (callable): A function that takes a node state and returns a numerical score.
     """
-    def __init__(self, game_tree, scoring_function):
-        self.gmt = game_tree
+    def __init__(self, scoring_function):
         self.score = scoring_function
     
-    def run(self, node_id, *, depth=3, with_constraints: Dict = None):
-        self.gmt.expand_node(node_id, depth=depth, with_constraints=with_constraints) # constrain the who for example
-        root_node = MinMaxNode(self.gmt.root)
-        best_child, best_value = self.minmax(root_node, True)
+    def run(self, game_tree, node_id, *, depth=3, with_constraints: Dict = None):
+        state_node = game_tree.nodes[node_id]
+        game_tree.expand_node(node_id, depth=depth, with_constraints=with_constraints) # constrain the who for example
+        
+        search_root = MinMaxNode(state_node)
+        best_child, best_value = self.minmax(search_root, True)
         return best_child, best_value
     
     def minmax(self, node, is_maximizing):
