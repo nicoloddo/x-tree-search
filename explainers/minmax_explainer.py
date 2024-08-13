@@ -60,7 +60,7 @@ class MinMaxExplainer:
                                 Possession("backpropagating child", "best"))
                         )),
 
-                    ComparisonAdjective("better", "score", ">"),
+                    ComparisonAdjective("better", "score", ">="),
                 
                     NodesGroupPointerAdjective("siblings",
                         definition = "node.parent.children",
@@ -110,7 +110,7 @@ class MinMaxExplainer:
                                 Possession("next possible move", "the best"))
                         )),
 
-                    ComparisonAdjective("better", "score", ">"),
+                    ComparisonAdjective("better", "score", ">="),
                 
                     NodesGroupPointerAdjective("possible alternative moves",
                         definition = "node.parent.children",
@@ -129,5 +129,14 @@ class MinMaxExplainer:
                 ]
             )
         )
+
+        default_settings = {
+            'with_framework': 'lowlevel',
+            'explanation_depth': 3 ,
+            'print_implicit_assumptions': True,
+            'assumptions_verbosity': 'verbose',
+            'print_mode': 'logic'
+        }
+        explainer.configure_settings(default_settings)
 
         return explainer
