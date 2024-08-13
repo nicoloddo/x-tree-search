@@ -50,7 +50,7 @@ class MarkovChain:
         
         def check_consistency(self):
             # Checks if probabilities in the node sum up to 1
-            if not abs(sum(prob for _, prob in self.connections) - 1) + probability < 1e-6:
+            if not abs(sum(prob for _, prob in self.connections) - 1) < 1e-6:
                 warnings.warn("Probabilities for each node must sum to 1")
                 return False
 
