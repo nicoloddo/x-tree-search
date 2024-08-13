@@ -54,6 +54,7 @@ class Game:
 
     async def _start_game(self):
         # Start the state monitoring task
+        self.stop = False
         state_monitoring_task = asyncio.create_task(self._monitor_game_state())
 
         print(self.tree.get_current_state().state)
@@ -66,7 +67,10 @@ class Game:
         state_monitoring_task.cancel()
 
         print()
-        print("Game stopped or finished.")
+        if self.stop:
+            print("Game paused.")
+        elif self.gm.ended:
+            print("Game finished.")
         print()
         print(self.tree.get_current_state().state)
 
