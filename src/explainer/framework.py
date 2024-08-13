@@ -5,20 +5,20 @@ from src.explainer.explanation_settings import ExplanationSettings
 class ArgumentationFramework:
     """Manages adjectives and their relationships in the argumentation framework."""
     
-    def __init__(self, *, refer_to_nodes_as):
+    def __init__(self, *, refer_to_nodes_as, adjectives = [], tactics = []):
         """Initialize the ArgumentationFramework.
         
         Args:
             refer_to_nodes_as: How to refer to nodes when printing explanations, e.g.: node, move, position, ..."""
-        
-        #TODO: Add possibility to provide directly the adjectives to add optionally with tactics for the adjective
-        #TODO: Add possibility to provide directly the tactics for the framework not linked to specific adjectives
         
         self.adjectives: Dict[str, 'Adjective'] = {}
         self.tree_search_motivation: str = ""
         self.settings = ExplanationSettings()
         self.refer_to_nodes_as = refer_to_nodes_as
         self.general_explanation_tactics = {}
+
+        self.add_adjectives(adjectives)
+        self.add_explanation_tactics(tactics)
     
     def set_settings(self, settings):
         self.settings = settings
@@ -40,7 +40,6 @@ class ArgumentationFramework:
         Args:
             adjectives: The List of Adjective objects to add.
         """
-        #TODO: Add possibility to provide a tuple with a tactics to add to the adjective
         for adjective in adjectives:
             self.add_adjective(adjective)
 
