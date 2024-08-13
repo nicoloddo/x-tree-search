@@ -1,4 +1,7 @@
 from typing import Dict
+
+import numpy as np
+
 from games.game import Game, GameModel, GameTree
 
 class TicTacToe(Game):
@@ -32,8 +35,12 @@ class TicTacToe(Game):
                 return True
             if board[0][2] == board[1][1] == board[2][0] != 'free':
                 return True
+            
+            full_board = np.all(board != 'free')
+            if full_board:
+                return True
 
-            # If no winner, return False
+            # If no winner and not full_board, return False
             return False
 
         gm.set_endgame(tic_tac_toe_endgame)
