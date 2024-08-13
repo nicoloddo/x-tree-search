@@ -1,9 +1,17 @@
 from abc import abstractmethod
 from typing import Dict
 import asyncio
+import os
+from IPython.display import clear_output
+
+import numpy as np
+import copy
 
 from src.game.game_model import GameModel
 from src.game.game_tree import GameTree
+
+import nest_asyncio
+nest_asyncio.apply()
 
 class Game:
     GameModel.verbose = False
@@ -12,6 +20,8 @@ class Game:
         self.gm = self._game_model_definition()
         self.players = {}
         self.stop = False
+        self.clear_console = self.clear_cmd  # To keep track of the previous state
+        self._previous_state = None
 
     @abstractmethod
     def _game_model_definition(self) -> GameModel:
@@ -35,25 +45,47 @@ class Game:
 
     def start(self):
         """This does not run on Jupyter"""
+        self.clear_console = self.clear_cmd
         asyncio.run(self._start_game())
     
     def start_on_jupyter(self):
+        self.clear_console = self.clear_jupyter
         return asyncio.ensure_future(self._start_game())
 
-        # If you're in a Jupyter notebook, you can start the game like this:
-        # await game.start_on_jupyter()
+    async def _start_game(self):
+        # Start the state monitoring task
+        state_monitoring_task = asyncio.create_task(self._monitor_game_state())
 
-    async def _start_game(self): 
         print(self.tree.get_current_state().state)
 
         while not self.gm.ended and not self.stop:
-            
             await asyncio.gather(*(player.play(self) for player in self.players))
+            await asyncio.sleep(0.1)  # Reduced sleep time for more responsive updates
 
-            # Add a small delay here to prevent busy-waiting
-            await asyncio.sleep(0.05)
-        
-        print("Game stopped or ended")
+        # Stop the state monitoring task
+        state_monitoring_task.cancel()
+
+        print()
+        print("Game stopped or finished.")
+        print()
+        print(self.tree.get_current_state().state)
+
+    async def _monitor_game_state(self):
+        """Periodically checks the game's current state and prints it if it has changed."""
+        while not self.gm.ended and not self.stop:
+            current_state = self.tree.get_current_state().state
+
+            if not np.array_equal(current_state, self._previous_state):
+                self.clear_console()
+                print(current_state)
+                self._previous_state = copy.deepcopy(current_state)
+            
+            await asyncio.sleep(0.2)  # Adjust the sleep time as needed
+    
+    def clear_cmd(self):
+        os.system('cls' if os.name == 'nt' else 'clear')  # Clear the console
+    def clear_jupyter(self):
+        clear_output(wait=True)  # Clear the Jupyter output
 
 class GameAgent:
     def __init__(self, core, *, agent_id):
@@ -61,9 +93,11 @@ class GameAgent:
         self.id = agent_id
 
     async def play(self, game):
-        await asyncio.sleep(0.5)
-
-        # Use the search algorithm to determine the best move
+        await asyncio.sleep(0.1)
+        if game.gm.ended:
+            return
+    
+        # Use the search algorithm to determine the best move        
         tree = game.tree
 
         current_state = tree.get_current_state()
@@ -87,8 +121,10 @@ class User:
         self.ask_where = ask_where
 
     async def play(self, game):
-        await asyncio.sleep(0.5)
-
+        await asyncio.sleep(1)
+        if game.gm.ended:
+            return
+       
         who = self.id
 
         if self.ask_what:
@@ -120,5 +156,6 @@ class User:
         await asyncio.to_thread(game.act, action)
 
     async def async_input(self, prompt: str) -> str:
+        # Ensure proper input handling in Jupyter
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, input, prompt)
