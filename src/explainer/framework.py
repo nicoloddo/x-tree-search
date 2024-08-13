@@ -11,6 +11,9 @@ class ArgumentationFramework:
         Args:
             refer_to_nodes_as: How to refer to nodes when printing explanations, e.g.: node, move, position, ..."""
         
+        #TODO: Add possibility to provide directly the adjectives to add optionally with tactics for the adjective
+        #TODO: Add possibility to provide directly the tactics for the framework not linked to specific adjectives
+        
         self.adjectives: Dict[str, 'Adjective'] = {}
         self.tree_search_motivation: str = ""
         self.settings = ExplanationSettings()
@@ -37,6 +40,7 @@ class ArgumentationFramework:
         Args:
             adjectives: The List of Adjective objects to add.
         """
+        #TODO: Add possibility to provide a tuple with a tactics to add to the adjective
         for adjective in adjectives:
             self.add_adjective(adjective)
 
@@ -93,16 +97,15 @@ class ArgumentationFramework:
                 self.add_explanation_tactic(tactic)
     
     def add_explanation_tactic(self, tactic: 'Tactic', *, to_adjective: str = ''):
-        tactics_to_add = [tactic]
-        for requirement in tactic.requirements:
-            tactics_to_add.append(requirement[0](*requirement[1]))
-
-        if to_adjective == '':
-            self._add_explanation_tactics(tactics_to_add)
-        else:
+        if to_adjective != '':
             adjective = self.get_adjective(to_adjective)
-            adjective._add_explanation_tactics(tactics_to_add)
+            adjective.add_explanation_tactic(tactic)
+            return
 
+        tactics_to_add = [tactic]
+        tactics_to_add += tactic.get_requirements()
+        self._add_explanation_tactics(tactics_to_add)
+            
     def del_explanation_tactic(self, tactic_class_name: str, *, to_adjective: str = ''):
         if to_adjective == '':
             tactic = self.get_explanation_tactic(tactic_class_name)

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from typing import Any, Callable, List
 
 from src.explainer.common.exceptions import CannotBeEvaluated
 
@@ -30,7 +30,7 @@ class Adjective(ABC):
     """Abstract base class for all types of adjectives."""
     refer_to_nodes_as = None
     
-    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, *, definition: str):
+    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, tactics: List['Tactic'], *, definition: str):
         """
         Initialize the Adjective.
         
@@ -47,11 +47,15 @@ class Adjective(ABC):
         self.name = name
         self.type = adjective_type
         self.explanation = explanation
-        self.explanation_tactics = {}
         self.framework = None
         self.definition = definition
         self.getter = None
         self.contextualize(definition)
+
+        self.explanation_tactics = {}
+        if tactics is None:
+            tactics = []
+        self.add_explanation_tactics(tactics)
 
     # Utility methods
     def _set_getter(self, getter: Callable[[Any], Any]):
@@ -70,6 +74,18 @@ class Adjective(ABC):
         self.framework = framework
         self.refer_to_nodes_as = self.framework.refer_to_nodes_as
         self.explanation.contextualize(self)
+
+        for tactic in self.explanation_tactics.values():
+            tactic.contextualize(self)
+
+    def add_explanation_tactics(self, tactics):
+        for tactic in tactics:
+            self.add_explanation_tactic(tactic)
+    
+    def add_explanation_tactic(self, tactic):
+        tactics_to_add = [tactic]
+        tactics_to_add += tactic.get_requirements()
+        self._add_explanation_tactics(tactics_to_add)
 
     def _add_explanation_tactics(self, tactics):
         for tactic in tactics:
@@ -189,7 +205,7 @@ class Adjective(ABC):
 class BooleanAdjective(Adjective):
     """Represents a boolean adjective."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None):
         """
         Initialize the BooleanAdjective.
         
@@ -199,7 +215,7 @@ class BooleanAdjective(Adjective):
             explanation: An explanation for the adjective.
         """
         explanation = explanation or PossessionAssumption(name, definition)
-        super().__init__(name, AdjectiveType.STATIC, explanation, definition = definition)
+        super().__init__(name, AdjectiveType.STATIC, explanation, tactics, definition = definition)
 
     def _proposition(self, evaluation: bool = True, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the adjective """
@@ -215,7 +231,7 @@ class BooleanAdjective(Adjective):
 class PointerAdjective(Adjective):
     """Represents a pointer adjective that references a specific attribute or object."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None):
         """
         Initialize the PointerAdjective.
         
@@ -225,7 +241,7 @@ class PointerAdjective(Adjective):
             explanation: An explanation for the adjective.
         """
         explanation = explanation or PossessionAssumption(name, definition)
-        super().__init__(name, AdjectiveType.POINTER, explanation, definition = definition)
+        super().__init__(name, AdjectiveType.POINTER, explanation, tactics, definition = definition)
 
     def _proposition(self, evaluation: Any = None, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the pointer value """
@@ -245,13 +261,13 @@ class NodesGroupPointerAdjective(PointerAdjective):
     Example:
         NodesGroupPointerAdjective("siblings", definition = "node.parent.children", excluding = "node")
     """
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, *, excluding: str):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None, *, excluding: str):
         explanation = explanation or PossessionAssumption(name, definition + " excluding " + excluding)
         if excluding:
             composite_definition = f"[element for element in {definition} if element is not {excluding}]"
         else:
             composite_definition = f"[{definition}]"
-        super().__init__(name, composite_definition, explanation)
+        super().__init__(name, composite_definition, explanation, tactics)
     
     def _proposition(self, evaluation: Any = None, node: Any = None) -> Proposition:
         if evaluation is not None and type(evaluation) is not list:
@@ -265,7 +281,7 @@ class ComparisonAdjective(Adjective):
     """Represents a ranking adjective used for comparing nodes.
     Comparison nodes do not need a getter to be evaluated."""
     
-    def __init__(self, name: str, property_pointer_adjective_name: str, operator: str):
+    def __init__(self, name: str, property_pointer_adjective_name: str, operator: str, tactics = None):
         """
         Initialize the RankingAdjective.
         
@@ -277,7 +293,7 @@ class ComparisonAdjective(Adjective):
         explanation = CompositeExplanation(
             ComparisonAssumption(name, property_pointer_adjective_name, operator),
             ComparisonNodesPropertyPossession(property_pointer_adjective_name))
-        super().__init__(name, AdjectiveType.COMPARISON, explanation, definition=DEFAULT_GETTER)
+        super().__init__(name, AdjectiveType.COMPARISON, explanation, tactics, definition=DEFAULT_GETTER)
         self.property_pointer_adjective_name = property_pointer_adjective_name
 
         # Validate the operator to ensure it's safe and expected
@@ -320,7 +336,7 @@ class _RankAdjective(BooleanAdjective):
     property of being x ranked in a group, based on a given comparison adjective
     and the evaluator function. This is parent class of MaxRankAdjective and MinRankAdjective."""
     
-    def __init__(self, name: str, comparison_adjective_name: str, group_pointer_adjective_name: str, explanation: Explanation, evaluator: Callable[[Any, ComparisonAdjective, PointerAdjective], bool]):
+    def __init__(self, name: str, comparison_adjective_name: str, group_pointer_adjective_name: str, explanation: Explanation, tactics: List['Tactic'], evaluator: Callable[[Any, ComparisonAdjective, PointerAdjective], bool]):
         """
         Initialize the MaxRankAdjective.
         
@@ -330,7 +346,7 @@ class _RankAdjective(BooleanAdjective):
             group_pointer_adjective:
         """
         explanation = explanation or PossessionAssumption(name)
-        super().__init__(name, explanation=explanation)
+        super().__init__(name, explanation=explanation, tactics=tactics)
         self.comparison_adjective_name = comparison_adjective_name
         self.group_pointer_adjective_name = group_pointer_adjective_name
         self.evaluator = evaluator
@@ -344,17 +360,17 @@ class _RankAdjective(BooleanAdjective):
         return self.evaluator(node, comparison_adjective, group)
 
 class MaxRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective):
+    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective, tactics = None):
         explanation = CompositeExplanation(
             RankAssumption('max', name, comparison_adjective_name, nodes_group_pointer_adjective_name),
             GroupComparison(comparison_adjective_name, nodes_group_pointer_adjective_name))
         evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(node, other_node) for other_node in group)
-        super().__init__(name, comparison_adjective_name, nodes_group_pointer_adjective_name, explanation, evaluator)
+        super().__init__(name, comparison_adjective_name, nodes_group_pointer_adjective_name, explanation, tactics, evaluator)
 
 class MinRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective):
+    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective, tactics = None):
         explanation = CompositeExplanation(
             RankAssumption('min', name, comparison_adjective_name, nodes_group_pointer_adjective_name),
             GroupComparison(comparison_adjective_name, nodes_group_pointer_adjective_name, positive_implication=False))
         evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(other_node, node) for other_node in group)
-        super().__init__(name, comparison_adjective_name, nodes_group_pointer_adjective_name, explanation, evaluator)
+        super().__init__(name, comparison_adjective_name, nodes_group_pointer_adjective_name, explanation, tactics, evaluator)

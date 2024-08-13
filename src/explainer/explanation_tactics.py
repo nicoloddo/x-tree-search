@@ -46,7 +46,7 @@ class Tactic(ABC):
 
     @abstractmethod
     def contextualize(self, belonging_object: 'Adjective'):
-        """Sets the Argumentation framework the Explanation belongs to."""
+        """Sets the object and the framework the Explanation belongs to."""
         pass
 
     @abstractmethod
@@ -155,6 +155,14 @@ class Tactic(ABC):
 
     def apply_on_explanation(self, explanation):
         return explanation
+    
+    def get_requirements(self):
+        recursive_requirements = []
+        for requirement in self.requirements:
+            requirement_tactic = requirement[0](*requirement[1])
+            recursive_requirements.append(requirement_tactic)
+            recursive_requirements += requirement_tactic.get_requirements()
+        return recursive_requirements
 
 class SpecificTactic(Tactic):
     """Specific Tactics are allowed to start only from a selected adjective explanation."""
