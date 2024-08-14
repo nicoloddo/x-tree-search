@@ -178,7 +178,7 @@ class ArgumentativeExplainer:
         tactic = perform_on.get_explanation_tactic(tactic_class_name)
 
         tactics_to_delete_names = [tactic_class_name]
-        for requirement in tactic.requirements:
+        for requirement in tactic.get_requirements():
             tactics_to_delete_names.append(requirement.name)
 
         perform_on._del_explanation_tactics(tactics_to_delete_names)
