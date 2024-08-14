@@ -117,7 +117,7 @@ class MinMaxExplainer:
                         excluding = "node"),
 
                     MaxRankAdjective("the best", "better", "possible alternative moves",
-                                    tactics = [OnlyRelevantComparisons(mode = "top_1")]),
+                                    tactics = [OnlyRelevantComparisons(mode = "top_3")]),
 
                     MinRankAdjective("the best the opponent can do", "better", "possible alternative moves"),
                 ],
@@ -125,7 +125,7 @@ class MinMaxExplainer:
                 tactics=[
                     SubstituteQuantitativeExplanations("it leads to a better position"),
 
-                    SkipConditionStatement(except_on_adjectives=['score'])
+                    #SkipConditionStatement(except_on_adjectives=['score'])
                 ]
             )
         )
