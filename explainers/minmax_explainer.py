@@ -39,7 +39,7 @@ class MinMaxExplainer:
                             explanation_if_true = Assumption("Leaf nodes have scores from the evaluation function"),
                             explanation_if_false = CompositeExplanation(
                                 Assumption("Internal nodes have scores from children"),
-                                Possession("backpropagating child"))
+                                Possession("backpropagating child", "score"))
                         )),
 
 
