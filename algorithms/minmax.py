@@ -38,15 +38,17 @@ class MinMaxNode:
 
 class MinMax:
     """
-    Implements the MinMax algorithm to determine the optimal child of a node.
+    Implements the MinMax algorithm with optional Alpha-Beta pruning to determine the optimal child of a node.
 
     Attributes:
         scoring_function (callable): A function that takes a node state and returns a numerical score.
+        use_alpha_beta (bool): Whether to use alpha-beta pruning.
     """
-    def __init__(self, scoring_function, *, start_with_maximizing = True):
+    def __init__(self, scoring_function, *, start_with_maximizing=True, use_alpha_beta=False):
         self.score = scoring_function
         self.last_choice = None
         self.start_with_maximizing = start_with_maximizing
+        self.use_alpha_beta = use_alpha_beta
     
     def run(self, game_tree, node_id, *, depth=3, with_constraints: Dict = None):
         state_node = game_tree.nodes[node_id]
@@ -54,7 +56,10 @@ class MinMax:
         
         search_root = MinMaxNode(state_node)
         if len(search_root.children) > 0:
-            best_child, best_value = self.minmax(search_root, self.start_with_maximizing)
+            if self.use_alpha_beta:
+                best_child, best_value = self.alpha_beta(search_root, depth, float('-inf'), float('inf'), self.start_with_maximizing)
+            else:
+                best_child, best_value = self.minmax(search_root, self.start_with_maximizing)
             self.last_choice = best_child
             return best_child.id, best_value
         else:
@@ -95,3 +100,45 @@ class MinMax:
         node.score_child = best_child
         node.score = best_value
         return best_child, best_value
+
+    def alpha_beta(self, node, depth, alpha, beta, is_maximizing):
+            node.maximizing_player_turn = is_maximizing
+
+            if depth == 0 or node.is_leaf:
+                node.score = self.score(node.node)
+                return node, node.score
+            
+            best_child = None
+
+            if is_maximizing:
+                best_value = float('-inf')
+                for child in node.children:
+                    if not child.has_score():
+                        _, child_score = self.alpha_beta(child, depth - 1, alpha, beta, False)
+                    else:
+                        child_score = child.score
+
+                    if child_score > best_value:
+                        best_value = child_score
+                        best_child = child
+                    alpha = max(alpha, best_value)
+                    if beta <= alpha:
+                        break
+            else:
+                best_value = float('inf')
+                for child in node.children:
+                    if not child.has_score():
+                        _, child_score = self.alpha_beta(child, depth - 1, alpha, beta, True)
+                    else:
+                        child_score = child.score
+
+                    if child_score < best_value:
+                        best_value = child_score
+                        best_child = child
+                    beta = min(beta, best_value)
+                    if beta <= alpha:
+                        break
+
+            node.score_child = best_child
+            node.score = best_value
+            return best_child, best_value
