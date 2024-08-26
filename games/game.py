@@ -135,27 +135,33 @@ class User:
         who = self.id
 
         if self.ask_what:
-            what = await self.async_input("Insert what [insert 'exit' to exit]: ")
+            what = await self.async_input("Insert what [insert 'exit' to exit] [click enter with no input to refresh]: ")
 
             if what == 'exit':
                 game.stop = True
                 return
+            if what == '':
+                await asyncio.sleep(0.5)
         else:
             what = ''
         
         if self.ask_where:
-            where_str = await self.async_input("Insert where (format: x,y) [insert 'exit' to exit]: ")
+            where_input_question = "Insert where (format: x,y) [insert 'exit' to exit] [click enter with no input to refresh]: "
+            where_str = await self.async_input(where_input_question)
             
             if where_str == 'exit':
                 game.stop = True
                 return
-            
-            try:
-                x, y = map(int, where_str.split(','))
-                where = (x, y)
-            except ValueError:
-                print("Invalid input format. Please use 'x,y' format.")
-                return await self.async_input("Insert where (format: x,y) [insert 'exit' to exit]: ")
+            elif where_str == '':
+                await asyncio.sleep(0.5)
+                return await self.async_input(where_input_question)
+            else:
+                try:
+                    x, y = map(int, where_str.split(','))
+                    where = (x, y)
+                except ValueError:
+                    print("Invalid input format. Please use 'x,y' format.")
+                    return await self.async_input(where_input_question)
         else:
             where = ''
         
