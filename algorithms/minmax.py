@@ -16,6 +16,11 @@ class MinMaxNode:
         self.maximizing_player_turn = None
         self.score_child = None
 
+        self.children = []
+
+    def expand(self, with_constraints=None):
+        # Expands the node by one depth.
+        self.node.expand(with_constraints)
         self.children = self.populate_children()
     
     def populate_children(self):
@@ -28,12 +33,16 @@ class MinMaxNode:
     @property
     def id(self):
         return self.node.id
+    
+    @property
+    def action(self):
+        return self.node.action
 
     def has_score(self):
         return self.score is not None
     
     def __str__(self) -> str:
-        return self.id
+        return str(self.node)
 
 
 class MinMax:
@@ -44,34 +53,40 @@ class MinMax:
         scoring_function (callable): A function that takes a node state and returns a numerical score.
         use_alpha_beta (bool): Whether to use alpha-beta pruning.
     """
-    def __init__(self, scoring_function, *, start_with_maximizing=True, use_alpha_beta=False):
+    def __init__(self, scoring_function, *, max_depth=3, start_with_maximizing=True, use_alpha_beta=False):
         self.score = scoring_function
+        self.max_depth=max_depth
         self.last_choice = None
         self.start_with_maximizing = start_with_maximizing
         self.use_alpha_beta = use_alpha_beta
     
-    def run(self, game_tree, node_id, *, depth=3, with_constraints: Dict = None):
-        state_node = game_tree.nodes[node_id]
-        game_tree.expand_node(node_id, depth=depth, with_constraints=with_constraints) # constrain the who for example
-        
-        search_root = MinMaxNode(state_node)
-        if len(search_root.children) > 0:
-            if self.use_alpha_beta:
-                best_child, best_value = self.alpha_beta(search_root, depth, float('-inf'), float('inf'), self.start_with_maximizing)
-            else:
-                best_child, best_value = self.minmax(search_root, self.start_with_maximizing)
-            self.last_choice = best_child
-            return best_child.id, best_value
-        else:
-            return None, None
-    
-    def minmax(self, node, is_maximizing):
-        node.maximizing_player_turn = is_maximizing
+    def run(self, state_node, *, max_depth = None, expand_with_constraints: Dict = None):
+        if max_depth is None:
+            max_depth = self.max_depth
 
-        # If the node is a leaf, return its score
+        search_root = MinMaxNode(state_node)
+
+        if self.use_alpha_beta:
+            pass
+            #TODO: best_child, best_value = self.alpha_beta(search_root, depth, float('-inf'), float('inf'), self.start_with_maximizing)
+        else:
+            best_child, best_value = self.minmax(search_root, self.start_with_maximizing, max_depth=max_depth, with_constraints=expand_with_constraints)
+
+        self.last_choice = best_child
+        return best_child, best_value
+    
+    def minmax(self, node, is_maximizing, current_depth = 0, *, max_depth, with_constraints=None):
+        if current_depth >= max_depth:
+            node.score = self.score(node.node)
+            return None, None
+        else:
+            node.expand(with_constraints)
+            node.maximizing_player_turn = is_maximizing
+
+        # If the node is a leaf, or if we reached the max search depth, return its score
         if node.is_leaf:
             node.score = self.score(node.node)
-            return node, node.score
+            return None, None
         
         # Initialize best value
         if is_maximizing:
@@ -84,7 +99,7 @@ class MinMax:
         for child in node.children:
             # If child does not have a score, recursively call minmax on the child
             if not child.has_score():
-                _, _ = self.minmax(child, not is_maximizing)
+                _, _ = self.minmax(child, not is_maximizing, current_depth + 1, max_depth=max_depth)
 
             # Update the best value and best move depending on the player
             if is_maximizing:
