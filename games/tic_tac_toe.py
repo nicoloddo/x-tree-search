@@ -19,6 +19,7 @@ class TicTacToe(Game):
         gm.agents[1, 1] = 'O'
         gm.agents[1, 0] = 'starter'
 
+        # Set Endgame
         def tic_tac_toe_endgame(game):
             board = game.action_spaces["board"]
             # Check rows for winning condition
@@ -46,6 +47,7 @@ class TicTacToe(Game):
 
         gm.set_endgame(tic_tac_toe_endgame)
 
+        # Set rules
         gm.action_is_violation_if(lambda who, where, what, game: not game.started and game.agents[who][0] != 'starter', rule_description="This is not the starting player and this is the first turn.")
         gm.action_is_violation_if(lambda who, where, what, game: game.started and who == game.actions[-1]['who'], rule_description="Players cannot play two times consecutively")
         gm.action_is_violation_if(lambda who, where, what, game: where != FREE_LABEL, "board", rule_description="The space needs to be free to put a sign on it.")
