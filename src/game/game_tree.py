@@ -34,7 +34,7 @@ class GameTree(Tree):
         self.game = game
         self.action_space_id = action_space_id
 
-        self.root = self.__add_node(game=self.game)
+        self.root = self.__add_node(root_node_bool=True)
         self.root.state = game.action_spaces[action_space_id]
     
     def get_current_state(self):
@@ -55,21 +55,20 @@ class GameTree(Tree):
             children_and_probs (list) (derived): List of tuples containing children of this node and the respective transition probability
             state (GameModel.ActionSpace) (derived)
             action (dict) (derived)
-            game
+            belonging_tree
         """
-        def __init__(self, parent, value, game=None):
+        def __init__(self, parent, value, *, belonging_tree, root_node_bool=False):
             mandatory_features = ["state", "action", "game"]
+            self.belonging_tree = belonging_tree
 
-            if not parent and not value and game: # Root node
+            if root_node_bool: # Root node
                 value = {}
                 for feature in mandatory_features:
                     value[feature] = None
-                value["game"] = game
-            elif not parent and not value and not game:
-                raise ValueError("You should specify the game when initializing a root node.")
-            elif not parent:
-                raise ValueError("Not root nodes must have a parent specified at initialization.")
-            else:
+                value["game"] = belonging_tree.game # Root nodes set the game feature
+            else: # Not root node
+                if not parent:
+                    raise ValueError("Not root nodes must have a parent specified at initialization.")
                 if not all(features in value for features in mandatory_features):
                     raise ValueError(f"All mandatory features should be in the GameTreeNode value: {mandatory_features}")
             
@@ -96,7 +95,12 @@ class GameTree(Tree):
         def game(self, value):
             self.value["game"] = value
 
-        def expand(self, game_tree, with_constraints=None):
+        def expand(self, with_constraints=None):
+            """Expands the node by one depth.
+            With the constraints you can limit the expansion to valid moves coming from a specific player for example,
+            to avoid getting moves that the current player will not be able to use."""
+            game_tree = self.belonging_tree
+
             if self.expanded:
                 return                
             self.expanded = True
@@ -117,27 +121,30 @@ class GameTree(Tree):
 
             game_tree.set_children(self.id, children_values)
 
-        def _expand_children(self, game_tree, count_depth, depth):
+        def _expand_children(self, count_depth, depth):            
             if count_depth >= depth:
                 return
             
             for child in self.children:
-                child.expand(game_tree)
-                child._expand_children(game_tree, count_depth + 1, depth)
+                child.expand()
+                child._expand_children(count_depth + 1, depth)
         
-        def expand_to_depth(self, game_tree, depth, with_constraints):
+        def expand_to_depth(self, depth):
+            """The expand_to_depth is acceptable only without constraints, because children might need different constraints
+            than a parent. Please use the expand method directly while handling the depth yourself if you need to apply constraints."""
+
             count_depth = 0
 
             if depth > 0:
-                self.expand(game_tree, with_constraints) # expand first
+                self.expand() # expand first
                 count_depth += 1
             
             if depth > 1:
-                self._expand_children(game_tree, count_depth, depth)
+                self._expand_children(count_depth, depth)
 
-    def __add_node(self, parent=None, value=None, *, game=None):
+    def __add_node(self, parent=None, value=None, *, root_node_bool=False):
         """Overrides the add_node method to ensure GameTreeNode objects are created."""
-        new_node = self.GameTreeNode(parent, value, game)
+        new_node = self.GameTreeNode(parent, value, belonging_tree=self, root_node_bool=root_node_bool)
         self.nodes[new_node.id] = new_node
         return new_node
 
@@ -155,7 +162,7 @@ class GameTree(Tree):
             probability = 1/len(children_values)
             parent._add_child(child, probability)
 
-    def expand_node(self, node_id, *, depth=1, with_constraints=None):
+    def expand_node_to_depth(self, node_id, *, depth=1):
         node = self.nodes[node_id]
 
-        node.expand_to_depth(self, depth, with_constraints)
+        node.expand_to_depth(depth)
