@@ -5,23 +5,45 @@ from src.explainer.explanation_settings import ExplanationSettings
 class ArgumentationFramework:
     """Manages adjectives and their relationships in the argumentation framework."""
     
-    def __init__(self, *, refer_to_nodes_as, adjectives = [], tactics = []):
+    def __init__(self, *, refer_to_nodes_as, adjectives = [], tactics = [], settings: Dict = None):
         """Initialize the ArgumentationFramework.
         
         Args:
-            refer_to_nodes_as: How to refer to nodes when printing explanations, e.g.: node, move, position, ..."""
+            refer_to_nodes_as: How to refer to nodes when printing explanations, e.g.: node, move, position, ...
+            adjectives: List of adjectives of the framework
+            tactics: List of explanation tactics for the framework (generally applicable over all adjectives)
+                    Use adjective specific explanation tactics if you want to constrain a tactc.
+            settings: Dictionary of framework specific settings. """
         
-        self.adjectives: Dict[str, 'Adjective'] = {}
         self.tree_search_motivation: str = ""
-        self.settings = ExplanationSettings()
-        self.refer_to_nodes_as = refer_to_nodes_as
-        self.general_explanation_tactics = {}
 
+        self.refer_to_nodes_as = refer_to_nodes_as
+
+        self.adjectives: Dict[str, 'Adjective'] = {}
         self.add_adjectives(adjectives)
+
+        self.general_explanation_tactics = {}
         self.add_explanation_tactics(tactics)
+
+        self.framework_specific_settings = False
+        self.set_settings(settings)
     
-    def set_settings(self, settings):
-        self.settings = settings
+    def set_settings(self, settings_dict: Dict = None):
+        """Set framework specific settings giving a dictionary."""
+        self.settings = ExplanationSettings()
+
+        if settings_dict is not None:
+            self.framework_specific_settings = True
+            self.settings.configure(settings_dict)
+
+    def actuate_settings(self):
+        self.settings.actuate_all()
+        
+    def _set_settings(self, settings):
+        """Method used by the explainer to accord the settings to the explainer.
+        Only works if the framework does not have framework specific settings."""
+        if not self.framework_specific_settings:
+            self.settings = settings
 
     def add_adjective(self, adjective: 'Adjective'):
         """

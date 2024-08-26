@@ -32,17 +32,19 @@ class ArgumentativeExplainer:
         Add a framework to explain the tree search.
         """
         self.frameworks[framework_name] = framework
-        framework.set_settings(self.settings)
+        framework._set_settings(self.settings)
 
         if len(self.frameworks) == 1: 
             # If this was the first added framework, select it automatically
-            self.framework = self.frameworks[framework_name]
+            self.settings.with_framework = framework_name
+            self.select_framework(framework_name)
     
     def select_framework(self, framework_name: str):
         """
         Selects the framework to use for the explanations
         """
         self.framework = self.frameworks[framework_name]
+        self.framework.actuate_settings()
 
     def available_frameworks(self):
         for framework in self.frameworks.keys():
@@ -96,6 +98,8 @@ class ArgumentativeExplainer:
         Raises:
             KeyError: If no adjective with the given name is found.
         """
+        if node is None:
+            raise ValueError("The node you are asking about is non existent. This might happen because of async processing. Try to run again.")
 
         # Handle temporary settings for this explanation:
         if with_framework is not None:

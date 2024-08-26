@@ -69,7 +69,14 @@ class MinMaxExplainer:
                     MaxRankAdjective("best", "better", "siblings"),
 
                     MinRankAdjective("worst", "better", "siblings"),
-                ]
+                ],
+
+                settings = {
+                    'explanation_depth': 3 ,
+                    'print_implicit_assumptions': True,
+                    'assumptions_verbosity': 'verbose',
+                    'print_mode': 'logic'
+                }
             )
         )
 
@@ -123,20 +130,16 @@ class MinMaxExplainer:
                 ],
                 
                 tactics=[
-                    SubstituteQuantitativeExplanations("it leads to a better position"),
+                    SubstituteQuantitativeExplanations("it leads to a better position")
+                ],
 
-                    #SkipConditionStatement(except_on_adjectives=['score'])
-                ]
+                settings = {
+                    'explanation_depth': 4 ,
+                    'print_implicit_assumptions': False,
+                    'assumptions_verbosity': 'if_asked',
+                    'print_mode': 'verbal'
+                }
             )
         )
-
-        default_settings = {
-            'with_framework': 'lowlevel',
-            'explanation_depth': 3 ,
-            'print_implicit_assumptions': True,
-            'assumptions_verbosity': 'verbose',
-            'print_mode': 'logic'
-        }
-        explainer.configure_settings(default_settings)
 
         return explainer

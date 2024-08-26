@@ -66,7 +66,7 @@ class ExplanationSettings:
     
     def _actuate_print_mode(self, value):
         LogicalExpression.print_mode = value
-        self._actuate_passthrough(value)
+        return self._actuate_passthrough(value)
     
     _actuators = {
         'with_framework': _actuate_passthrough,
@@ -99,3 +99,7 @@ class ExplanationSettings:
     def to_dict(self):
         """Return a dictionary representation of the settings."""
         return self._settings.copy()
+
+    def actuate_all(self):
+        for key, value in self._settings.items():
+            self._actuators[key](self, value)
