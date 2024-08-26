@@ -72,7 +72,8 @@ class MinMax:
         else:
             best_child, best_value = self.minmax(search_root, self.start_with_maximizing, max_depth=max_depth, with_constraints=expand_with_constraints)
 
-        self.last_choice = best_child
+        if best_child is not None:
+            self.last_choice = best_child
         return best_child, best_value
     
     def minmax(self, node, is_maximizing, current_depth = 0, *, max_depth, with_constraints=None):
