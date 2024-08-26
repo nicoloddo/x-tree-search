@@ -6,6 +6,10 @@ from games.game import Game, GameModel, GameTree
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
+
+    def action_print_attributes(self):
+        """Which attributes to print when printing an action"""
+        return ['what', 'where']
     
     def _game_model_definition(self) -> GameModel:
         gm = GameModel( 

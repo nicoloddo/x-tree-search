@@ -34,7 +34,11 @@ class Game:
     
     @property
     def tree(self):
-        return GameTree(self.gm, "board")
+        return GameTree(self.gm, "board", self.action_print_attributes())
+    
+    def action_print_attributes(self):
+        """Which attributes to print when printing an action"""
+        return ['who', 'what', 'where', 'on', 'what_before']
 
     @abstractmethod
     def act(self, action) -> None:
@@ -106,12 +110,11 @@ class GameAgent:
 
         current_state = tree.get_current_state()
 
-        best_outcome_id, _ = self.core.run(tree, current_state.id, with_constraints={'who': self.id})
+        best_outcome, _ = self.core.run(current_state, expand_with_constraints={'who': self.id})
         
-        if best_outcome_id is None:
+        if best_outcome is None:
             return
         
-        best_outcome = tree.get_node(best_outcome_id)
         action = best_outcome.action
         
         # Apply the move to the game
