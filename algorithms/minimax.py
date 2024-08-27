@@ -1,12 +1,12 @@
 from typing import Dict
 
-class MinMaxNode:
+class MiniMaxNode:
     """
-    A wrapper for nodes in the game tree for use with the MinMax algorithm.
+    A wrapper for nodes in the game tree for use with the MiniMax algorithm.
     
     Attributes:
         node (object): The original node from the game tree.
-        score (float): The score assigned to the node by the MinMax algorithm.
+        score (float): The score assigned to the node by the MiniMax algorithm.
     """
     def __init__(self, node, parent=None):
         self.node = node
@@ -24,7 +24,7 @@ class MinMaxNode:
         self.children = self.populate_children()
     
     def populate_children(self):
-        return [MinMaxNode(child, self) for child in self.node.children]
+        return [MiniMaxNode(child, self) for child in self.node.children]
     
     @property
     def is_leaf(self):
@@ -45,9 +45,9 @@ class MinMaxNode:
         return str(self.node)
 
 
-class MinMax:
+class MiniMax:
     """
-    Implements the MinMax algorithm with optional Alpha-Beta pruning to determine the optimal child of a node.
+    Implements the MiniMax algorithm with optional Alpha-Beta pruning to determine the optimal child of a node.
 
     Attributes:
         scoring_function (callable): A function that takes a node state and returns a numerical score.
@@ -62,13 +62,13 @@ class MinMax:
         if use_alpha_beta:
             self.algorithm = self.alphabeta
         else:
-            self.algorithm = self.minmax
+            self.algorithm = self.minimax
     
     def run(self, state_node, *, max_depth = None, expansion_constraints_self : Dict = None, expansion_constraints_other : Dict = None):
         if max_depth is None:
             max_depth = self.max_depth
 
-        search_root = MinMaxNode(state_node)
+        search_root = MiniMaxNode(state_node)
 
         best_child, best_value = self.algorithm(search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
 
@@ -76,7 +76,7 @@ class MinMax:
             self.last_choice = best_child
         return best_child, best_value
     
-    def minmax(self, node, is_maximizing, current_depth = 0, *, max_depth, constraints_maximizer=None, constraints_minimizer=None):
+    def minimax(self, node, is_maximizing, current_depth = 0, *, max_depth, constraints_maximizer=None, constraints_minimizer=None):
         if current_depth >= max_depth:
             node.score = self.score(node.node)
             return None, None
@@ -99,9 +99,9 @@ class MinMax:
         best_child = None
 
         for child in node.children:
-            # If child does not have a score, recursively call minmax on the child
+            # If child does not have a score, recursively call minimax on the child
             if not child.has_score():
-                _, _ = self.minmax(child, not is_maximizing, current_depth + 1, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer)
+                _, _ = self.minimax(child, not is_maximizing, current_depth + 1, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer)
 
             # Update the best value and best move depending on the player
             if is_maximizing:
@@ -141,7 +141,7 @@ class MinMax:
         best_child = None
 
         for child in node.children:
-            # If child does not have a score, recursively call minmax on the child
+            # If child does not have a score, recursively call minimax on the child
             if not child.has_score():
                 _, _ = self.alphabeta(child, not is_maximizing, current_depth + 1, alpha, beta, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer)
 

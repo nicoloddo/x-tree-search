@@ -2,12 +2,12 @@
 
 The Argumentation Framework API provides a flexible system for defining propositions and inferences about nodes in a tree-based structure. Given the framework you can then explain any decision made by the algorithm in an interactive argumentative way.
 
-# Usage Example: MinMax Tree Search
+# Usage Example: MiniMax Tree Search
 
-Here's an example of how to use the Argumentation Framework API to represent a minmax tree search reasoning.
-Suppose to have a MinMax algorithm that gives scores to the leaf nodes and backpropagates the score of the best or worst child depending on if the maximizing or minimizing player is playing.
+Here's an example of how to use the Argumentation Framework API to represent a minimax tree search reasoning.
+Suppose to have a MiniMax algorithm that gives scores to the leaf nodes and backpropagates the score of the best or worst child depending on if the maximizing or minimizing player is playing.
 
-To argumentatively explain a decision made by our minmax, we have to define where do the adjectives "best" and "worst" come from for a node.
+To argumentatively explain a decision made by our minimax, we have to define where do the adjectives "best" and "worst" come from for a node.
 1. Thus, we declare a "score" adjective, linked to the node.score parameter.
 2. Then we provide an explanation to why a node has a specific score.
 3. This includes explaining what a leaf is,

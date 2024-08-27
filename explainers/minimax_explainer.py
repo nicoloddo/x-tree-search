@@ -6,16 +6,16 @@ from src.explainer.explanation import Possession, Assumption, If, ConditionalExp
 
 from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, SubstituteQuantitativeExplanations, SkipConditionStatement
 
-class MinMaxExplainer:
+class MiniMaxExplainer:
     """
     A factory class that returns an instance of ArgumentativeExplainer
-    configured for MinMax explanations.
+    configured for MiniMax explanations.
     """
 
     def __new__(cls, *args, **kwargs):
         """
         Create and return an instance of ArgumentativeExplainer
-        configured for MinMax explanations.
+        configured for MiniMax explanations.
 
         Returns:
             An instance of ArgumentativeExplainer
