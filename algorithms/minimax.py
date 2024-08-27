@@ -38,6 +38,7 @@ class MiniMaxNode:
     def action(self):
         return self.node.action
 
+    @property
     def has_score(self):
         return self.score is not None
     
@@ -100,7 +101,7 @@ class MiniMax:
 
         for child in node.children:
             # If child does not have a score, recursively call minimax on the child
-            if not child.has_score():
+            if not child.has_score:
                 _, _ = self.minimax(child, not is_maximizing, current_depth + 1, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer)
 
             # Update the best value and best move depending on the player
@@ -139,10 +140,12 @@ class MiniMax:
             best_value = float('inf')
         
         best_child = None
+        alpha_child = None
+        beta_child = None
 
         for child in node.children:
             # If child does not have a score, recursively call minimax on the child
-            if not child.has_score():
+            if not child.has_score:
                 _, _ = self.alphabeta(child, not is_maximizing, current_depth + 1, alpha, beta, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer)
 
             # Update the best value and best move depending on the player
@@ -157,6 +160,7 @@ class MiniMax:
                     # The backpropagated score will be alpha or more:
                     # at least alpha.
                     alpha = best_value
+                    alpha_child = child
 
                 # Alpha-beta pruning
                 if beta <= alpha:
@@ -178,6 +182,7 @@ class MiniMax:
                     # The backpropagated score will be beta or less:
                     # at maximum beta.
                     beta = best_value
+                    beta_child = child
 
                 # Alpha-beta pruning
                 if beta <= alpha:
@@ -191,4 +196,7 @@ class MiniMax:
         # Assign the best value to the current node
         node.score_child = best_child
         node.score = best_value
+        
+        node.alpha = alpha_child
+        node.beta = beta_child
         return best_child, best_value

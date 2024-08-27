@@ -2,11 +2,11 @@ from src.explainer.explainer import ArgumentativeExplainer
 from src.explainer.framework import ArgumentationFramework
 
 from src.explainer.adjective import BooleanAdjective, PointerAdjective, QuantitativePointerAdjective, NodesGroupPointerAdjective, ComparisonAdjective, MaxRankAdjective, MinRankAdjective
-from src.explainer.explanation import Possession, Assumption, If, ConditionalExplanation, CompositeExplanation
+from src.explainer.explanation import Possession, Assumption, Comparison, If, ConditionalExplanation, CompositeExplanation
 
 from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, SubstituteQuantitativeExplanations, SkipConditionStatement
 
-class MiniMaxExplainer:
+class AlphaBetaExplainer:
     """
     A factory class that returns an instance of ArgumentativeExplainer
     configured for MiniMax explanations.
@@ -61,14 +61,49 @@ class MiniMaxExplainer:
                         )),
 
                     ComparisonAdjective("better", "score", ">="),
-                
+                    ComparisonAdjective("better", "score", "<="),
+
+                    BooleanAdjective("not worth exploring",
+                        definition = "not node.has_score",
+                        
+                        explanation = ConditionalExplanation(
+                            condition = If("opponent player turn"),
+                            explanation_if_true = CompositeExplanation(
+                                Assumption("On our turn we would choose this good sibling, or even better."),
+                                Comparison("bad sibling", "worse", "what we could choose at the previous move")
+                            ),
+                            explanation_if_false = CompositeExplanation(
+                                Assumption("On our turn we would choose this good sibling, or even better."),
+                                Comparison("good sibling", "better", "what the opponent could choose at the previous move")
+                        ))),
+                    
+                    PointerAdjective("good sibling",
+                        definition = "node.parent.alpha",
+                        explanation = Possession("siblings")),
+
+                    PointerAdjective("bad sibling",
+                        definition = "node.parent.beta",
+                        explanation = Possession("siblings")),
+
+                    PointerAdjective("what they could choose at the previous move",
+                        definition = "node.parent.beta",
+                        explanation = Assumption("We assume the opponent will do their best move.")),
+
+                    PointerAdjective("what we could choose at the previous move",
+                        definition = "node.parent.alpha",
+                        explanation = Assumption("On our turn we take the maximum rated move.")),
+                    
                     NodesGroupPointerAdjective("siblings",
                         definition = "node.parent.children",
                         excluding = "node"),
 
-                    MaxRankAdjective("best", "better", "siblings"),
+                    NodesGroupPointerAdjective("siblings worth exploring",
+                        definition = "[sibling for sibling in node.parent.children if sibling.has_score]",
+                        excluding = "node"),
 
-                    MinRankAdjective("worst", "better", "siblings"),
+                    MaxRankAdjective("best", "better", "siblings worth exploring"),
+
+                    MaxRankAdjective("worst", "worse", "siblings worth exploring"),
                 ],
 
                 settings = {
@@ -123,8 +158,7 @@ class MiniMaxExplainer:
                         definition = "node.parent.children",
                         excluding = "node"),
 
-                    MaxRankAdjective("the best", "better", "possible alternative moves",
-                                    tactics = [OnlyRelevantComparisons(mode = "top_3")]),
+                    MaxRankAdjective("the best", "better", "possible alternative moves"),
 
                     MinRankAdjective("the best the opponent can do", "better", "possible alternative moves"),
                 ],
