@@ -170,7 +170,7 @@ class Possession(Explanation):
             # If two arguments are provided, the first is the pointer adjective name
             self.pointer_adjective_name, self.adjective_name = args
         else:
-            raise ValueError("AdjectiveExplanation takes a max of 2 arguments")
+            raise ValueError("A Possession explanation takes a max of 2 arguments")
 
     def _explain(self, node: Any) -> LogicalExpression:
         """
@@ -187,7 +187,7 @@ class Possession(Explanation):
         adjective = self.framework.get_adjective(self.adjective_name)
 
         if not self.pointer_adjective_name: # the possession refers to the self node
-            explanation = self.forward_explanation(adjective, node)
+            explanation = self.forward_explanation(adjective, node) # Why the node has this property?
 
         else:
             pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
@@ -228,6 +228,80 @@ class Possession(Explanation):
                     pointer_adjective.implies(), # why this referred_object?
                     adjective.implies()) # why the referred_object has this property?
             return implication
+        
+class Comparison(Explanation):
+    """Represents an explanation given by referring to 
+    a comparison between a node and another."""
+
+    def __init__(self, *args): #(obj1_pointer_adjective_name: str, comparison_adjective_name: str, obj2_pointer_adjective_name: str)
+        super().__init__()
+        """
+        Initialize the Comparison explanation.
+
+        Usage:
+            Comparison(comparison_adjective_name, obj2_pointer_adjective_name)
+            Comparison(obj1_pointer_adjective_name, comparison_adjective_name, obj2_pointer_adjective_name)
+
+            The first case takes the current node as first object of comparison
+        
+        Args:
+            *args: Either two or three string arguments.
+                   If two argument: comparison_adjective_name, obj2_pointer_adjective_name
+                   If three arguments: obj1_pointer_adjective_name, comparison_adjective_name, obj2_pointer_adjective_name)
+
+            obj1_pointer_adjective_name: The name of the pointer adjective that selects the first object to compare.
+                                        If not given the node itself will be used.
+            comparison_adjective_name: The name of the adjective to use for the comparison.
+            obj2_pointer_adjective_name : The name of the pointer adjective that selects the second object to compare.
+        """
+        
+        if len(args) == 2:
+            # If they did not provide 2 arguments, the first is the comparison_adjective_name
+            self.obj1_pointer_adjective_name = None
+            self.comparison_adjective_name = args[0]
+            self.obj2_pointer_adjective_name = args[1]
+        elif len(args) == 3:
+            # If two arguments are provided, the first is the pointer obj1_pointer_adjective_name
+            self.obj1_pointer_adjective_name, self.comparison_adjective_name, self.obj2_pointer_adjective_name = args
+        else:
+            raise ValueError("A Comparison explanation takes a min of 2 and a max of 3 arguments")
+
+    def _explain(self, node: Any):
+        comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
+        
+        obj2_pointer_adjective = self.framework.get_adjective(self.obj2_pointer_adjective_name)
+        obj2 = self.forward_evaluation(obj2_pointer_adjective, node)
+
+        if self.obj1_pointer_adjective_name is None:
+            explanations = self.forward_multiple_explanations(
+                    (comparison_adjective, node, obj2), # why obj1 is <(e.g.) better> than obj2?
+                    (obj2_pointer_adjective, node) # why the node has this pointer adjective?
+                )
+            
+        else:
+            obj1_pointer_adjective = self.framework.get_adjective(self.obj1_pointer_adjective_name)
+            obj1 = self.forward_evaluation(obj1_pointer_adjective, node)
+
+            explanations = self.forward_multiple_explanations(
+                    (comparison_adjective, obj1, obj2), # why obj1 is <(e.g.) better> than obj2?
+                    (obj1_pointer_adjective, node), # why the node has this pointer adjective?
+                    (obj2_pointer_adjective, node) # why the node has this pointer adjective?
+                )
+        
+        explanation = And(*explanations)
+        return explanation
+    
+    def implies(self) -> LogicalExpression:
+        """ Generates a proposition that contitutes the antecedent of an
+        implication explaining why a certain object referenced through a pointer adjectiv
+        is <(e.g.) better> than another."""
+        # TODO: do the implies
+        if self.obj1_pointer_adjective_name is None:
+            obj1_string = "Node"
+        else:
+            obj1_string = self.obj1_pointer_adjective_name
+
+        return Postulate(f"{obj1_string} is {self.comparison_adjective_name} than {self.obj1_pointer_adjective_name}")
 
 class ComparisonNodesPropertyPossession(Explanation):
     """Represents an explanation provided by referring to the possession
