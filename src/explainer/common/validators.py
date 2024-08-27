@@ -26,14 +26,14 @@ def validate_getter(getter):
                 current = node
                 while isinstance(current, ast.Attribute):
                     current = current.value
-                if not (isinstance(current, ast.Name) and current.id == 'node'):
+                if not (isinstance(current, ast.Name) and current.id == 'node') and not self.in_list_comprehension:
                     self.is_valid = False
                     raise ValueError("Invalid attribute access, must start with 'node'")
                 self.generic_visit(node)
             
             def visit_Name(self, node):
                 # Allow usage of 'node' and identifiers in list comprehensions
-                if node.id != 'node' and not self.in_list_comprehension:
+                if node.id != 'node' and node.id != 'element' and not self.in_list_comprehension:
                     self.is_valid = False
                     raise ValueError("Usage of unauthorized identifier: '{}'".format(node.id))
                 self.generic_visit(node)
