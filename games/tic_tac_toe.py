@@ -11,6 +11,17 @@ class TicTacToe(Game):
         """Which attributes to print when printing an action"""
         return ['what', 'where']
     
+    def expansion_constraints_self(self, agent_id):
+        return {'who': agent_id}
+    
+    def expansion_constraints_other(self, agent_id):
+        not_agent_ids = [key for key in self.players.keys() if key != agent_id] # Get the players ids different than the maximizer
+        if len(not_agent_ids) == 1:
+            other_id = not_agent_ids[0]
+            return {'who': other_id}
+        else:
+            raise ValueError("A TicTacToe game should have a maximum of two players.")
+    
     def _game_model_definition(self) -> GameModel:
         gm = GameModel( 
         agents_number=2, default_agent_features=['not starter', 'X'], additional_agent_features=[['starter'], ['O']], 

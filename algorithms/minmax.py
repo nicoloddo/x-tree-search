@@ -60,7 +60,7 @@ class MinMax:
         self.start_with_maximizing = start_with_maximizing
         self.use_alpha_beta = use_alpha_beta
     
-    def run(self, state_node, *, max_depth = None, expand_with_constraints: Dict = None):
+    def run(self, state_node, *, max_depth = None, expansion_constraints_self : Dict = None, expansion_constraints_other : Dict = None):
         if max_depth is None:
             max_depth = self.max_depth
 
@@ -70,17 +70,18 @@ class MinMax:
             pass
             #TODO: best_child, best_value = self.alpha_beta(search_root, depth, float('-inf'), float('inf'), self.start_with_maximizing)
         else:
-            best_child, best_value = self.minmax(search_root, self.start_with_maximizing, max_depth=max_depth, with_constraints=expand_with_constraints)
+            best_child, best_value = self.minmax(search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
 
         if best_child is not None:
             self.last_choice = best_child
         return best_child, best_value
     
-    def minmax(self, node, is_maximizing, current_depth = 0, *, max_depth, with_constraints=None):
+    def minmax(self, node, is_maximizing, current_depth = 0, *, max_depth, constraints_maximizer=None, constraints_minimizer=None):
         if current_depth >= max_depth:
             node.score = self.score(node.node)
             return None, None
         else:
+            with_constraints = constraints_maximizer if is_maximizing else constraints_minimizer
             node.expand(with_constraints)
             node.maximizing_player_turn = is_maximizing
 
@@ -100,7 +101,7 @@ class MinMax:
         for child in node.children:
             # If child does not have a score, recursively call minmax on the child
             if not child.has_score():
-                _, _ = self.minmax(child, not is_maximizing, current_depth + 1, max_depth=max_depth)
+                _, _ = self.minmax(child, not is_maximizing, current_depth + 1, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer)
 
             # Update the best value and best move depending on the player
             if is_maximizing:

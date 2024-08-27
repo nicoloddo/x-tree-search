@@ -18,7 +18,7 @@ class Game:
 
     def __init__(self):
         self.gm = self._game_model_definition()
-        self.players = {}
+        self.players = {} # Dictionary that holds the players as 'id': player
         self.stop = False
         self.clear_console = self.clear_cmd  # To keep track of the previous state
         self._previous_state = None
@@ -26,6 +26,29 @@ class Game:
     @abstractmethod
     def _game_model_definition(self) -> GameModel:
         """Method that builds the game model of the game."""
+        pass
+
+    @abstractmethod
+    def expansion_constraints_self(self) -> Dict:
+        """Method that provides constraints to expand a node of the tree
+        game when is the turn of the self player.
+        Return None if you don't want to constrain the expansion.
+        E.g.: 
+        expansion_constraints_self(self, maximizer_id) 
+            return {'who': maximizer_id}"""
+        pass
+    
+    @abstractmethod
+    def expansion_constraints_other(self) -> Dict:
+        """Method that provides constraints to expand a node of the tree
+        game when is the turn of the other player.
+        Return None if you don't want to constrain the expansion.
+        E.g.: 
+        expansion_constraints_other(self, agent_id) 
+            not_agent_ids = [key for key, val in self.players.items() if val != agent_id]
+            other_id = not_agent_ids[0]
+            return {'who': other_id}
+        """
         pass
 
     @property
@@ -45,7 +68,8 @@ class Game:
         pass
     
     def set_players(self, players):
-        self.players = players
+        for player in players:
+            self.players[player.id] = player
 
     def start(self):
         """This does not run on Jupyter"""
@@ -64,7 +88,7 @@ class Game:
         print(self.tree.get_current_state().state)
 
         while not self.gm.ended and not self.stop:
-            await asyncio.gather(*(player.play(self) for player in self.players))
+            await asyncio.gather(*(player.play(self) for player in self.players.values()))
             await asyncio.sleep(0.1)  # Reduced sleep time for more responsive updates
 
         # Stop the state monitoring task
@@ -109,8 +133,9 @@ class GameAgent:
         tree = game.tree
 
         current_state = tree.get_current_state()
-
-        best_outcome, _ = self.core.run(current_state, expand_with_constraints={'who': self.id})
+        self_constraints = game.expansion_constraints_self(self.id)
+        other_constraints = game.expansion_constraints_other(self.id)
+        best_outcome, _ = self.core.run(current_state, expansion_constraints_self=self_constraints, expansion_constraints_other=other_constraints)
         
         if best_outcome is None:
             return
