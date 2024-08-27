@@ -146,20 +146,47 @@ class MiniMax:
                 _, _ = self.alphabeta(child, not is_maximizing, current_depth + 1, alpha, beta, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer)
 
             # Update the best value and best move depending on the player
-            if is_maximizing:
+            if is_maximizing: # Maximizing player turn
                 if child.score > best_value:
                     best_value = child.score
                     best_child = child
-                alpha = max(alpha, best_value)
-            else:
+
+                if best_value > alpha:
+                    # The maximizer will choose this score or,
+                    # if there are better childs, even more.
+                    # The backpropagated score will be alpha or more:
+                    # at least alpha.
+                    alpha = best_value
+
+                # Alpha-beta pruning
+                if beta <= alpha:
+                    # the minimizing player had a better move to choose:
+                    # because the score backpropagated from this branch will be at least alpha,
+                    # and the minimizer had another branch in which the score was beta,
+                    # and beta <= alpha (better for the minimizer),
+                    # the minimizer will not go down this way.
+                    break
+
+            else: # Minimizer player turn
                 if child.score < best_value:
                     best_value = child.score
                     best_child = child
-                beta = min(beta, best_value)
+                
+                if best_value < beta:
+                    # The minimizer will choose this score or,
+                    # if there are worse childs, even less.
+                    # The backpropagated score will be beta or less:
+                    # at maximum beta.
+                    beta = best_value
 
-            # Alpha-beta pruning
-            if beta <= alpha:
-                break
+                # Alpha-beta pruning
+                if beta <= alpha:
+                    # the minimizing player had a better move to choose:
+                    # because the score backpropagated from this branch will be at maximum beta,
+                    # and the maximizer had another branch in which the score was alpha,
+                    # and alpha >= beta (better for the maximizer),
+                    # the maximizer will not go down this way.
+                    break
         
         # Assign the best value to the current node
         node.score_child = best_child
