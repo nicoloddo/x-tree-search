@@ -96,7 +96,7 @@ class MiniMaxExplainer:
                             condition = If("final move"),
                             explanation_if_true = Assumption("final moves are evaluated only looking at the final position", necessary=True),
                             explanation_if_false = CompositeExplanation(
-                                Possession("next possible move"))
+                                Possession("next possible move", "score"))
                         )),
                     
 
