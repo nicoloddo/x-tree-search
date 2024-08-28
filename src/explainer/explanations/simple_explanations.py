@@ -233,7 +233,7 @@ class Comparison(Explanation):
     """Represents an explanation given by referring to 
     a comparison between a node and another."""
 
-    def __init__(self, *args): #(obj1_pointer_adjective_name: str, comparison_adjective_name: str, obj2_pointer_adjective_name: str)
+    def __init__(self, *args, forward_property_explanations = False): #(obj1_pointer_adjective_name: str, comparison_adjective_name: str, obj2_pointer_adjective_name: str)
         super().__init__()
         """
         Initialize the Comparison explanation.
@@ -252,7 +252,10 @@ class Comparison(Explanation):
             obj1_pointer_adjective_name: The name of the pointer adjective that selects the first object to compare.
                                         If not given the node itself will be used.
             comparison_adjective_name: The name of the adjective to use for the comparison.
-            obj2_pointer_adjective_name : The name of the pointer adjective that selects the second object to compare.
+            obj2_pointer_adjective_name : The name of the pointer adjective that selects the second object to compare.7
+
+            keyword argument:
+            forward_property_explanations: whether it is necessary to explain why the node has the given pointer adjectives attached.
         """
         
         if len(args) == 2:
@@ -265,6 +268,8 @@ class Comparison(Explanation):
             self.obj1_pointer_adjective_name, self.comparison_adjective_name, self.obj2_pointer_adjective_name = args
         else:
             raise ValueError("A Comparison explanation takes a min of 2 and a max of 3 arguments")
+        
+        self.forward_property_explanations = forward_property_explanations
 
     def _explain(self, node: Any):
         comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
@@ -273,22 +278,29 @@ class Comparison(Explanation):
         obj2 = self.forward_evaluation(obj2_pointer_adjective, node)
 
         if self.obj1_pointer_adjective_name is None:
-            explanations = self.forward_multiple_explanations(
-                    (comparison_adjective, node, obj2), # why obj1 is <(e.g.) better> than obj2?
-                    (obj2_pointer_adjective, node) # why the node has this pointer adjective?
-                )
+            if self.forward_property_explanations:
+                explanations = self.forward_multiple_explanations(
+                        (comparison_adjective, node, obj2), # why obj1 is <(e.g.) better> than obj2?
+                        (obj2_pointer_adjective, node) # why the node has this pointer adjective?
+                    )
+                explanation = And(*explanations)
+            else:
+                explanation = self.forward_explanation(comparison_adjective, node, obj2)
             
         else:
             obj1_pointer_adjective = self.framework.get_adjective(self.obj1_pointer_adjective_name)
             obj1 = self.forward_evaluation(obj1_pointer_adjective, node)
 
-            explanations = self.forward_multiple_explanations(
-                    (comparison_adjective, obj1, obj2), # why obj1 is <(e.g.) better> than obj2?
-                    (obj1_pointer_adjective, node), # why the node has this pointer adjective?
-                    (obj2_pointer_adjective, node) # why the node has this pointer adjective?
-                )
-        
-        explanation = And(*explanations)
+            if self.forward_property_explanations:
+                explanations = self.forward_multiple_explanations(
+                        (comparison_adjective, obj1, obj2), # why obj1 is <(e.g.) better> than obj2?
+                        (obj1_pointer_adjective, node), # why the node has this pointer adjective?
+                        (obj2_pointer_adjective, node) # why the node has this pointer adjective?
+                    )
+                explanation = And(*explanations)
+            else:
+                explanation = self.forward_explanation(comparison_adjective, obj1, obj2)
+
         return explanation
     
     def implies(self) -> LogicalExpression:
