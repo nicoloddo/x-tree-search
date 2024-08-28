@@ -156,7 +156,6 @@ class GameTree(Tree):
 
             composed_string = f"{who_does}{what_in}{where}{on_action_space}{modifying_what}"
             composed_string = composed_string[:-1] # Remove the last space
-            composed_string = '{' + composed_string + '}'
             return composed_string
 
     def __add_node(self, parent=None, value=None, *, root_node_bool=False):
