@@ -108,12 +108,12 @@ class ArgumentativeExplainer:
             self.select_framework(with_framework)
 
         if explanation_depth is not None:
-            prev_explanation_depth = self.settings.explanation_depth
-            self.settings.explanation_depth = explanation_depth
+            prev_explanation_depth = self.framework.settings.explanation_depth
+            self.framework.settings.explanation_depth = explanation_depth
 
         if print_depth is not None:
-            prev_print_depth = self.settings.print_depth
-            self.settings.print_depth = print_depth
+            prev_print_depth = self.framework.settings.print_depth
+            self.framework.settings.print_depth = print_depth
 
 
         # Get the explanation
@@ -148,10 +148,10 @@ class ArgumentativeExplainer:
             self.select_framework(prev_framework)
 
         if explanation_depth is not None:
-            self.settings.explanation_depth = prev_explanation_depth
+            self.framework.settings.explanation_depth = prev_explanation_depth
 
         if print_depth is not None:
-            self.settings.print_depth = prev_print_depth
+            self.framework.settings.print_depth = prev_print_depth
 
         # Raise unexpected exception
         if to_raise_later is not None:
