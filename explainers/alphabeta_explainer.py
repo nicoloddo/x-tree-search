@@ -21,100 +21,7 @@ class AlphaBetaExplainer:
             An instance of ArgumentativeExplainer
         """
         explainer = ArgumentativeExplainer()
-
-        explainer.add_framework("lowlevel", 
-            ArgumentationFramework(refer_to_nodes_as = 'node',
-                
-                adjectives = [
-                
-                    BooleanAdjective("leaf",
-                        definition = "node.is_leaf"),
-
-
-                    QuantitativePointerAdjective("score",
-                        definition = "node.score",
-
-                        explanation = ConditionalExplanation(
-                            condition = If("leaf"),
-                            explanation_if_true = Assumption("Leaf nodes have scores from the evaluation function"),
-                            explanation_if_false = CompositeExplanation(
-                                Assumption("Internal nodes have scores from children"),
-                                Possession("backpropagating child", "score"))
-                        )),
-
-
-                    BooleanAdjective("opponent player turn",
-                        definition = "not node.maximizing_player_turn"),
-
-
-                    PointerAdjective("backpropagating child",
-                        definition = "node.score_child",
-
-                        explanation = ConditionalExplanation(
-                            condition = If("opponent player turn"),
-                            explanation_if_true = CompositeExplanation(
-                                Assumption("We assume the opponent will do their best move."),
-                                Possession("backpropagating child", "worst")),
-                            explanation_if_false = CompositeExplanation(
-                                Assumption("On our turn we take the maximum rated move."),
-                                Possession("backpropagating child", "best"))
-                        )),
-
-                    ComparisonAdjective("better", "score", ">="),
-                    ComparisonAdjective("better", "score", "<="),
-
-                    BooleanAdjective("not worth exploring",
-                        definition = "not node.has_score",
-                        
-                        explanation = ConditionalExplanation(
-                            condition = If("opponent player turn"),
-                            explanation_if_true = CompositeExplanation(
-                                Assumption("On our turn we would choose this good sibling, or even better."),
-                                Comparison("bad sibling", "worse", "what we could choose at the previous move")
-                            ),
-                            explanation_if_false = CompositeExplanation(
-                                Assumption("On our turn we would choose this good sibling, or even better."),
-                                Comparison("good sibling", "better", "what the opponent could choose at the previous move")
-                        ))),
-                    
-                    PointerAdjective("good sibling",
-                        definition = "node.parent.alpha",
-                        explanation = Possession("siblings")),
-
-                    PointerAdjective("bad sibling",
-                        definition = "node.parent.beta",
-                        explanation = Possession("siblings")),
-
-                    PointerAdjective("what they could choose at the previous move",
-                        definition = "node.parent.beta",
-                        explanation = Assumption("We assume the opponent will do their best move.")),
-
-                    PointerAdjective("what we could choose at the previous move",
-                        definition = "node.parent.alpha",
-                        explanation = Assumption("On our turn we take the maximum rated move.")),
-                    
-                    NodesGroupPointerAdjective("siblings",
-                        definition = "node.parent.children",
-                        excluding = "node"),
-
-                    NodesGroupPointerAdjective("siblings worth exploring",
-                        definition = "[sibling for sibling in node.parent.children if sibling.has_score]",
-                        excluding = "node"),
-
-                    MaxRankAdjective("best", "better", "siblings worth exploring"),
-
-                    MaxRankAdjective("worst", "worse", "siblings worth exploring"),
-                ],
-
-                settings = {
-                    'explanation_depth': 3 ,
-                    'print_implicit_assumptions': True,
-                    'assumptions_verbosity': 'verbose',
-                    'print_mode': 'logic'
-                }
-            )
-        )
-
+        
         explainer.add_framework("highlevel", 
             ArgumentationFramework(refer_to_nodes_as = 'move',
 
@@ -130,50 +37,161 @@ class AlphaBetaExplainer:
                         explanation = ConditionalExplanation(
                             condition = If("final move"),
                             explanation_if_true = Assumption("final moves are evaluated only looking at the final position", necessary=True),
-                            explanation_if_false = CompositeExplanation(
-                                Possession("next possible move"))
-                        )),
+                            explanation_if_false = ConditionalExplanation(
+                                condition=If("fully searched"),
+                                skip_condition_statement = True,
+                                explanation_if_false = ConditionalExplanation(
+                                        condition = If("opponent player turn"),
+                                        explanation_if_true = CompositeExplanation(
+                                            Possession("next move at least"),
+                                            Possession("irrelevant to study further")),
+                                        explanation_if_false = CompositeExplanation(
+                                            Possession("next move at least"),
+                                            Possession("irrelevant to study further")),
+                                    ),
+                                    
+                                explanation_if_true = CompositeExplanation(
+                                    Possession("next move", "score"))
+                            )
+                        ),
+                    ),
                     
 
                     BooleanAdjective("opponent player turn",
                         definition = "not node.maximizing_player_turn"),
 
+                    BooleanAdjective("fully searched",
+                        definition = "node.fully_searched"),
 
-                    PointerAdjective("next possible move",
+                    PointerAdjective("next move",
                         definition = "node.score_child",
 
                         explanation = ConditionalExplanation(
-                            condition = If("opponent player turn"),
-                            explanation_if_true = CompositeExplanation(
-                                Assumption("we assume the opponent will do their best move"),
-                                Possession("next possible move", "the best the opponent can do")),
-                            explanation_if_false = CompositeExplanation(
-                                Assumption("on our turn we take the maximum rated move"),
-                                Possession("next possible move", "the best"))
+                            condition = If("fully searched"),
+                            skip_condition_statement = True,
+
+                            explanation_if_true = ConditionalExplanation(
+                                condition = If("opponent player turn"),
+                                explanation_if_true = CompositeExplanation(
+                                    Assumption("We assume the opponent will do their best move."),
+                                    Possession("next move", "the best the opponent can do")),
+                                explanation_if_false = CompositeExplanation(
+                                    Assumption("On our turn we take the maximum rated move."),
+                                    Possession("next move", "the best"))),
+                            
+                            explanation_if_false = ConditionalExplanation(
+                                condition = If("opponent player turn"),
+                                explanation_if_true = CompositeExplanation(
+                                    Assumption("The opponent can choose to do this move, or something even worse for us."),
+                                    ),
+                                explanation_if_false = CompositeExplanation(
+                                    Assumption("We could choose to do this move, or something even worse for the opponent."),
+                                    )
+                                )
                         )),
 
-                    ComparisonAdjective("better", "score", ">="),
+                    PointerAdjective("next move at least",
+                        definition = "node.score_child",
+
+                        explanation = ConditionalExplanation(
+                            condition = If("fully searched"),
+                            skip_condition_statement = True,
+
+                            explanation_if_true = ConditionalExplanation(
+                                condition = If("opponent player turn"),
+                                explanation_if_true = CompositeExplanation(
+                                    Assumption("We assume the opponent will do their best move."),
+                                    Possession("next move", "the best the opponent can do")),
+                                explanation_if_false = CompositeExplanation(
+                                    Assumption("On our turn we take the maximum rated move."),
+                                    Possession("next move", "the best"))),
+                            
+                            explanation_if_false = ConditionalExplanation(
+                                condition = If("opponent player turn"),
+                                explanation_if_true = CompositeExplanation(
+                                    Assumption("The opponent can choose to do this move, or something even worse for us."),
+                                    ),
+                                explanation_if_false = CompositeExplanation(
+                                    Assumption("We could choose to do this move, or something even worse for the opponent."),
+                                    )
+                                )
+                        )),
+
+                    BooleanAdjective("irrelevant to study further",
+                        definition = "not node.fully_searched",
+                        
+                        explanation = ConditionalExplanation(
+                                condition = If("opponent player turn"),
+                                skip_condition_statement = True,
+
+                                explanation_if_true = CompositeExplanation(
+                                    Possession("better alternative for us"),
+                                    Comparison("next move", "worse or equal", "better alternative for us")),
+                                explanation_if_false = CompositeExplanation(
+                                    Possession("better alternative for the opponent"),
+                                    Comparison("next move", "better or equal", "better alternative for the opponent"))
+                            )
+                    ),
+
+                    PointerAdjective("better alternative for the opponent",
+                        definition = "node.beta",
+                        explanation = Assumption("We assume the opponent will do their best move.")),
+
+                    PointerAdjective("better alternative for us",
+                        definition = "node.alpha",
+                        explanation = Assumption("On our turn we take the maximum rated move.")),
+
+                    ComparisonAdjective("better or equal", "score", ">="),
+
+                    ComparisonAdjective("worse or equal", "score", "<="),
                 
                     NodesGroupPointerAdjective("possible alternative moves",
                         definition = "node.parent.children",
                         excluding = "node"),
 
-                    MaxRankAdjective("the best", "better", "possible alternative moves"),
+                    MaxRankAdjective("the best", "better or equal", "possible alternative moves"),
 
-                    MinRankAdjective("the best the opponent can do", "better", "possible alternative moves"),
+                    MaxRankAdjective("the best the opponent can do", "worse or equal", "possible alternative moves"),
                 ],
                 
                 tactics=[
-                    SubstituteQuantitativeExplanations("it leads to a better position")
+                    #SubstituteQuantitativeExplanations("it leads to a better or equal position"),
                 ],
 
                 settings = {
                     'explanation_depth': 4 ,
                     'print_implicit_assumptions': False,
-                    'assumptions_verbosity': 'if_asked',
+                    'assumptions_verbosity': 'verbose',
                     'print_mode': 'verbal'
                 }
             )
         )
 
         return explainer
+    
+
+
+"""Alternative:
+
+                    BooleanAdjective("not worth exploring",
+                        definition = "not node.has_score",
+                        
+                        explanation = ConditionalExplanation(
+                            condition = If("opponent player turn"),
+                            explanation_if_true = CompositeExplanation(
+                                Assumption("The opponent would choose this bad sibling, or even worse."),
+                                Comparison("bad sibling", "worse", "what we could choose at the previous move")
+                            ),
+                            explanation_if_false = CompositeExplanation(
+                                Assumption("On our turn we would choose this good sibling, or even better."),
+                                Comparison("good sibling", "better", "what the opponent could choose at the previous move")
+                        ))),
+                    
+                    PointerAdjective("good sibling",
+                        definition = "node.parent.alpha",
+                        explanation = Possession("siblings")),
+
+                    PointerAdjective("bad sibling",
+                        definition = "node.parent.beta",
+                        explanation = Possession("siblings")),
+"""
