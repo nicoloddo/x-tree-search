@@ -89,7 +89,7 @@ class If(Possession):
 class ConditionalExplanation(Explanation):
     """Represents an explanation that depends on a condition."""
     
-    def __init__(self, condition: If, explanation_if_true: Explanation, explanation_if_false: Explanation):
+    def __init__(self, *, condition: If, explanation_if_true: Explanation, explanation_if_false: Explanation, skip_condition_statement: bool = False):
         super().__init__()
         """
         Initialize the ConditionalExplanation.
@@ -102,6 +102,7 @@ class ConditionalExplanation(Explanation):
         self.condition = condition
         self.explanation_if_true = explanation_if_true
         self.explanation_if_false = explanation_if_false
+        self.skip_condition_statement = skip_condition_statement
 
     def _contextualize(self):
         self.condition.contextualize(self.explanation_of_adjective)
@@ -124,19 +125,25 @@ class ConditionalExplanation(Explanation):
         condition_result = self.forward_evaluation(self.condition, node)
 
         if condition_result:
-            explanations = self.forward_multiple_explanations(
-                    (self.condition, node),
-                    (self.explanation_if_true, node),
-                    no_increment = True
-                )
-            explanation = And(*explanations)
+            if self.skip_condition_statement:
+                explanation = self.forward_explanation(self.explanation_if_true, node, no_increment=True)
+            else:
+                explanations = self.forward_multiple_explanations(
+                        (self.condition, node),
+                        (self.explanation_if_true, node),
+                        no_increment = True
+                    )
+                explanation = And(*explanations)
         else:
-            explanations = self.forward_multiple_explanations(
-                    (self.condition, node),
-                    (self.explanation_if_false, node),
-                    no_increment = True
-                )
-            explanation = And(*explanations)
+            if self.skip_condition_statement:
+                explanation = self.forward_explanation(self.explanation_if_false, node, no_increment=True)
+            else:
+                explanations = self.forward_multiple_explanations(
+                        (self.condition, node),
+                        (self.explanation_if_false, node),
+                        no_increment = True
+                    )
+                explanation = And(*explanations)
 
         return explanation
 
