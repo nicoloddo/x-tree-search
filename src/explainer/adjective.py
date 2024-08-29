@@ -150,7 +150,7 @@ class Adjective(ABC):
     def _proposition(self, *args, **kwargs) -> Proposition:
         pass
 
-    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics = None, current_explanation_depth) -> Implies:
+    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics = None, current_explanation_depth, explain_further=True) -> Implies:
         """
         Provide an explanation for the adjective's value on a given node.
         
@@ -174,7 +174,7 @@ class Adjective(ABC):
             consequent = self.proposition(evaluation, node, explanation_tactics=explanation_tactics)
             antecedent = self.explanation.explain(node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
         
-        if antecedent is not None: # If the explanation was given
+        if antecedent is not None and explain_further: # If the explanation was given
             implication = Implies(antecedent, consequent)
 
             if self.framework.settings.print_depth:
@@ -281,18 +281,21 @@ class ComparisonAdjective(Adjective):
     """Represents a ranking adjective used for comparing nodes.
     Comparison nodes do not need a getter to be evaluated."""
     
-    def __init__(self, name: str, property_pointer_adjective_name: str, operator: str, tactics = None):
+    def __init__(self, name: str, property_pointer_adjective_name: str, operator: str, *, explanation = None, tactics = None):
         """
         Initialize the RankingAdjective.
         
         Args:
             name: The name of the adjective.
             property_pointer_adjective_name: The name of the pointer adjective to use for comparison.
-            comparison_operator: A function that compares two values and returns a boolean.
+            operator: A string with the boolean operator to utilize.
+            explanation: An explanation for the comparison result. Do not provide to use the default explanation.
+            tactics: Tactics for the adjective, refer to the main Adjective class.
         """
-        explanation = CompositeExplanation(
-            ComparisonAssumption(name, property_pointer_adjective_name, operator),
-            ComparisonNodesPropertyPossession(property_pointer_adjective_name))
+        if explanation is None:
+            explanation = CompositeExplanation(
+                ComparisonAssumption(name, property_pointer_adjective_name, operator),
+                ComparisonNodesPropertyPossession(property_pointer_adjective_name))
         super().__init__(name, AdjectiveType.COMPARISON, explanation, tactics, definition=DEFAULT_GETTER)
         self.property_pointer_adjective_name = property_pointer_adjective_name
 
@@ -307,7 +310,7 @@ class ComparisonAdjective(Adjective):
         """ Returns a proposition reflecting the comparison """
         if nodes == None:
             nodes = [f"{self.refer_to_nodes_as}1", f"{self.refer_to_nodes_as}2"]
-        proposition = Proposition(nodes[0], f"{self.name} than {nodes[1]}", evaluation)
+        proposition = Proposition(nodes[0], f"{self.name} {nodes[1]}", evaluation)
 
         return proposition
 

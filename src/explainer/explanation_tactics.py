@@ -308,3 +308,48 @@ class SubstituteQuantitativeExplanations(GeneralTactic):
             explanation.antecedent = Implies(explanation.antecedent, self.substitution_statement)
         
         return explanation
+    
+class SkipQuantitativeExplanation(SpecificTactic):
+    """When explaining a QuantitativePointerAdjective, skip its statement
+    and pass directly to the explanation of the PointerAdjective instead."""
+    @property
+    def allowed_in_expl_starting_from_adjective_types(self):
+        return [ComparisonAdjective]
+    
+    @property
+    def exec_from_adjective_types(self):
+        return [QuantitativePointerAdjective]
+
+    def __init__(self):
+        super().__init__(self.__class__.__name__)
+
+    # apply    
+    def apply_on_explanation(self, explanation):
+        if isinstance(explanation, Implies):
+            return explanation.antecedent
+        else:
+            return None
+
+class SubstituteQuantitativeExplanation(SpecificTactic):
+    """When explaining a QuantitativePointerAdjective, skip its statement
+    and pass directly to the explanation of the PointerAdjective instead."""
+    @property
+    def allowed_in_expl_starting_from_adjective_types(self):
+        return [ComparisonAdjective]
+    
+    @property
+    def exec_from_adjective_types(self):
+        return [ComparisonAdjective]
+
+    def __init__(self, substitution_statement):        
+        self.substitution_statement = Postulate('\t' + substitution_statement)
+        super().__init__(self.__class__.__name__)
+
+        self.requirements.append([SkipQuantitativeExplanation, ()])
+
+    # apply    
+    def apply_on_explanation(self, explanation):
+        if isinstance(explanation, Implies):
+            explanation.antecedent = Implies(explanation.antecedent, self.substitution_statement)
+        
+        return explanation
