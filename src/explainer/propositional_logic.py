@@ -55,7 +55,7 @@ class Proposition(LogicalExpression):
             if self.print_mode == 'logic':
                 string_end = f"has {self.expr} = {self.evaluation}"
             elif self.print_mode == 'verbal':
-                string_end = f"has as {self.expr} {self.evaluation}"
+                string_end = f"has {self.expr} {self.evaluation}"
 
         to_string = f"{self.obj_name} {string_end}"
 
@@ -97,7 +97,8 @@ class NAryOperator(LogicalExpression):
         if len(self.exprs) > 2 or not all(isinstance(expr, Proposition) for expr in self.exprs):
             joining_string = '\n' + operator_string + ' '
         else:
-            joining_string = ' ' + operator_string + ' '
+            # They are only two propositions to tie
+            joining_string = '\n' + operator_string + ' '
         
         joined = joining_string.join(str(expr) for expr in self.exprs)
         return joined
@@ -143,8 +144,6 @@ class Implies(LogicalExpression):
         elif self.print_mode == 'verbal':
             operator_string = self.verbal
 
-        operator_string = operator_string + '\n'
-
         if "first_print" in self._str_settings_list:
             symbol = operator_string + '\n'
         else:
@@ -160,8 +159,8 @@ class Implies(LogicalExpression):
             self.antecedent = textwrap.indent(f"{self.antecedent}", indentation)
 
         if self.print_mode == 'logic':
-            to_string = f"{self.consequent} {symbol} {self.antecedent}"
+            to_string = f"{self.consequent} {symbol}\n {self.antecedent}"
         elif self.print_mode == 'verbal':
-            to_string = f"{self.consequent} ({symbol} {self.antecedent})"
+            to_string = f"{self.consequent} ({symbol}\n {self.antecedent})"
 
         return to_string
