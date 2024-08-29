@@ -7,6 +7,7 @@ class MiniMaxNode:
     Attributes:
         node (object): The original node from the game tree.
         score (float): The score assigned to the node by the MiniMax algorithm.
+        nodes_holder (list): Pointer to the structure that holds all the nodes in the tree.
     """
     def __init__(self, node, parent=None, nodes_holder = {}):
         self.node = node
@@ -67,6 +68,7 @@ class MiniMax:
         self.max_depth=max_depth
         self.last_choice = None
         self.search_root = None
+        self.search_root_final = None
         self.nodes = {} # Holds the nodes with as key their node.node.id
         self.start_with_maximizing = start_with_maximizing
 
@@ -74,35 +76,6 @@ class MiniMax:
             self.algorithm = self.alphabeta
         else:
             self.algorithm = self.minimax
-
-    def get_node(self, node_id: str):
-        return self.nodes[node_id]
-    
-    def print_tree(self, node = None, level=0, is_score_child=False):
-        if node is None:
-            node = self.search_root
-
-        indent = "  " * level
-        score_indicator = "*" if is_score_child else " "
-        maximizer_string = "maximizer" if node.maximizing_player_turn else "minimizer"
-        if node.is_leaf:
-            fully_searched_string = "leaf"
-        else:
-            fully_searched_string = "fully searched" if node.fully_searched else "pruned"
-        
-        if node.alpha is None:
-            alpha_string =  "None"
-        else:
-            alpha_string = node.alpha.id
-        
-        if node.beta is None:
-            beta_string = "None"
-        else:
-            beta_string = node.beta.id
-        print(f"{indent}{score_indicator}Node {node.id}: Score = {node.score} Alpha = {alpha_string} Beta = {beta_string} ({maximizer_string}, {fully_searched_string})")
-        
-        for child in node.children:
-            self.print_tree(child, level + 1, child == node.score_child)
     
     def run(self, state_node, *, max_depth = None, expansion_constraints_self : Dict = None, expansion_constraints_other : Dict = None):
         if max_depth is None:
@@ -114,7 +87,7 @@ class MiniMax:
         best_child, best_value = self.algorithm(self.search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
 
         if best_child is not None:
-            self.search_root = best_child.parent
+            self.search_root_final = best_child.parent
             self.last_choice = best_child
         return best_child, best_value
     
@@ -187,6 +160,7 @@ class MiniMax:
         # If the node is a leaf, or if we reached the max search depth, return its score
         if node.is_leaf:
             node.score = self.score(node.node)
+            node.fully_searched = True
             return None, None
         
         # Initialize best value
@@ -256,3 +230,33 @@ class MiniMax:
         node.score = best_value
 
         return best_child, best_value
+    
+    def get_node(self, node_id: str):
+        return self.nodes[node_id]
+    
+    def print_tree(self, node = None, level=0, is_score_child=False):
+        if node is None:
+            node = self.search_root_final
+
+        indent = "  " * 2*level
+        score_indicator = "*" if is_score_child else ""
+        maximizer_string = "maximizer" if node.maximizing_player_turn else "minimizer"
+        
+        leaf_string = "leaf" if node.is_leaf else " "
+        
+        fully_searched_string = "fully searched" if node.fully_searched else "pruned"
+        
+        if node.alpha is None:
+            alpha_string =  "None"
+        else:
+            alpha_string = node.alpha.id
+        
+        if node.beta is None:
+            beta_string = "None"
+        else:
+            beta_string = node.beta.id
+
+        print(f"{indent}{score_indicator}Node {node.id}: Score = {node.score} Alpha = {alpha_string} Beta = {beta_string} ({maximizer_string}, {fully_searched_string}) ({leaf_string})")
+        
+        for child in node.children:
+            self.print_tree(child, level + 1, child == node.score_child)
