@@ -4,7 +4,7 @@ from src.explainer.framework import ArgumentationFramework
 from src.explainer.adjective import BooleanAdjective, PointerAdjective, QuantitativePointerAdjective, NodesGroupPointerAdjective, ComparisonAdjective, MaxRankAdjective, MinRankAdjective
 from src.explainer.explanation import Possession, Assumption, If, ConditionalExplanation, CompositeExplanation
 
-from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, SubstituteQuantitativeExplanations, SkipConditionStatement
+from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, SubstituteQuantitativeExplanations
 
 class MiniMaxExplainer:
     """
