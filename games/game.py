@@ -147,12 +147,17 @@ class GameAgent:
             await asyncio.to_thread(game.act, action)
 
 class User:
-    def __init__(self, *, agent_id, ask_what=True, ask_where=True):
+    def __init__(self, *, agent_id, ask_what=True, ask_where=True, pause_first_turn=False):
         self.id = agent_id
         self.ask_what = ask_what
         self.ask_where = ask_where
+        self.pause_first_turn = pause_first_turn
 
     async def play(self, game):
+        if self.pause_first_turn:
+            game.stop = True
+            return
+
         await asyncio.sleep(1)
         if game.gm.ended:
             return
