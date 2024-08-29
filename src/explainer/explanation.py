@@ -11,8 +11,14 @@ Only Assumptions don't, stopping the explanation inception.
 from .explanations.base import Explanation
 __all__ = ['Explanation']
 
-from .explanations.simple_explanations import Assumption, PossessionAssumption, ComparisonAssumption, RankAssumption, Possession, Comparison, ComparisonNodesPropertyPossession, GroupComparison, CompositeExplanation
-__all__.extend(['Assumption', 'PossessionAssumption', 'ComparisonAssumption', 'RankAssumption', 'Possession', 'Comparison', 'ComparisonNodesPropertyPossession', 'GroupComparison', 'CompositeExplanation'])
+from .explanations.assumption import Assumption, PossessionAssumption, ComparisonAssumption, RankAssumption
+__all__.extend(['Assumption', 'PossessionAssumption', 'ComparisonAssumption', 'RankAssumption'])
+                
+from .explanations.simple_explanation import Possession, Comparison, ComparisonNodesPropertyPossession, GroupComparison
+__all__.extend(['Possession', 'Comparison', 'ComparisonNodesPropertyPossession', 'GroupComparison'])
+
+from .explanations.composite_explanation import CompositeExplanation
+__all__.extend(['CompositeExplanation'])
 
 from .explanations.conditional_explanation import If, ConditionalExplanation
 __all__.extend(['If', 'ConditionalExplanation'])

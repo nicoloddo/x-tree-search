@@ -1,5 +1,5 @@
 from .base import Explanation
-from .simple_explanations import Possession
+from .simple_explanation import Possession
 
 from src.explainer.propositional_logic import LogicalExpression, And, Or
 

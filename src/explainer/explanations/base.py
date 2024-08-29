@@ -22,7 +22,7 @@ class Explanation(ABC):
     def _contextualize(self, *args, **kwargs):
         pass
 
-    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics={}, current_explanation_depth) -> LogicalExpression:
+    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics={}, current_explanation_depth, explain_further=True) -> LogicalExpression:
         """
         Generate a propositional logic explanation for the given node.
         
@@ -40,7 +40,7 @@ class Explanation(ABC):
         self.current_explanation_depth = current_explanation_depth
         self.explanation_tactics = explanation_tactics
 
-        if current_explanation_depth > self.framework.settings.explanation_depth:
+        if current_explanation_depth > self.framework.settings.explanation_depth or not explain_further:
             return
         
         if other_node:
@@ -55,13 +55,13 @@ class Explanation(ABC):
         else:
             return
 
-    def forward_explanation(self, obj, *args, no_increment = False):
+    def forward_explanation(self, obj, *args, explain_further=True, no_increment = False):
         increment = 0 if no_increment else 1
         #if isinstance(obj, Adjective):
             #return adjective.explain(*args, current_explanation_depth = self.current_explanation_depth + increment)
-        return obj.explain(*args, explanation_tactics = self.explanation_tactics, current_explanation_depth = self.current_explanation_depth + increment)
+        return obj.explain(*args, explanation_tactics = self.explanation_tactics, current_explanation_depth = self.current_explanation_depth + increment, explain_further=explain_further)
     
-    def forward_multiple_explanations(self, *forward_explanations, no_increment=False):
+    def forward_multiple_explanations(self, *forward_explanations, explain_further=True, no_increment=False):
         """
         Handle multiple forward explanations with variable arguments and return an array of explanations.
         Make sure to use this forwarding method since it will keep the current_explanation depth
@@ -83,7 +83,7 @@ class Explanation(ABC):
         
         explanations = []
         for obj, *args in forward_explanations:            
-            explanation = obj.explain(*args, explanation_tactics = explanation_tactics, current_explanation_depth=forward_explanation_depth)
+            explanation = obj.explain(*args, explanation_tactics = explanation_tactics, current_explanation_depth=forward_explanation_depth, explain_further=explain_further)
             explanations.append(explanation)
         
         return explanations
