@@ -4,6 +4,10 @@ import numpy as np
 
 from games.game import Game, GameModel, GameTree
 
+import ipywidgets as widgets
+from IPython.display import display, HTML
+import asyncio
+
 FREE_LABEL = ' '
 class TicTacToe(Game):
 
@@ -82,3 +86,86 @@ class TicTacToe(Game):
             raise ValueError("Player variable has to be 0 or 1")
 
         performed = self.model.action("board", player, coordinates, sign)
+
+    """Trying out interactive jupyter""" 
+    def __init__(self, explainer):
+        super().__init__() 
+    """  
+    def __init__(self, explainer):
+        super().__init__()
+        self.explainer = explainer
+        self.board_buttons = [[widgets.Button(description='', layout=widgets.Layout(width='50px', height='50px'))
+                               for _ in range(3)] for _ in range(3)]
+        self.explanation_output = widgets.Output()
+        self.explain_button = widgets.Button(description="Explain Opponent's Move")
+        self.explain_button.on_click(self.explain_opponent_move)
+        self.jupyter_current_player = None
+        self.player_dropdown = widgets.Dropdown(options=[], description="Current Player:")
+        self.player_dropdown.observe(self.update_current_player, names='value')
+        self.current_player = None
+    
+    def display_interface(self):
+        self.player_dropdown.options = [(f"Player {i+1} ({self.players[i].__class__.__name__})", i) for i in self.players]
+        board = widgets.GridBox(children=[self.board_buttons[i][j] for i in range(3) for j in range(3)],
+                                layout=widgets.Layout(grid_template_columns='repeat(3, 50px)'))
+        for i in range(3):
+            for j in range(3):
+                self.board_buttons[i][j].on_click(lambda _, x=i, y=j: asyncio.ensure_future(self.handle_click(x, y)))
+        
+        display(widgets.VBox([self.player_dropdown, board, self.explain_button, self.explanation_output]))
+        
+    def update_display_jupyter(self, state):
+        for x in range(3):
+            for y in range(3):
+                value = state[x, y]
+                self.board_buttons[x][y].description = value
+                self.board_buttons[x][y].disabled = (value != FREE_LABEL)
+    
+    def update_current_player(self, change):
+        self.jupyter_current_player = change['new']
+
+    async def handle_click(self, x, y):
+        if self.jupyter_current_player is not None:
+            action = {'who': self.jupyter_current_player, 'where': (x, y), 'what': 'X' if self.jupyter_current_player == 0 else 'O'}
+            await asyncio.to_thread(self.act, action)
+            self.clear_console()
+            current_state = self.tree.get_current_state().state
+            self.update_display(current_state)
+    
+    def explain_opponent_move(self, _):
+        with self.explanation_output:
+            self.explanation_output.clear_output()
+            explanation = self.explainer.explain_adjective(self.current_player.choice, 'the best', explanation_depth=4, with_framework='highlevel')
+            print(explanation)
+    
+    def clear_jupyter(self):
+        self.display_interface()
+    """
+
+
+def simple_scoring_function(node):
+    """ Evaluate the Tic Tac Toe board state for the 'X' player's perspective """
+    state = node.state
+    score = 0
+    
+    # Possible lines to check (3 rows, 3 columns, 2 diagonals)
+    lines = []
+    # Rows and columns
+    for i in range(3):
+        lines.append(state[i, :])  # Row
+        lines.append(state[:, i])  # Column
+    # Diagonals
+    lines.append(np.array([state[i, i] for i in range(3)]))  # Main diagonal
+    lines.append(np.array([state[i, 2 - i] for i in range(3)]))  # Anti-diagonal
+
+    for line in lines:
+        if np.all(line == "X"):
+            score += 100  # 'X' wins
+        elif np.all(line == "O"):
+            score -= 100  # 'O' wins
+        elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
+            score += 10  # 'X' is one move away from winning
+        elif np.count_nonzero(line == "O") == 2 and np.count_nonzero(line == "free") == 1:
+            score -= 10  # 'O' is one move away from winning
+
+    return score
