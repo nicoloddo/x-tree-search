@@ -74,11 +74,20 @@ class Game:
     def start(self):
         """This does not run on Jupyter"""
         self.clear_console = self.clear_cmd
+        self.update_display = self.print_state
         asyncio.run(self._start_game())
     
     def start_on_jupyter(self):
         self.clear_console = self.clear_jupyter
+        self.update_display = self.update_display_jupyter
         return asyncio.ensure_future(self._start_game())
+    
+    def print_state(self, current_state):
+        """Override in the specific game if you want to change its way of display"""
+        print(current_state)
+    def update_display_jupyter(self, current_state):
+        """Override in the specific game if you want to change its way of display"""
+        print(current_state)
 
     async def _start_game(self):
         # Start the state monitoring task
@@ -109,7 +118,7 @@ class Game:
 
             if not np.array_equal(current_state, self._previous_state):
                 self.clear_console()
-                print(current_state)
+                self.update_display(current_state)
                 self._previous_state = copy.deepcopy(current_state)
             
             await asyncio.sleep(0.2)  # Adjust the sleep time as needed
@@ -145,15 +154,23 @@ class GameAgent:
         # Apply the move to the game
         if action is not None:
             await asyncio.to_thread(game.act, action)
+    
+    @property
+    def choice(self):
+        return self.core.last_choice
 
 class User:
-    def __init__(self, *, agent_id, ask_what=True, ask_where=True, pause_first_turn=False):
+    def __init__(self, *, agent_id, jupyter_interactive=False, ask_what=True, ask_where=True, pause_first_turn=False):
         self.id = agent_id
+        self.jupyter_interactive = jupyter_interactive
         self.ask_what = ask_what
         self.ask_where = ask_where
         self.pause_first_turn = pause_first_turn
 
     async def play(self, game):
+        if self.jupyter_interactive:
+            return
+        
         if self.pause_first_turn:
             game.stop = True
             return
