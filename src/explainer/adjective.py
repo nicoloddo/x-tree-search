@@ -150,7 +150,7 @@ class Adjective(ABC):
     def _proposition(self, *args, **kwargs) -> Proposition:
         pass
 
-    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics = None, current_explanation_depth, explain_further=True) -> Implies:
+    def explain(self, node: Any, other_nodes: Any = None, *, explanation_tactics = None, current_explanation_depth, explain_further=True) -> Implies:
         """
         Provide an explanation for the adjective's value on a given node.
         
@@ -166,15 +166,21 @@ class Adjective(ABC):
 
         # Get propositions
         if self.type == AdjectiveType.COMPARISON:
-            evaluation = self.evaluate(node, other_node, explanation_tactics=explanation_tactics)
-            consequent = self.proposition(evaluation, [node, other_node], explanation_tactics=explanation_tactics)
-            antecedent = self.explanation.explain(node, other_node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
+            evaluation = self.evaluate(node, other_nodes, explanation_tactics=explanation_tactics)
+            consequent = self.proposition(evaluation, [node, other_nodes], explanation_tactics=explanation_tactics)
+            if explain_further:
+                antecedent = self.explanation.explain(node, other_nodes, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
+            else:
+                antecedent = None
         else:
             evaluation = self.evaluate(node, explanation_tactics=explanation_tactics)
             consequent = self.proposition(evaluation, node, explanation_tactics=explanation_tactics)
-            antecedent = self.explanation.explain(node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
-        
-        if antecedent is not None and explain_further: # If the explanation was given
+            if explain_further:
+                antecedent = self.explanation.explain(node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
+            else:
+                antecedent = None
+
+        if antecedent is not None: # If the explanation was given
             implication = Implies(antecedent, consequent)
 
             if self.framework.settings.print_depth:
@@ -310,17 +316,26 @@ class ComparisonAdjective(Adjective):
         """ Returns a proposition reflecting the comparison """
         if nodes == None:
             nodes = [f"{self.refer_to_nodes_as}1", f"{self.refer_to_nodes_as}2"]
-        proposition = Proposition(nodes[0], f"{self.name} {nodes[1]}", evaluation)
+
+        main_node = nodes[0]
+        other_nodes = nodes[1]
+
+        if type(other_nodes) is not list:
+            other_nodes = [other_nodes]
+
+        other_nodes_string = ', '.join([str(node) for node in other_nodes])
+
+        proposition = Proposition(main_node, f"{self.name} {other_nodes_string}", evaluation)
 
         return proposition
 
-    def _evaluate(self, node1: Any, node2: Any) -> bool:
+    def _evaluate(self, node1: Any, other_nodes: Any) -> bool:
         """
         Evaluate the comparison between two nodes.
         
         Args:
             node1: The first node to compare.
-            node2: The second node to compare.
+            other_nodes: The other nodes to compare to the first one.
         
         Returns:
             A boolean indicating how node1 compares to node2 with the given operator.
@@ -331,8 +346,12 @@ class ComparisonAdjective(Adjective):
             raise SyntaxError(f"ComparisonAdjective has been linked to a non quantitative adjective {property_pointer_adjective.name}.")
         
         value1 = property_pointer_adjective.evaluate(node1)
-        value2 = property_pointer_adjective.evaluate(node2)
-        return self.comparison_operator(value1, value2)
+
+        if type(other_nodes) is not list:
+            other_nodes = [other_nodes]
+        other_values = [property_pointer_adjective.evaluate(node2) for node2 in other_nodes]
+                        
+        return all([self.comparison_operator(value1, value2) for value2 in other_values])
 
 class _RankAdjective(BooleanAdjective):
     """Represents a static (boolean) adjective that specifically refers to the

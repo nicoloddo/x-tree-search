@@ -42,7 +42,7 @@ class Possession(Explanation):
             # If two arguments are provided, the first is the pointer adjective name
             self.pointer_adjective_name, self.adjective_name = args
         else:
-            raise ValueError("A Possession explanation takes a max of 2 arguments")
+            raise ValueError("A Possession explanation takes a max of 2 non-keyword arguments")
         
         self.explain_further = explain_further
         self.forward_pointers_explanations = forward_pointers_explanations
@@ -68,12 +68,12 @@ class Possession(Explanation):
             pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
             referred_object = self.forward_evaluation(pointer_adjective, node)
 
-            if self.explanation_of_adjective == pointer_adjective:
+            if not self.forward_pointers_explanations:
+                explanation = self.forward_explanation(adjective, referred_object, explain_further=self.explain_further) # why the referred_object has this property?
+            elif self.explanation_of_adjective == pointer_adjective:
                 # only forward the explanation without asking why this referred object
                 # otherwise we would get into an infinite recursion,
                 # by trying to explain the pointer adjective by referring to it.
-                explanation = self.forward_explanation(adjective, referred_object, explain_further=self.explain_further) # why the referred_object has this property?
-            elif not self.forward_pointers_explanations:
                 explanation = self.forward_explanation(adjective, referred_object, explain_further=self.explain_further) # why the referred_object has this property?
             else:
                 explanations = self.forward_multiple_explanations(
@@ -212,13 +212,13 @@ class ComparisonNodesPropertyPossession(Explanation):
         """
         self.adjective_for_comparison_name = adjective_for_comparison_name
 
-    def _explain(self, node: Any, other_node: Any) -> Proposition:
+    def _explain(self, node: Any, other_nodes: Any) -> Proposition:
         """
         Generate an explanation for the possession of a property on a node and another node to be compared to.
         
         Args:
             node: The main node to explain.
-            other_node: The node that is compared to.
+            other_nodes: The nodes that it is compared to.
             
         
         Returns:
@@ -226,10 +226,14 @@ class ComparisonNodesPropertyPossession(Explanation):
         """
         adjective_for_comparison = self.framework.get_adjective(self.adjective_for_comparison_name)
 
-        explanations = self.forward_multiple_explanations(
-                    (adjective_for_comparison, node),
-                    (adjective_for_comparison, other_node)
-                )
+        if type(other_nodes) is not list:
+            other_nodes = [other_nodes]
+
+        to_forward_explanations = [(adjective_for_comparison, node)]
+        for o_node in other_nodes:
+            to_forward_explanations.append((adjective_for_comparison, o_node))
+
+        explanations = self.forward_multiple_explanations(*to_forward_explanations)
         
         explanation = And(*explanations)
 
@@ -277,12 +281,10 @@ class GroupComparison(Explanation):
         group_pointer_adjective = self.framework.get_adjective(self.group_pointer_adjective_name)
         group = self.forward_evaluation(group_pointer_adjective, node)
 
-        to_forward_explanations = [(comparison_adjective, node, other_node) for other_node in group]
-        to_forward_explanations.append((group_pointer_adjective, node))
-        explanations = self.forward_multiple_explanations(*to_forward_explanations)
-        base_explanation = explanations.pop() # pop the group_pointer_adjective explanation
+        group_explanation = self.forward_explanation(group_pointer_adjective, node)
+        properties_explanations = self.forward_explanation(comparison_adjective, node, group)
                 
-        explanation = And(base_explanation, And(*explanations))
+        explanation = And(group_explanation, properties_explanations)
         return explanation
 
     def implies(self) -> LogicalExpression:
