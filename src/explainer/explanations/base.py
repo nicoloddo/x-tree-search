@@ -40,7 +40,7 @@ class Explanation(ABC):
         self.current_explanation_depth = current_explanation_depth
         self.explanation_tactics = explanation_tactics
 
-        if current_explanation_depth > self.framework.settings.explanation_depth or not explain_further:
+        if current_explanation_depth > self.framework.settings.explanation_depth:
             return
         
         if other_node:
@@ -51,6 +51,8 @@ class Explanation(ABC):
         if explanation is not None:
             # We assign to this explanation the current explanation depth.
             explanation.current_explanation_depth = current_explanation_depth
+            if not explain_further:
+                explanation.antecedent = None
             return explanation
         else:
             return
