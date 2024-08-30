@@ -20,5 +20,5 @@ __all__.extend(['Possession', 'Comparison', 'ComparisonNodesPropertyPossession',
 from .explanations.composite_explanation import CompositeExplanation
 __all__.extend(['CompositeExplanation'])
 
-from .explanations.conditional_explanation import If, ConditionalExplanation
-__all__.extend(['If', 'ConditionalExplanation'])
+from .explanations.conditional_explanation import If, ConditionalExplanation, RecursivePossession
+__all__.extend(['If', 'ConditionalExplanation', 'RecursivePossession'])
