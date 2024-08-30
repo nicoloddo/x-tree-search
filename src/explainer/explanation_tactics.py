@@ -171,7 +171,7 @@ class SpecificTactic(Tactic):
     def allowed_in_expl_starting_from_adjective_types(self) -> List:
     # List of adjective types from which explanation the tactic will be applied.
     # The tactic will be applied only if the explanation is starting from one of those.
-    # Examples below.
+    # Leave empty if you want to allow it from any adjective type.
         pass
 
     def contextualize(self, adjective: Adjective):
@@ -182,6 +182,8 @@ class SpecificTactic(Tactic):
         self.validate_context()
 
     def validate_context(self):
+        if len(self.allowed_in_expl_starting_from_adjective_types) == 0:
+            return True
         for allowed_adjective in self.allowed_in_expl_starting_from_adjective_types:
             if isinstance(self.tactic_of_adjective, allowed_adjective):
                 return True        
@@ -290,7 +292,11 @@ class SkipQuantitativeExplanations(GeneralTactic):
 
 class SubstituteQuantitativeExplanations(GeneralTactic):
     """When explaining a QuantitativePointerAdjective, skip its statement
-    and pass directly to the explanation of the PointerAdjective instead."""
+    and pass directly to the explanation of the PointerAdjective instead.
+    It has as dependency the SkipQuantitativeExplanation tactic.
+    This version of the tactic can only be applied generally, it would not
+    work as a Specific Tactic because it relies on the SkipQuantitativeExplanation
+    to delete the quantitative explanations."""
     
     @property
     def exec_from_adjective_types(self):
@@ -301,51 +307,6 @@ class SubstituteQuantitativeExplanations(GeneralTactic):
         super().__init__(self.__class__.__name__)
 
         self.requirements.append([SkipQuantitativeExplanations, ()])
-
-    # apply    
-    def apply_on_explanation(self, explanation):
-        if isinstance(explanation, Implies):
-            explanation.antecedent = Implies(explanation.antecedent, self.substitution_statement)
-        
-        return explanation
-    
-class SkipQuantitativeExplanation(SpecificTactic):
-    """When explaining a QuantitativePointerAdjective, skip its statement
-    and pass directly to the explanation of the PointerAdjective instead."""
-    @property
-    def allowed_in_expl_starting_from_adjective_types(self):
-        return [ComparisonAdjective]
-    
-    @property
-    def exec_from_adjective_types(self):
-        return [QuantitativePointerAdjective]
-
-    def __init__(self):
-        super().__init__(self.__class__.__name__)
-
-    # apply    
-    def apply_on_explanation(self, explanation):
-        if isinstance(explanation, Implies):
-            return explanation.antecedent
-        else:
-            return None
-
-class SubstituteQuantitativeExplanation(SpecificTactic):
-    """When explaining a QuantitativePointerAdjective, skip its statement
-    and pass directly to the explanation of the PointerAdjective instead."""
-    @property
-    def allowed_in_expl_starting_from_adjective_types(self):
-        return [ComparisonAdjective]
-    
-    @property
-    def exec_from_adjective_types(self):
-        return [ComparisonAdjective]
-
-    def __init__(self, substitution_statement):        
-        self.substitution_statement = Postulate('\t' + substitution_statement)
-        super().__init__(self.__class__.__name__)
-
-        self.requirements.append([SkipQuantitativeExplanation, ()])
 
     # apply    
     def apply_on_explanation(self, explanation):
