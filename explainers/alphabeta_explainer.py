@@ -2,7 +2,7 @@ from src.explainer.explainer import ArgumentativeExplainer
 from src.explainer.framework import ArgumentationFramework
 
 from src.explainer.adjective import BooleanAdjective, PointerAdjective, QuantitativePointerAdjective, NodesGroupPointerAdjective, ComparisonAdjective, MaxRankAdjective, MinRankAdjective
-from src.explainer.explanation import Possession, Assumption, Comparison, If, ConditionalExplanation, CompositeExplanation
+from src.explainer.explanation import Possession, RecursivePossession, Assumption, Comparison, If, ConditionalExplanation, CompositeExplanation
 
 from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, SubstituteQuantitativeExplanation
 
@@ -36,28 +36,29 @@ class AlphaBetaExplainer:
 
                         explanation = ConditionalExplanation(
                             condition = If("final move"),
+                            skip_condition_statement_if_false = True,
                             explanation_if_true = Assumption("final moves are evaluated only looking at the final position", necessary=True),
                             explanation_if_false = ConditionalExplanation(
                                 condition=If("fully searched"),
                                 skip_condition_statement = True,   
 
                                 explanation_if_true = CompositeExplanation(
-                                    Possession("as next move", explain_further=False)),
+                                    Possession("opponent player turn"),
+                                    RecursivePossession("as next move", any_stop_conditions = [If("as next move", "final move"), If("as next move", "not fully searched")])),
 
                                 explanation_if_false = ConditionalExplanation(
                                         condition = If("opponent player turn"),
-                                        skip_condition_statement = True,
                                         explanation_if_true = CompositeExplanation(
                                             Possession("as next possible move", explain_further=False),
-                                            Assumption("The opponent can choose to do this move, or something even worse for us."),
-                                            Comparison("as next possible move", "better than the alternative coming from", "upperbound",
+                                            Comparison("as next possible move", "worse than the alternative coming from", "upperbound",
                                                        forward_pointers_explanations=False),
+                                            Assumption("The opponent can choose to do this move, or something even worse for us."),
                                             ),
                                         explanation_if_false = CompositeExplanation(
                                             Possession("as next possible move", explain_further=False),
-                                            Assumption("We could choose to do this move, or something even worse for the opponent."),
-                                            Comparison("as next possible move", "worse than the alternative coming from", "lowerbound",
+                                            Comparison("as next possible move", "better than the alternative coming from", "lowerbound",
                                                        forward_pointers_explanations=False),
+                                            Assumption("We could choose to do this move, or something even worse for the opponent."),                                                       
                                             ),
                                     ),
                             )
@@ -69,6 +70,8 @@ class AlphaBetaExplainer:
 
                     BooleanAdjective("fully searched",
                         definition = "node.fully_searched"),
+                    BooleanAdjective("not fully searched",
+                        definition = "not node.fully_searched"),
 
                     PointerAdjective("as next move",
                         definition = "node.score_child",
@@ -93,23 +96,11 @@ class AlphaBetaExplainer:
                     PointerAdjective("upperbound",
                         definition = "node.parent.alpha"),
 
-                    ComparisonAdjective("better or equal than", "score", ">=",
-                        tactics=[
-                                    SubstituteQuantitativeExplanation("it leads to a better or equal position"),
-                                ]),
-                    ComparisonAdjective("worse or equal than", "score", "<=",
-                        tactics=[
-                                    SubstituteQuantitativeExplanation("it leads to a better or equal position"),
-                                ]),
+                    ComparisonAdjective("better or equal than", "score", ">="),
+                    ComparisonAdjective("worse or equal than", "score", "<="),
 
-                    ComparisonAdjective("better than the alternative coming from", "score", ">=",
-                        tactics=[
-                                    SubstituteQuantitativeExplanation("it leads to a better or equal position"),
-                                ]),
-                    ComparisonAdjective("worse than the alternative coming from", "score", "<=",
-                        tactics=[
-                                    SubstituteQuantitativeExplanation("it leads to a better or equal position"),
-                                ]),
+                    ComparisonAdjective("better than the alternative coming from", "score", ">="),
+                    ComparisonAdjective("worse than the alternative coming from", "score", "<="),
                 
                     NodesGroupPointerAdjective("possible alternative moves",
                         definition = "node.parent.children",
@@ -122,6 +113,7 @@ class AlphaBetaExplainer:
                 
                 tactics=[
                     #SubstituteQuantitativeExplanations("it leads to a better or equal position"),
+                    SkipQuantitativeExplanations()
                 ],
 
                 settings = {
