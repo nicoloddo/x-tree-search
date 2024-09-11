@@ -47,7 +47,7 @@ class Tactic(ABC):
         pass
 
     @abstractmethod
-    def decontextualize(self, belonging_object: 'Adjective'):
+    def decontextualize(self):
         """Undo the contextualization."""
         pass
 
@@ -183,7 +183,7 @@ class SpecificTactic(Tactic):
         self.framework = adjective.framework        
         self.validate_context()
     
-    def decontextualize(self, framework: ArgumentationFramework):
+    def decontextualize(self):
         self.tactic_of_object = None
         self.tactic_of_framework = None
         self.framework = None
@@ -210,7 +210,7 @@ class GeneralTactic(Tactic):
         self.framework = framework
         self.validate_context()
 
-    def decontextualize(self, framework: ArgumentationFramework):
+    def decontextualize(self):
         self.tactic_of_object = None
         self.tactic_of_framework = None
         self.framework = None
