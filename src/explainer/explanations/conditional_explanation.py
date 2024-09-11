@@ -112,6 +112,11 @@ class ConditionalExplanation(Explanation):
         self.condition.contextualize(self.explanation_of_adjective)
         self.explanation_if_true.contextualize(self.explanation_of_adjective)
         self.explanation_if_false.contextualize(self.explanation_of_adjective)
+    
+    def _decontextualize(self):
+        self.condition.decontextualize()
+        self.explanation_if_true.decontextualize()
+        self.explanation_if_false.decontextualize()
 
     def _explain(self, node: Any) -> LogicalExpression:
         """
@@ -287,6 +292,10 @@ class RecursivePossession(Explanation):
     def _contextualize(self):
         for condition in self.any_stop_conditions:
             condition.contextualize(self.explanation_of_adjective)
+    
+    def _decontextualize(self):
+        for condition in self.any_stop_conditions:
+            condition.decontextualize()
 
     def implies(self) -> LogicalExpression:
         """ Generates a proposition that contitutes the antecedent of an

@@ -21,6 +21,10 @@ class CompositeExplanation(Explanation):
     def _contextualize(self):
         for exp in self.explanations:
             exp.contextualize(self.explanation_of_adjective)
+        
+    def _decontextualize(self):
+        for exp in self.explanations:
+            exp.decontextualize()
 
     def _explain(self, node: Any, other_node: Any = None) -> LogicalExpression:
         """

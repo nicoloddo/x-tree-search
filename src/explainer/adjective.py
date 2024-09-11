@@ -50,7 +50,7 @@ class Adjective(ABC):
         self.framework = None
         self.definition = definition
         self.getter = None
-        self.contextualize(definition)
+        self.set_getter(definition)
 
         self.explanation_tactics = {}
         if tactics is None:
@@ -61,7 +61,7 @@ class Adjective(ABC):
     def _set_getter(self, getter: Callable[[Any], Any]):
         self.getter = getter
 
-    def contextualize(self, getter: str):
+    def set_getter(self, getter: str):
         """ 
         Contextualizes the adjective onto the current tree by specifying
         the getter function that permits to evaluate the adjective.
@@ -69,7 +69,7 @@ class Adjective(ABC):
         validate_getter(getter)
         self._set_getter(eval(f"lambda node: {getter}"))
 
-    def set_belonging_framework(self, framework: ArgumentationFramework):
+    def contextualize(self, framework: ArgumentationFramework):
         """Sets the Argumentation framework the Adjective belongs to."""
         self.framework = framework
         self.refer_to_nodes_as = self.framework.refer_to_nodes_as
@@ -77,6 +77,15 @@ class Adjective(ABC):
 
         for tactic in self.explanation_tactics.values():
             tactic.contextualize(self)
+    
+    def decontextualize(self, framework: ArgumentationFramework):
+        """Undo the contextualization."""
+        self.framework = None
+        self.refer_to_nodes_as = None
+        self.explanation.decontextualize()
+
+        for tactic in self.explanation_tactics.values():
+            tactic.decontextualize()
 
     def add_explanation_tactics(self, tactics):
         for tactic in tactics:
@@ -237,7 +246,7 @@ class BooleanAdjective(Adjective):
 class PointerAdjective(Adjective):
     """Represents a pointer adjective that references a specific attribute or object."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None, _custom_getter = None):
         """
         Initialize the PointerAdjective.
         
@@ -245,6 +254,9 @@ class PointerAdjective(Adjective):
             name: The name of the adjective.
             definition: The correspondant node attribute (use the keyword "node" to refer to one of its elements).
             explanation: An explanation for the adjective.
+            tactics: Tactics to use with the adjective.
+            _custom_getter: Parameter to use for internal scopes, can override the getter attribute of the adjective.
+                            It is suggested to not use externally.
         """
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.POINTER, explanation, tactics, definition = definition)

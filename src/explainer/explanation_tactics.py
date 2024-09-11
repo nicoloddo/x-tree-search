@@ -41,12 +41,14 @@ class Tactic(ABC):
         An example can be found at SubstituteQuantitativeExplanations."""
         self.requirements = []
 
-    def set_belonging_framework(self, framework):
-        self.framework = framework
-
     @abstractmethod
     def contextualize(self, belonging_object: 'Adjective'):
         """Sets the object and the framework the Explanation belongs to."""
+        pass
+
+    @abstractmethod
+    def decontextualize(self, belonging_object: 'Adjective'):
+        """Undo the contextualization."""
         pass
 
     @abstractmethod
@@ -180,6 +182,11 @@ class SpecificTactic(Tactic):
         self.tactic_of_adjective = adjective
         self.framework = adjective.framework        
         self.validate_context()
+    
+    def decontextualize(self, framework: ArgumentationFramework):
+        self.tactic_of_object = None
+        self.tactic_of_framework = None
+        self.framework = None
 
     def validate_context(self):
         if len(self.allowed_in_expl_starting_from_adjective_types) == 0:
@@ -201,8 +208,12 @@ class GeneralTactic(Tactic):
         self.tactic_of_object = framework
         self.tactic_of_framework = framework
         self.framework = framework
-        
         self.validate_context()
+
+    def decontextualize(self, framework: ArgumentationFramework):
+        self.tactic_of_object = None
+        self.tactic_of_framework = None
+        self.framework = None
     
     def validate_context(self):
         if isinstance(self.tactic_of_object, ArgumentationFramework):

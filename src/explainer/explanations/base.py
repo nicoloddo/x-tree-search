@@ -19,7 +19,17 @@ class Explanation(ABC):
         self.refer_to_nodes_as = self.framework.refer_to_nodes_as
         self._contextualize()
     
+    def decontextualize(self):
+        """Sets the Argumentation framework the Explanation belongs to."""
+        self.explanation_of_adjective = None
+        self.framework = None
+        self.refer_to_nodes_as = None
+        self._decontextualize()
+    
     def _contextualize(self, *args, **kwargs):
+        pass
+
+    def _decontextualize(self, *args, **kwargs):
         pass
 
     def explain(self, node: Any, other_node: Any = None, *, explanation_tactics={}, current_explanation_depth, explain_further=True) -> LogicalExpression:

@@ -47,13 +47,24 @@ class ArgumentationFramework:
 
     def add_adjective(self, adjective: 'Adjective'):
         """
-        Add an adjective to the framework and create derived adjectives if it's a ranking adjective.
+        Add an adjective to the framework.
         
         Args:
             adjective: The Adjective object to add.
         """
         self.adjectives[adjective.name] = adjective
-        adjective.set_belonging_framework(self)
+        adjective.contextualize(self)
+
+    def del_adjective(self, adjective_name: str):
+        """
+        Deletes an adjective from the framework.
+        
+        Args:
+            adjective: The Adjective object to add.
+        """
+        adjective = self.adjectives[adjective_name]
+        adjective.decontextualize()
+        del self.adjectives[adjective_name]
     
     def add_adjectives(self, adjectives: List['Adjective']):
         """
