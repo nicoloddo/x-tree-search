@@ -52,6 +52,14 @@ class Game:
         pass
 
     @property
+    def started(self):
+        return self.gm.started
+    
+    @property
+    def ended(self):
+        return self.gm.ended
+
+    @property
     def model(self):
         return self.gm
     
