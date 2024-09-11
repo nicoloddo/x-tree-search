@@ -2,11 +2,12 @@ from typing import Dict
 
 import numpy as np
 
-from games.game import Game, GameModel, GameTree
+from games.game import Game, GameModel, GameTree, User
 
 import ipywidgets as widgets
 from IPython.display import display, HTML
 import asyncio
+from functools import wraps
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
@@ -87,61 +88,91 @@ class TicTacToe(Game):
 
         performed = self.model.action("board", player, coordinates, sign)
 
-    """Trying out interactive jupyter""" 
-    def __init__(self, explainer):
-        super().__init__() 
-    """  
-    def __init__(self, explainer):
+    """Interactive game handling"""
+    def __init__(self):
         super().__init__()
-        self.explainer = explainer
-        self.board_buttons = [[widgets.Button(description='', layout=widgets.Layout(width='50px', height='50px'))
-                               for _ in range(3)] for _ in range(3)]
-        self.explanation_output = widgets.Output()
-        self.explain_button = widgets.Button(description="Explain Opponent's Move")
-        self.explain_button.on_click(self.explain_opponent_move)
-        self.jupyter_current_player = None
-        self.player_dropdown = widgets.Dropdown(options=[], description="Current Player:")
-        self.player_dropdown.observe(self.update_current_player, names='value')
-        self.current_player = None
+        self.buttons = None
+        self.status_label = None
+        self.board_output = None
     
-    def display_interface(self):
-        self.player_dropdown.options = [(f"Player {i+1} ({self.players[i].__class__.__name__})", i) for i in self.players]
-        board = widgets.GridBox(children=[self.board_buttons[i][j] for i in range(3) for j in range(3)],
-                                layout=widgets.Layout(grid_template_columns='repeat(3, 50px)'))
+    def get_current_player_id(self):
+        if not self.started:
+            return next(id for id, player in self.players.items() if self.model.agents[id, 0] == 'starter')
+        else:
+            last_player = self.model.actions[-1]['who']
+            return next(id for id in self.players.keys() if id != last_player)
+
+    def create_board_widget(self):
+        self.buttons = [[widgets.Button(description='', layout=widgets.Layout(width='50px', height='50px')) for _ in range(3)] for _ in range(3)]
+        self.status_label = widgets.Label(value="Player X's turn")
+        self.board_output = widgets.Output()
+        
         for i in range(3):
             for j in range(3):
-                self.board_buttons[i][j].on_click(lambda _, x=i, y=j: asyncio.ensure_future(self.handle_click(x, y)))
+                self.buttons[i][j].on_click(self.create_button_click_handler(i, j))
         
-        display(widgets.VBox([self.player_dropdown, board, self.explain_button, self.explanation_output]))
-        
-    def update_display_jupyter(self, state):
-        for x in range(3):
-            for y in range(3):
-                value = state[x, y]
-                self.board_buttons[x][y].description = value
-                self.board_buttons[x][y].disabled = (value != FREE_LABEL)
-    
-    def update_current_player(self, change):
-        self.jupyter_current_player = change['new']
+        board_widget = widgets.GridBox(children=[button for row in self.buttons for button in row], layout=widgets.Layout(grid_template_columns="repeat(3, auto)"))
+        return widgets.VBox([board_widget, self.status_label, self.board_output])
 
-    async def handle_click(self, x, y):
-        if self.jupyter_current_player is not None:
-            action = {'who': self.jupyter_current_player, 'where': (x, y), 'what': 'X' if self.jupyter_current_player == 0 else 'O'}
-            await asyncio.to_thread(self.act, action)
-            self.clear_console()
-            current_state = self.tree.get_current_state().state
-            self.update_display(current_state)
-    
-    def explain_opponent_move(self, _):
-        with self.explanation_output:
-            self.explanation_output.clear_output()
-            explanation = self.explainer.explain_adjective(self.current_player.choice, 'the best', explanation_depth=4, with_framework='highlevel')
-            print(explanation)
-    
-    def clear_jupyter(self):
-        self.display_interface()
-    """
+    def clear_board_output(self):
+        if self.board_output:
+            self.board_output.clear_output()
 
+    def create_button_click_handler(self, i, j):
+        def handle_click(b):
+            current_player_id = self.get_current_player_id()
+            current_player = self.players[current_player_id]
+            sign = self.model.agents[current_player_id, 1]  # Get the correct sign from the game model
+            
+            if isinstance(current_player, User):
+                action = {'who': current_player_id, 'where': (i, j), 'what': sign}
+                self.act(action)
+                asyncio.create_task(self.continue_game())
+        return handle_click
+
+    def update_board(self):
+        board_state = self.model.action_spaces["board"]
+        for i in range(3):
+            for j in range(3):
+                self.buttons[i][j].description = board_state[i, j] if board_state[i, j] != FREE_LABEL else ''
+
+        if self.ended:
+            winner = self.model.actions[-1]['who']
+            if np.all(self.model.action_spaces["board"] != FREE_LABEL):
+                self.status_label.value = "Game Over! It's a draw!"
+            else:
+                self.status_label.value = f"Game Over! Player {'X' if winner == 0 else 'O'} wins!"
+        else:
+            next_player = 'X' if self.get_current_player_id() == 0 else 'O'
+            self.status_label.value = f"Player {next_player}'s turn"
+
+    async def turn_handler(self):
+        self.clear_board_output()
+        current_player_id = self.get_current_player_id()
+        current_player = self.players[current_player_id]
+        sign = self.model.agents[current_player_id, 1]
+
+        if not isinstance(current_player, User):
+            with self.board_output:
+                print(f"AI player {sign} is thinking...")
+            await current_player.play(self)
+            await self.continue_game()
+        else:
+            with self.board_output:
+                print(f"User player {sign} is thinking...")
+
+        self.update_board()
+
+    async def continue_game(self):
+        self.update_board()
+        if not self.ended:
+            await self.turn_handler()
+
+    async def start_on_jupyter(self):
+        board_widget = self.create_board_widget()
+        self.update_board()
+        display(board_widget)
+        await self.turn_handler()
 
 def simple_scoring_function(node):
     """ Evaluate the Tic Tac Toe board state for the 'X' player's perspective """
