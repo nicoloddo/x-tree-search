@@ -56,9 +56,11 @@ def validate_getter(getter):
                 # Allow load operations and basic expressions
                 allowed_types = (ast.Load, ast.Expr, ast.Expression, ast.Attribute, ast.Name, 
                                  ast.ListComp, ast.comprehension,
-                                 ast.Store,
+                                 ast.Store, ast.Constant,
                                  ast.Compare, ast.Subscript, ast.IfExp, ast.UnaryOp, ast.BinOp,
-                                 ast.Not, ast.IsNot)
+                                 ast.Not, ast.IsNot, ast.And, ast.Or, 
+                                 ast.Gt, ast.Lt, ast.Eq,
+                                 ast.BoolOp)
                 if type(node) not in allowed_types:
                     self.is_valid = False
                     raise ValueError("Unauthorized operation or structure: {}".format(type(node).__name__))
