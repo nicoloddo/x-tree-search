@@ -27,6 +27,8 @@ class MiniMaxNode:
 
         self.children = []
 
+        self.max_search_depth_reached = False
+
     def expand(self, with_constraints=None):
         # Expands the node by one depth.
         self.node.expand(with_constraints)
@@ -38,6 +40,10 @@ class MiniMaxNode:
     @property
     def is_leaf(self):
         return self.node.is_leaf
+
+    @property
+    def final_node(self):
+        return self.is_leaf and not self.max_search_depth_reached
     
     @property
     def id(self):
@@ -152,6 +158,7 @@ class MiniMax:
 
         if current_depth >= max_depth:
             node.score = self.score(node.node)
+            node.max_search_depth_reached = True
             return None, None
         else:
             with_constraints = constraints_maximizer if is_maximizing else constraints_minimizer
