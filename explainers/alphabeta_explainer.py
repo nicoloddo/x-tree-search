@@ -26,25 +26,46 @@ class AlphaBetaExplainer:
             ArgumentationFramework(refer_to_nodes_as = 'move',
 
                 adjectives = [
-                
-                    BooleanAdjective("final move",
+                    BooleanAdjective("leaf",
                         definition = "node.is_leaf"),
+                    BooleanAdjective("final move",
+                        definition = "node.final_node"),
+                    BooleanAdjective("the most forward in the future I looked",
+                        definition = "node.max_search_depth_reached"),
+
+                    BooleanAdjective("a win",
+                        definition = "node.final_node and node.score > 0",
+                        explanation = Assumption("That's how you win in this game!")),
+                    BooleanAdjective("a loss",
+                        definition = "node.final_node and node.score < 0",
+                        explanation = Assumption("That's how you lose in this game!")),
+                    BooleanAdjective("a draw",
+                        definition = "node.final_node and node.score == 0",
+                        explanation = Assumption("That's how you draw in this game!")),
 
 
                     QuantitativePointerAdjective("score",
                         definition = "node.score",
 
                         explanation = ConditionalExplanation(
-                            condition = If("final move"),
+                            condition = If("leaf"),
                             skip_condition_statement_if_false = True,
-                            explanation_if_true = Assumption("final moves are evaluated only looking at the final position", necessary=True),
+                            explanation_if_true = ConditionalExplanation(
+                                condition=If("a win"),
+                                explanation_if_true=Possession("a win"),
+                                explanation_if_false= ConditionalExplanation(
+                                    condition=If("a loss"),
+                                    explanation_if_true = Possession("a loss"),
+                                    explanation_if_false = Possession ("a draw")
+                                )
+                            ),
                             explanation_if_false = ConditionalExplanation(
                                 condition=If("fully searched"),
                                 skip_condition_statement = True,   
 
                                 explanation_if_true = CompositeExplanation(
                                     Possession("opponent player turn"),
-                                    RecursivePossession("as next move", any_stop_conditions = [If("as next move", "final move"), If("as next move", "not fully searched")])),
+                                    RecursivePossession("as next move", any_stop_conditions = [If("as next move", "a win"), If("as next move", "a loss"), If("as next move", "a draw"), If("as next move", "the most forward in the future I looked"), If("as next move", "not fully searched")])),
 
                                 explanation_if_false = ConditionalExplanation(
                                         condition = If("opponent player turn"),
