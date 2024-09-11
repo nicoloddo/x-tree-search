@@ -7,7 +7,7 @@ from src.explainer.propositional_logic import Proposition, Implies
 from src.explainer.explanation import *
 from src.explainer.framework import ArgumentationFramework
 from src.explainer.common.validators import validate_getter, validate_comparison_operator
-from src.explainer.common.utils import apply_explanation_tactics
+from src.explainer.common.utils import AdjectiveType, apply_explanation_tactics
 
 """
 Adjectives constitute predicates by getting attributed to a node.
@@ -19,12 +19,8 @@ node <adjective> than node2 (RankingAdjective)
 """
 
 DEFAULT_GETTER = "node.no_getter_provided"
-
-class AdjectiveType:
-    """Enum for different types of adjectives."""
-    STATIC = 1  # Represents boolean attributes of nodes
-    POINTER = 2  # Represents attributes that point to specific values or nodes
-    COMPARISON = 3  # Represents boolean comparison between attributes of nodes
+COMPARISON_AUXILIARY_ADJECTIVE = "compared to"
+Explanation.COMPARISON_AUXILIARY_ADJECTIVE = COMPARISON_AUXILIARY_ADJECTIVE
 
 class Adjective(ABC):
     """Abstract base class for all types of adjectives."""
@@ -78,7 +74,7 @@ class Adjective(ABC):
         for tactic in self.explanation_tactics.values():
             tactic.contextualize(self)
     
-    def decontextualize(self, framework: ArgumentationFramework):
+    def decontextualize(self):
         """Undo the contextualization."""
         self.framework = None
         self.refer_to_nodes_as = None
@@ -175,12 +171,14 @@ class Adjective(ABC):
 
         # Get propositions
         if self.type == AdjectiveType.COMPARISON:
+            self.framework.add_adjective(AuxiliaryAdjective(COMPARISON_AUXILIARY_ADJECTIVE, getter = lambda node: other_nodes))
             evaluation = self.evaluate(node, other_nodes, explanation_tactics=explanation_tactics)
             consequent = self.proposition(evaluation, [node, other_nodes], explanation_tactics=explanation_tactics)
             if explain_further:
-                antecedent = self.explanation.explain(node, other_nodes, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
+                antecedent = self.explanation.explain(node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
             else:
                 antecedent = None
+            #self.framework.del_adjective(COMPARISON_AUXILIARY_ADJECTIVE)
         else:
             evaluation = self.evaluate(node, explanation_tactics=explanation_tactics)
             consequent = self.proposition(evaluation, node, explanation_tactics=explanation_tactics)
@@ -246,7 +244,7 @@ class BooleanAdjective(Adjective):
 class PointerAdjective(Adjective):
     """Represents a pointer adjective that references a specific attribute or object."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None, _custom_getter = None):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None, *, _custom_getter = None):
         """
         Initialize the PointerAdjective.
         
@@ -260,6 +258,8 @@ class PointerAdjective(Adjective):
         """
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.POINTER, explanation, tactics, definition = definition)
+        if _custom_getter is not None:
+            self.getter = _custom_getter
 
     def _proposition(self, evaluation: Any = None, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the pointer value """
@@ -272,6 +272,26 @@ class PointerAdjective(Adjective):
 
 class QuantitativePointerAdjective(PointerAdjective):
     pass
+
+class AuxiliaryAdjective(PointerAdjective):
+    """Auxiliary Adjectives are created dynamically during explanations. They have as getter a queue system."""
+    def __init__(self, name, getter):
+        super().__init__(name, _custom_getter = getter)
+        self.getter = [self.getter]
+        self.type = AdjectiveType.AUXILIARY
+        self.empty = False
+
+    def add_getter(self, new_getter):            
+        self.getter.append(new_getter)
+        self.empty = False
+    
+    def _evaluate(self, node: Any):
+        if self.empty:
+            ValueError(f"The Auxiliary Adjective {self.name} is empty while evaluating {node}.")
+        current_getter = self.getter.pop()
+        if len(self.getter) == 0:
+            self.empty = True
+        return current_getter(node)
 
 class NodesGroupPointerAdjective(PointerAdjective):
     """Represents a pointer adjective that references a group of objects. 
@@ -297,7 +317,10 @@ class NodesGroupPointerAdjective(PointerAdjective):
 
 class ComparisonAdjective(Adjective):
     """Represents a ranking adjective used for comparing nodes.
-    Comparison nodes do not need a getter to be evaluated."""
+    Comparison nodes do not need a getter to be evaluated.
+    
+    While explaining a Comparison Adjective you can refer to an auxiliary adjective called "compared to".
+    """
     
     def __init__(self, name: str, property_pointer_adjective_name: str, operator: str, *, explanation = None, tactics = None):
         """

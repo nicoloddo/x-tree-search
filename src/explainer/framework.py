@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple, Optional
 
 from src.explainer.explanation_settings import ExplanationSettings
+from src.explainer.common.utils import AdjectiveType
 
 class ArgumentationFramework:
     """Manages adjectives and their relationships in the argumentation framework."""
@@ -52,19 +53,39 @@ class ArgumentationFramework:
         Args:
             adjective: The Adjective object to add.
         """
-        self.adjectives[adjective.name] = adjective
-        adjective.contextualize(self)
+        if adjective.type == AdjectiveType.AUXILIARY and adjective.name in self.adjectives:
+            self.adjectives[adjective.name].add_getter(adjective.getter[0])
+        else:
+            self.adjectives[adjective.name] = adjective
+            adjective.contextualize(self)
 
     def del_adjective(self, adjective_name: str):
         """
         Deletes an adjective from the framework.
         
         Args:
-            adjective: The Adjective object to add.
-        """
+            adjective_name: The adjective name of the one to delete.
+        """            
         adjective = self.adjectives[adjective_name]
+
+        if adjective.type == AdjectiveType.AUXILIARY:
+            if len(adjective.getter) > 0:
+                raise ValueError("The Auxiliary Adjective was not used completely? It is not empty.")
+            
         adjective.decontextualize()
         del self.adjectives[adjective_name]
+    
+    def has_adjective(self, adjective_name: 'Adjective'):
+        """
+        Checks if an adjective is in the framework.
+        
+        Args:
+            adjective_name: The adjective name to be checked.
+        """
+        if adjective_name in self.adjectives.keys():
+            return True
+        else:
+            return False
     
     def add_adjectives(self, adjectives: List['Adjective']):
         """
@@ -108,7 +129,7 @@ class ArgumentationFramework:
             KeyError: If no adjective with the given name is found.
         """
         return self.adjectives[name]
-    
+
     def add_explanation_tactics_to_adjective(self, to_adjective:str, tactics: List['Tactic']):
         """Adds explanation tactics to a specified adjective."""
         tactic_tuples = []

@@ -1,5 +1,6 @@
 from .base import Explanation
 from .simple_explanation import ComparisonNodesPropertyPossession
+from src.explainer.common.utils import AdjectiveType
 
 from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And
 
@@ -26,7 +27,7 @@ class CompositeExplanation(Explanation):
         for exp in self.explanations:
             exp.decontextualize()
 
-    def _explain(self, node: Any, other_node: Any = None) -> LogicalExpression:
+    def _explain(self, node: Any) -> LogicalExpression:
         """
         Generate an explanation by combining all sub-explanations with AND.
         
@@ -37,13 +38,11 @@ class CompositeExplanation(Explanation):
         Returns:
             A LogicalExpression representing the combination of all sub-explanations.
         """
+
         to_forward_explanations = []
         for exp in self.explanations:
             if exp is not None:
-                if isinstance(exp, ComparisonNodesPropertyPossession):
-                    to_forward_explanations.append((exp, node, other_node))
-                else:
-                    to_forward_explanations.append((exp, node))
+                to_forward_explanations.append((exp, node))
         explanations = self.forward_multiple_explanations(*to_forward_explanations, no_increment = True)
         return And(*explanations)
     

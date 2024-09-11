@@ -5,6 +5,7 @@ from src.explainer.propositional_logic import LogicalExpression
 
 class Explanation(ABC):
     refer_to_nodes_as = None
+    COMPARISON_AUXILIARY_ADJECTIVE = None
 
     """Abstract base class for all types of explanations."""
     def __init__(self):
@@ -32,13 +33,13 @@ class Explanation(ABC):
     def _decontextualize(self, *args, **kwargs):
         pass
 
-    def explain(self, node: Any, other_node: Any = None, *, explanation_tactics={}, current_explanation_depth, explain_further=True) -> LogicalExpression:
+    def explain(self, node: Any, *, explanation_tactics={}, current_explanation_depth, explain_further=True) -> LogicalExpression:
         """
         Generate a propositional logic explanation for the given node.
         
         Args:
             node: The node to explain.
-            other_node: Other node in case of double node explanations (e.g. comparisons)
+            other_nodes: Other nodes in case of multiple node explanations (e.g. comparisons)
             explanation_tactics: Optional explanation tactics to be handled
             current_explanation_depth: The amount of explanations that were given
                                 during the current explanation cycle
@@ -53,10 +54,7 @@ class Explanation(ABC):
         if current_explanation_depth > self.framework.settings.explanation_depth:
             return
         
-        if other_node:
-            explanation = self._explain(node, other_node)
-        else:
-            explanation = self._explain(node)
+        explanation = self._explain(node)
         
         if explanation is not None:
             # We assign to this explanation the current explanation depth.

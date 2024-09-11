@@ -1,4 +1,5 @@
 from .base import Explanation
+from src.explainer.common.utils import AdjectiveType
 
 from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And
 
@@ -212,7 +213,7 @@ class ComparisonNodesPropertyPossession(Explanation):
         """
         self.adjective_for_comparison_name = adjective_for_comparison_name
 
-    def _explain(self, node: Any, other_nodes: Any) -> Proposition:
+    def _explain(self, node: Any) -> Proposition:
         """
         Generate an explanation for the possession of a property on a node and another node to be compared to.
         
@@ -225,6 +226,10 @@ class ComparisonNodesPropertyPossession(Explanation):
             A Proposition explaining the possession of the property values for both nodes.
         """
         adjective_for_comparison = self.framework.get_adjective(self.adjective_for_comparison_name)
+        if self.explanation_of_adjective.type == AdjectiveType.COMPARISON:
+            other_nodes = self.framework.get_adjective(self.COMPARISON_AUXILIARY_ADJECTIVE).evaluate(node)
+        else:
+            raise ValueError("The ComparisonNodesPropertyPossession should be the explanation of a comparison adjective.")
 
         if type(other_nodes) is not list:
             other_nodes = [other_nodes]
