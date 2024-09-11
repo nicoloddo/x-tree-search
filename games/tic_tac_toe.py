@@ -103,7 +103,15 @@ class TicTacToe(Game):
             return next(id for id in self.players.keys() if id != last_player)
 
     def create_board_widget(self):
-        self.buttons = [[widgets.Button(description='', layout=widgets.Layout(width='50px', height='50px')) for _ in range(3)] for _ in range(3)]
+        self.buttons = [[widgets.Button(
+            description='', 
+            layout=widgets.Layout(
+                width='50px', 
+                height='50px', 
+                margin='0px',
+                border='1px solid black'
+            )
+        ) for _ in range(3)] for _ in range(3)]
         self.status_label = widgets.Label(value="Player X's turn")
         self.board_output = widgets.Output()
         
@@ -111,7 +119,15 @@ class TicTacToe(Game):
             for j in range(3):
                 self.buttons[i][j].on_click(self.create_button_click_handler(i, j))
         
-        board_widget = widgets.GridBox(children=[button for row in self.buttons for button in row], layout=widgets.Layout(grid_template_columns="repeat(3, auto)"))
+        board_widget = widgets.GridBox(
+            children=[button for row in self.buttons for button in row],
+            layout=widgets.Layout(
+                grid_template_columns="repeat(3, auto)",
+                grid_gap='0px',
+                width='150px',
+                height='150px'
+            )
+        )
         return widgets.VBox([board_widget, self.status_label, self.board_output])
 
     def clear_board_output(self):
