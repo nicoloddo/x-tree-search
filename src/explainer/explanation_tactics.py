@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List
+from collections import defaultdict
+
 from src.explainer.common.utils import return_arguments
 
 from src.explainer.propositional_logic import Postulate, Proposition, Implies, And
@@ -324,4 +326,50 @@ class SubstituteQuantitativeExplanations(GeneralTactic):
         if isinstance(explanation, Implies):
             explanation.antecedent = Implies(explanation.antecedent, self.substitution_statement)
         
+        return explanation
+    
+
+class CompactCollectiveConsequences(SpecificTactic):
+    """When explaining a Comparison, compact
+    explanations that lead to a similar outcome."""
+
+    def __init__(self, of_adjectives : List[str]):
+        super().__init__(self.__class__.__name__)
+        self.of_adjectives = of_adjectives
+    
+    @property
+    def allowed_in_expl_starting_from_adjective_types(self):
+        return [MaxRankAdjective, MinRankAdjective]
+    
+    @property
+    def exec_from_adjective_types(self):
+        return [ComparisonAdjective]
+    
+    def apply_on_explanation(self, explanation):
+        explanations_book = self.tactic_of_adjective.explanations_book
+
+        for adj in self.of_adjectives:
+            adj_book = explanations_book[adj]
+
+            seen = {}
+            for record in adj_book:
+                key = (record['depth'], record['evaluation'].id[-1])
+                
+                if key not in seen:
+                    seen[key] = {
+                        'first_record': record,
+                        'obj_names': [record['obj_name']]
+                    }
+                else:
+                    # Add the obj_name to the list in the first occurrence
+                    seen[key]['obj_names'].append(record['obj_name'])
+                    
+                    # Set explanation to None for this occurrence
+                    record['explanation'] = None
+
+            # Update the first occurrences with the complete list of obj_names
+            for info in seen.values():
+                info['first_record']['obj_name'] = info['obj_names']
+
+
         return explanation
