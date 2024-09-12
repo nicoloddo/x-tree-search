@@ -71,8 +71,12 @@ class Game:
         """Which attributes to print when printing an action"""
         return ['who', 'what', 'where', 'on', 'what_before']
 
+    def act(self, action):
+        args = self._act(action)
+        self.model.action(*args)
+
     @abstractmethod
-    def act(self, action) -> None:
+    def _act(self, action) -> None:
         pass
     
     def set_players(self, players):

@@ -75,7 +75,7 @@ class TicTacToe(Game):
 
         return gm
     
-    def act(self, action) -> None:
+    def _act(self, action) -> None:
         player = action['who']
         coordinates = action['where']
 
@@ -86,7 +86,7 @@ class TicTacToe(Game):
         else:
             raise ValueError("Player variable has to be 0 or 1")
 
-        performed = self.model.action("board", player, coordinates, sign)
+        return "board", player, coordinates, sign
 
     """Interactive game handling"""
     def __init__(self):
@@ -190,7 +190,7 @@ class TicTacToe(Game):
         display(board_widget)
         await self.turn_handler()
 
-def simple_scoring_function(node):
+def simple_scoring_function(node, depth):
     """ Evaluate the Tic Tac Toe board state for the 'X' player's perspective """
     state = node.state
     score = 0
@@ -214,5 +214,32 @@ def simple_scoring_function(node):
             score += 10  # 'X' is one move away from winning
         elif np.count_nonzero(line == "O") == 2 and np.count_nonzero(line == "free") == 1:
             score -= 10  # 'O' is one move away from winning
+
+    return score
+
+def simple_depth_dependant_scoring_function(node, depth):
+    """ Evaluate the Tic Tac Toe board state for the 'X' player's perspective """
+    state = node.state
+    score = 0
+    
+    # Possible lines to check (3 rows, 3 columns, 2 diagonals)
+    lines = []
+    # Rows and columns
+    for i in range(3):
+        lines.append(state[i, :])  # Row
+        lines.append(state[:, i])  # Column
+    # Diagonals
+    lines.append(np.array([state[i, i] for i in range(3)]))  # Main diagonal
+    lines.append(np.array([state[i, 2 - i] for i in range(3)]))  # Anti-diagonal
+
+    for line in lines:
+        if np.all(line == "X"):
+            score += 1000 + depth # 'X' wins
+        elif np.all(line == "O"):
+            score -= 1000 - depth # 'O' wins
+        elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
+            score += 100 + depth # 'X' is one move away from winning
+        elif np.count_nonzero(line == "O") == 2 and np.count_nonzero(line == "free") == 1:
+            score -= 100 - depth  # 'O' is one move away from winning
 
     return score
