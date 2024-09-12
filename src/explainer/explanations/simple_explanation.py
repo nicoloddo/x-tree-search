@@ -260,7 +260,7 @@ class GroupComparison(Explanation):
         
         Args:
             comparison_adjective_name: The name of the comparison adjective.
-            siblings_selector: The selector of sibling: a callable that given a node returns an array of siblings
+            group_pointer_adjective_name: a callable that given a node returns an array of objects to compare
             positive_implication: If the implication in the framework is seeking for a positive implication of
                                 inference of the comparison adjective or a negative implication:
                                 e.g. better than OR not(better than)?
@@ -287,9 +287,10 @@ class GroupComparison(Explanation):
         group = self.forward_evaluation(group_pointer_adjective, node)
 
         group_explanation = self.forward_explanation(group_pointer_adjective, node)
-        properties_explanations = self.forward_explanation(comparison_adjective, node, group)
-                
-        explanation = And(group_explanation, properties_explanations)
+        comparison_explanations = self.forward_explanation(comparison_adjective, node, group)
+        
+        comparison_explanations.consequent.expr = f"{self.comparison_adjective_name} them" # Remove redundant information
+        explanation = And(group_explanation, comparison_explanations)
         return explanation
 
     def implies(self) -> LogicalExpression:
