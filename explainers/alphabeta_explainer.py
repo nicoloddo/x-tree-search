@@ -4,7 +4,7 @@ from src.explainer.framework import ArgumentationFramework
 from src.explainer.adjective import BooleanAdjective, PointerAdjective, QuantitativePointerAdjective, NodesGroupPointerAdjective, ComparisonAdjective, MaxRankAdjective, MinRankAdjective
 from src.explainer.explanation import Possession, RecursivePossession, Assumption, Comparison, If, ConditionalExplanation, CompositeExplanation
 
-from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, SubstituteQuantitativeExplanations
+from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, CompactCollectiveConsequences
 
 class AlphaBetaExplainer:
     """
@@ -49,12 +49,14 @@ class AlphaBetaExplainer:
 
                         explanation = ConditionalExplanation(
                             condition = If("leaf"),
-                            skip_condition_statement_if_false = True,
+                            skip_condition_statement = True,
                             explanation_if_true = ConditionalExplanation(
                                 condition=If("a win"),
+                                skip_condition_statement = True,
                                 explanation_if_true=Possession("a win"),
                                 explanation_if_false= ConditionalExplanation(
                                     condition=If("a loss"),
+                                    skip_condition_statement = True,
                                     explanation_if_true = Possession("a loss"),
                                     explanation_if_false = Possession ("a draw")
                                 )
@@ -64,10 +66,25 @@ class AlphaBetaExplainer:
                                 skip_condition_statement = True,   
 
                                 explanation_if_true = CompositeExplanation(
-                                    Possession("opponent player turn"),
+                                    Assumption("We assume the opponent will do their best move and us our best move.", necessary=True),
+                                    #Possession("opponent player turn"),
                                     RecursivePossession("as next move", any_stop_conditions = [If("as next move", "a win"), If("as next move", "a loss"), If("as next move", "a draw"), If("as next move", "the most forward in the future I looked"), If("as next move", "not fully searched")])),
 
                                 explanation_if_false = ConditionalExplanation(
+                                    condition = If("as next move", "leaf"),
+                                    skip_condition_statement = True,
+                                    explanation_if_true = ConditionalExplanation(
+                                        condition=If("as next move", "a win"),
+                                        skip_condition_statement = True,
+                                        explanation_if_true=Possession("as next move", "a win"),
+                                        explanation_if_false= ConditionalExplanation(
+                                            condition=If("as next move", "a loss"),
+                                            skip_condition_statement = True,
+                                            explanation_if_true = Possession("as next move", "a loss"),
+                                            explanation_if_false = Possession ("as next move", "a draw")
+                                        )
+                                    ),
+                                    explanation_if_false = ConditionalExplanation(    
                                         condition = If("opponent player turn"),
                                         explanation_if_true = CompositeExplanation(
                                             Possession("as next possible move", explain_further=False),
@@ -82,6 +99,7 @@ class AlphaBetaExplainer:
                                             Assumption("We could choose to do this move, or something even worse for the opponent."),                                                       
                                             ),
                                     ),
+                                ),
                             )
                         ),
                     ),                    
@@ -96,20 +114,24 @@ class AlphaBetaExplainer:
 
                     PointerAdjective("as next move",
                         definition = "node.score_child",
-
                         explanation = ConditionalExplanation(
-                            condition = If("opponent player turn"),
-                            explanation_if_true = CompositeExplanation(
-                                Assumption("We assume the opponent will do their best move."),
-                                Possession("as next move", "the best the opponent can do")),
-                            explanation_if_false = CompositeExplanation(
-                                Assumption("On our turn we take the maximum rated move."),
-                                Possession("as next move", "the best")))
+                            condition = If("fully searched"),
+                            skip_condition_statement = True,
+                            explanation_if_true = ConditionalExplanation(
+                                condition = If("opponent player turn"),
+                                explanation_if_true = CompositeExplanation(
+                                    Assumption("We assume the opponent will do their best move."),
+                                    Possession("as next move", "the best the opponent can do")),
+                                explanation_if_false = CompositeExplanation(
+                                    Assumption("On our turn we take the maximum rated move."),
+                                    Possession("as next move", "the best"))
+                            ),
+                            explanation_if_false = Assumption("The move is legal.", implicit=True))
                         ),
                     
                     PointerAdjective("as next possible move",
                         definition = "node.score_child",
-                        explanation = Assumption("The move is legal.")),
+                        explanation = Assumption("The move is legal.", implicit=True)),
 
                     PointerAdjective("lowerbound",
                         definition = "node.parent.beta"),
@@ -133,8 +155,7 @@ class AlphaBetaExplainer:
                 ],
                 
                 tactics=[
-                    #SubstituteQuantitativeExplanations("it leads to a better or equal position"),
-                    SkipQuantitativeExplanations()
+                    #SkipQuantitativeExplanations()
                 ],
 
                 settings = {
