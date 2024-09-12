@@ -146,6 +146,8 @@ class GameTree(Tree):
                 self._expand_children(count_depth, depth)
 
         def __str__(self) -> str:
+            if self.action is None:
+                return "(No action recorded)"
             action_print_attributes = self.belonging_tree.action_print_attributes
 
             who_does = f"{str(self.action['who'])} does " if 'who' in action_print_attributes else ""
