@@ -259,6 +259,9 @@ class RecursivePossession(Explanation):
                     explain_further=self.explain_further
                 )
         
+        if recursion_depth > 0:
+            for e in explanation:
+                e.obj_name = "this"
         recursion_explanations.extend(explanation)
 
         true_stop_conditions = [
@@ -278,7 +281,7 @@ class RecursivePossession(Explanation):
                 additional_conditions_explanations = self.forward_multiple_explanations(
                     *to_forward_explanations, 
                     no_increment = True,
-                    explain_further=self.explain_further
+                    explain_further = True # The stop condition is explained further regardless
                 )
             if recursion_depth > self.max_recursion_depth:
                 additional_conditions_explanations.append(Postulate("Max recursion limit hitted in Recursive Possession explanation."))
