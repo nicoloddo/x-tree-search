@@ -60,7 +60,7 @@ class Explanation(ABC):
             # We assign to this explanation the current explanation depth.
             explanation.current_explanation_depth = current_explanation_depth
             if not explain_further:
-                explanation.antecedent = None
+                explanation = explanation.consequent
             return explanation
         else:
             return
