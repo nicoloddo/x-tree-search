@@ -25,6 +25,7 @@ Explanation.COMPARISON_AUXILIARY_ADJECTIVE = COMPARISON_AUXILIARY_ADJECTIVE
 class Adjective(ABC):
     """Abstract base class for all types of adjectives."""
     refer_to_nodes_as = None
+    explanations_book = {}
     
     def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, tactics: List['Tactic'], *, definition: str):
         """
@@ -200,6 +201,14 @@ class Adjective(ABC):
             explanation_part = 'consequent'
         
         explanation = apply_explanation_tactics(self, "explanation", explanation_tactics, explanation, explanation_part=explanation_part)
+
+        # Save the explanations in a lookup table
+        book_record = {'node': node, 'evaluation': evaluation, 'explanation': explanation, 'depth': current_explanation_depth}
+        if self.name not in self.explanations_book:
+            self.explanations_book[self.name] = [book_record]
+        else:
+            self.explanations_book[self.name].append(book_record)
+
         return explanation
         
     def implies(self, evaluation = None) -> Implies:
