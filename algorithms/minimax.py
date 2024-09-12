@@ -1,4 +1,5 @@
 from typing import Dict
+import copy
 
 class MiniMaxNode:
     """
@@ -12,6 +13,10 @@ class MiniMaxNode:
     def __init__(self, node, parent=None, nodes_holder = {}):
         self.node = node
         self.parent = parent
+        if self.parent is not None:
+            self.parent_state = parent.node.state
+        else:
+            self.parent_state = None
 
         self.nodes_holder = nodes_holder
         self.nodes_holder[self.id] = self
@@ -58,7 +63,7 @@ class MiniMaxNode:
         return self.score is not None
     
     def __str__(self) -> str:
-        return '{' + f"{str(self.node)}, id={self.node.id}" + '}'
+        return '\n' + f"{str(self.node.state)} {str(self.node)}, id={self.node.id}" + ''
 
 
 class MiniMax:
@@ -91,16 +96,17 @@ class MiniMax:
         self.nodes = self.search_root.nodes_holder
 
         best_child, best_value = self.algorithm(self.search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
+        best_child.parent_state = copy.deepcopy(best_child.parent.node.state)
 
         if best_child is not None:
             self.search_root_final = best_child.parent
-            self.last_choice = best_child
+            self.last_choice = best_child            
         return best_child, best_value
     
     def minimax(self, node, is_maximizing, current_depth = 0, *, max_depth, constraints_maximizer=None, constraints_minimizer=None):
         node.maximizing_player_turn = is_maximizing
         if current_depth >= max_depth:
-            node.score = self.score(node.node)
+            node.score = self.score(node.node, current_depth)
             return None, None
         else:
             with_constraints = constraints_maximizer if is_maximizing else constraints_minimizer
@@ -108,7 +114,7 @@ class MiniMax:
 
         # If the node is a leaf, or if we reached the max search depth, return its score
         if node.is_leaf:
-            node.score = self.score(node.node)
+            node.score = self.score(node.node, current_depth)
             return None, None
         
         # Initialize best value
@@ -156,18 +162,17 @@ class MiniMax:
             node.beta = beta
             beta = beta.score
 
-        if current_depth >= max_depth:
-            node.score = self.score(node.node)
-            node.max_search_depth_reached = True
-            return None, None
-        else:
-            with_constraints = constraints_maximizer if is_maximizing else constraints_minimizer
-            node.expand(with_constraints)
-
+        with_constraints = constraints_maximizer if is_maximizing else constraints_minimizer
+        node.expand(with_constraints)
+        
         # If the node is a leaf, or if we reached the max search depth, return its score
         if node.is_leaf:
-            node.score = self.score(node.node)
+            node.score = self.score(node.node, current_depth)
             node.fully_searched = True
+            return None, None
+        elif current_depth >= max_depth:
+            node.score = self.score(node.node, current_depth)
+            node.max_search_depth_reached = True
             return None, None
         
         # Initialize best value

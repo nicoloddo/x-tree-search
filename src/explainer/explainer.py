@@ -84,6 +84,7 @@ class ArgumentativeExplainer:
     def explain_adjective(self, node: Any, adjective_name: str, comparison_node: Any = None, *, with_framework = None, explanation_depth = None, print_depth = None) -> Any:
         """
         Generate a propositional logic explanation for why a node has a specific adjective.
+        Put a parent node state attribute to the nodes if you want to print the search node state.
         
         Args:
             node: The node to explain.
@@ -128,7 +129,12 @@ class ArgumentativeExplainer:
             # Give the explanation
             if isinstance(explanation, Implies):
                 explanation._str_settings(print_first = True)
-            print(explanation)
+
+            if hasattr(node, "parent_state"):
+                context_str = f"Given:\n {node.parent_state}\n"
+            else:
+                context_str = ""
+            print(f"{context_str}{explanation}")
 
         except CannotBeEvaluated as e:
             print(f"The adjective \"{adjective_name}\" cannot be evaluated on the {self.framework.refer_to_nodes_as} {node}.")
