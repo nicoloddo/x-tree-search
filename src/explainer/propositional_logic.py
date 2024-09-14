@@ -9,7 +9,7 @@ class LogicalExpression(ABC):
     def evaluate(self, interpretation: Dict[str, bool]) -> bool:
         """Evaluate the logical expression given an interpretation."""
         pass
-
+    
     @abstractmethod
     def __str__(self) -> str:
         """Return a string representation of the logical expression."""
@@ -25,37 +25,56 @@ class Postulate(LogicalExpression):
     
 class Proposition(LogicalExpression):
     """Represents a basic proposition in propositional logic."""
+    to_be = {'singular': 'is', 'plural': 'are'}
+    to_have = {'singular': 'has', 'plural': 'have'}
 
     def __init__(self, obj_name, expr: str, evaluation: Any = None):
         self.obj_name = obj_name
         self.expr = expr
         
-        if evaluation is None:
-            self.evaluation = '?'
-        elif type(evaluation) is list:
-            self.evaluation = ', '.join([str(val) for val in evaluation])
-        else:
-            self.evaluation = evaluation
+        self.evaluation = evaluation
+
+        self.nullified = False
+
+    def nullify(self):
+        self.nullified = True
     
     def add_tag(self, tag: str):
         self.tag = tag
 
     def __str__(self) -> str:
+        if self.evaluation is None:
+            self.evaluation = '?'
+        elif type(self.evaluation) is list:
+            self.evaluation = ', '.join([str(val) for val in self.evaluation])
+        
+        if self.obj_name is None:
+            self.obj_name = '?'
+            predicate_type = 'singular'
+        elif type(self.obj_name) is list:
+            self.obj_name = ', '.join([str(val) for val in self.obj_name])
+            predicate_type = 'plural'
+        else:
+            predicate_type = 'singular'
+
         if isinstance(self.evaluation, bool):
+            predicate = self.to_be[predicate_type]
+
             if self.evaluation:
-                string_end = f"is {self.expr}"
+                string_end = f"{predicate} {self.expr}"
             else:
                 if self.print_mode == 'logic':
                     negation = f"¬({self.expr})"
                 elif self.print_mode == 'verbal':
                     negation = f"not {self.expr}"
 
-                string_end = f"is {negation}"
+                string_end = f"{predicate} {negation}"
         else:
+            predicate = self.to_have[predicate_type]
             if self.print_mode == 'logic':
-                string_end = f"has {self.expr} = {self.evaluation}"
+                string_end = f"{predicate} {self.expr} = {self.evaluation}"
             elif self.print_mode == 'verbal':
-                string_end = f"has {self.expr} {self.evaluation}"
+                string_end = f"{predicate} {self.expr} {self.evaluation}"
 
         to_string = f"{self.obj_name} {string_end}"
 
@@ -75,8 +94,12 @@ class UnaryOperator(LogicalExpression):
 class NAryOperator(LogicalExpression):
     symbol = 'undefined symbol'
 
+    def is_valid_expr(expr):
+        return expr is not None and not getattr(expr, 'nullified', False)
+    
     def __new__(cls, *exprs: LogicalExpression):
-        filtered_exprs = tuple(filter(None, exprs)) # filter None expressions
+
+        filtered_exprs = tuple(filter(NAryOperator.is_valid_expr, exprs))
         if not filtered_exprs:
             return None
         if len(filtered_exprs) == 1:
@@ -89,18 +112,24 @@ class NAryOperator(LogicalExpression):
         pass # we set the exprs in the __new__ after filtering
 
     def __str__(self) -> str:
+        filtered_exprs = tuple(filter(NAryOperator.is_valid_expr, self.exprs))
+        if not filtered_exprs:
+            return None
+        if len(filtered_exprs) == 1:
+            return str(filtered_exprs[0])
+
         if self.print_mode == 'logic':
             operator_string = self.symbol
         elif self.print_mode == 'verbal':
             operator_string = self.verbal
 
-        if len(self.exprs) > 2 or not all(isinstance(expr, Proposition) for expr in self.exprs):
+        if len(filtered_exprs) > 2 or not all(isinstance(expr, Proposition) for expr in filtered_exprs):
             joining_string = '\n' + operator_string + ' '
         else:
             # They are only two propositions to tie
             joining_string = '\n' + operator_string + ' '
         
-        joined = joining_string.join(str(expr) for expr in self.exprs)
+        joined = joining_string.join(str(expr) for expr in filtered_exprs)
         return joined
 
 class And(NAryOperator):

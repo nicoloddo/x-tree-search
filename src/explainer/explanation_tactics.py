@@ -353,23 +353,26 @@ class CompactCollectiveConsequences(SpecificTactic):
 
             seen = {}
             for record in adj_book:
-                key = (record['depth'], record['evaluation'].id[-1])
+                key = (record['depth'], len(record['evaluation'].id), record['evaluation'].id[-1])
                 
                 if key not in seen:
+                    node = record['node']
                     seen[key] = {
-                        'first_record': record,
-                        'obj_names': [record['obj_name']]
+                        'node': node if type(node) is list else [node],
+                        'first_record': record                        
                     }
                 else:
                     # Add the obj_name to the list in the first occurrence
-                    seen[key]['obj_names'].append(record['obj_name'])
+                    seen[key]['node'].append(record['node'])
                     
-                    # Set explanation to None for this occurrence
-                    record['explanation'] = None
+                    # Nullify explanation for this occurrence
+                    record['explanation'].nullify()
 
             # Update the first occurrences with the complete list of obj_names
             for info in seen.values():
-                info['first_record']['obj_name'] = info['obj_names']
-
+                new_nodes = info['node']
+                if type(new_nodes) is list:
+                    if len(new_nodes) > 0:
+                        info['first_record']['explanation'].obj_name = new_nodes
 
         return explanation

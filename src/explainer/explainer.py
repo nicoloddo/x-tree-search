@@ -116,11 +116,11 @@ class ArgumentativeExplainer:
             prev_print_depth = self.framework.settings.print_depth
             self.framework.settings.print_depth = print_depth
 
-
         # Get the explanation
         to_raise_later = None
         try:
             adjective = self.framework.get_adjective(adjective_name)
+            adjective.init_explanations_book()
             if not comparison_node: # The adjective is not comparative
                 explanation = adjective.explain(node, current_explanation_depth = STARTING_EXPLANATION_DEPTH)
             else:

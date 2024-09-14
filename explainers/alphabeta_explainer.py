@@ -149,9 +149,11 @@ class AlphaBetaExplainer:
                         definition = "node.parent.children",
                         excluding = "node"),
 
-                    MaxRankAdjective("the best", "better or equal than", "possible alternative moves"),
+                    MaxRankAdjective("the best", "better or equal than", "possible alternative moves",
+                        tactics = [CompactCollectiveConsequences(of_adjectives=["as next move", "as next possible move"])]),
 
-                    MaxRankAdjective("the best the opponent can do", "worse or equal than", "possible alternative moves"),
+                    MaxRankAdjective("the best the opponent can do", "worse or equal than", "possible alternative moves",
+                        tactics = [CompactCollectiveConsequences(of_adjectives=["as next move", "as next possible move"])]),
                 ],
                 
                 tactics=[
