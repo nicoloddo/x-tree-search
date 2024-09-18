@@ -5,10 +5,6 @@ import textwrap
 class LogicalExpression(ABC):
     """Abstract base class for all logical expressions."""
     print_mode = 'logic'
-
-    def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        """Evaluate the logical expression given an interpretation."""
-        pass
     
     @abstractmethod
     def __str__(self) -> str:
@@ -137,16 +133,10 @@ class And(NAryOperator):
     symbol = '∧'
     verbal = 'and'
 
-    def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        return all(expr.evaluate(interpretation) for expr in self.exprs)
-
 class Or(NAryOperator):
     """Represents the disjunction of logical expressions."""
     symbol = '||'
     verbal = 'or'
-
-    def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        return any(expr.evaluate(interpretation) for expr in self.exprs if expr is not None)
 
 class Implies(LogicalExpression):
     """Represents the implication between two logical expressions."""
@@ -158,9 +148,6 @@ class Implies(LogicalExpression):
         self.consequent = consequent
 
         self._str_settings_list = {}
-
-    def evaluate(self, interpretation: Dict[str, bool]) -> bool:
-        return (not self.antecedent.evaluate(interpretation)) or self.consequent.evaluate(interpretation)
 
     def _str_settings(self, **kwargs):
         for key, value in kwargs.items():
