@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import Any, List, Callable
 from collections import defaultdict
 
 from src.explainer.common.utils import return_arguments
 
-from src.explainer.propositional_logic import Postulate, Proposition, Implies, And
+from src.explainer.propositional_logic import Postulate, NAryOperator, Implies, And, Proposition
 
 from src.explainer.adjective import Adjective
 from src.explainer.framework import ArgumentationFramework
@@ -12,7 +12,8 @@ from src.explainer.framework import ArgumentationFramework
 from src.explainer.adjective import MaxRankAdjective, MinRankAdjective, NodesGroupPointerAdjective
 from src.explainer.adjective import QuantitativePointerAdjective
 from src.explainer.adjective import ComparisonAdjective
-from src.explainer.explanation import ConditionalExplanation
+
+from src.explainer.explanation import Possession, RecursivePossession
 
 class Tactic(ABC):
     """Abstract base class for all types of explanation tactics.
@@ -346,6 +347,80 @@ class CompactCollectiveConsequences(SpecificTactic):
         return [ComparisonAdjective]
     
     def apply_on_explanation(self, explanation):
+        if not isinstance(explanation, Implies):
+            return explanation
+
+        # If the antecedent is not an And, there is nothing to compact
+        if not isinstance(explanation.antecedent, And):
+            return explanation
+        
+        explanations_book = []
+        # We need to unify similar exprs of the antecedent:
+        for expr in explanation.antecedent.exprs:
+            explanation_type = expr.record['explanation_type']
+            if isinstance(expr, NAryOperator):
+                explanation_types = [e.record['explanation_type'] for e in expr.exprs]
+                sub_exprs = expr.get_flat_exprs(max_depth=2)
+            else:
+                explanation_types = ['None']
+                sub_exprs = []
+            
+            explanations_book.append({'explanation_type': explanation_type, 
+                                      'subsequent_explanation_types': explanation_types, 
+                                      'subexpressions': sub_exprs,
+                                      'predicates': [expr.predicate for expr in sub_exprs],
+                                      'evaluations': [expr.evaluation for expr in sub_exprs],
+                                      'depths': [expr.record['depth'] for expr in sub_exprs],
+                                      'records': [expr.record for expr in sub_exprs]})
+        
+        seen = {}
+        for i, expl in enumerate(explanations_book):
+            if len(expl['subexpressions']) == 0:
+                continue
+
+            relevant_predicates_indexes = [p for p, predicate in enumerate(expl['predicates']) if predicate in self.of_adjectives]
+            
+            # For now we consider the last predicate as the most relevant:
+            most_relevant_predicate_index = relevant_predicates_indexes[-1]
+
+            key = (len(expl['evaluations'][most_relevant_predicate_index].id), 
+                   expl['evaluations'][most_relevant_predicate_index].id[-1])
+            
+            if key not in seen:
+                seen[key] = expl['subexpressions'][most_relevant_predicate_index]
+            else:                
+                subjects_to_add = expl['subexpressions'][most_relevant_predicate_index].subject
+                if not isinstance(subjects_to_add, list):
+                    subjects_to_add = [subjects_to_add]
+
+                if isinstance(seen[key], Implies):
+                    if seen[key].consequent.subject is not list:
+                        seen[key].consequent.subject = [seen[key].consequent.subject]
+                    seen[key].consequent.subject.extend(subjects_to_add) # try without linking to the consequent
+                else:
+                    if seen[key].subject is not list:
+                        seen[key].subject = [seen[key].subject]
+                    seen[key].subject.extend(subjects_to_add)
+                
+                # Nullify explanation for this occurrence
+                explanation.antecedent.exprs[i].nullify()
+        return explanation
+"""
+            for index, explanation_type in enumerate(explanation_types):
+                if explanation_type is RecursivePossession:
+                    recursive_possession = expr.exprs[index]
+                    propositions = [p for p in recursive_possession.exprs if type(p) is Proposition]
+                    selected_proposition = propositions[-1]
+                    break
+                elif explanation_type is Possession:
+                    possession = expr.exprs[index]
+                    if isinstance(possession, NAryOperator):
+                        propositions = [p for p in recursive_possession.exprs if type(p) is Proposition]
+                        selected_proposition = 0
+                    else:
+                        print("Explanation tactic CompactCollectiveConsequences is in a low studied branch.")
+                        proposition = None
+            
         explanations_book = self.tactic_of_adjective.explanations_book
 
         for adj in self.of_adjectives:
@@ -363,17 +438,17 @@ class CompactCollectiveConsequences(SpecificTactic):
                         'first_record': record                        
                     }
                 else:
-                    # Add the obj_name to the list in the first occurrence
+                    # Add the subject to the list in the first occurrence
                     seen[key]['node'].append(record['node'])
                     
                     # Nullify explanation for this occurrence
                     record['explanation'].nullify()
 
-            # Update the first occurrences with the complete list of obj_names
+            # Update the first occurrences with the complete list of subjects
             for info in seen.values():
                 new_nodes = info['node']
                 if type(new_nodes) is list:
                     if len(new_nodes) > 0:
-                        info['first_record']['explanation'].obj_name = new_nodes
+                        info['first_record']['explanation'].subject = new_nodes
 
-        return explanation
+        return explanation"""

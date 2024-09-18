@@ -228,7 +228,7 @@ class RecursivePossession(Explanation):
         
         if recursion_depth > 0:
             for e in explanation:
-                e.obj_name = "this"
+                e.subject = "this"
         recursion_explanations.extend(explanation)
 
         true_stop_conditions = [

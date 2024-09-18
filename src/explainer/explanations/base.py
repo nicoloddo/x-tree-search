@@ -55,10 +55,15 @@ class Explanation(ABC):
             return
         
         explanation = self._explain(node)
-        
+
         if explanation is not None:
-            # We assign to this explanation the current explanation depth.
+            # We assign to this explanation the current explanation depth so that Implies 
+            # can be indented well depending on the depth.
             explanation.current_explanation_depth = current_explanation_depth
+
+            record = {'explanation_of_adjective': self.explanation_of_adjective.name, 'adjective_ref': self.explanation_of_adjective, 'node': node, 'explanation_type': type(self), 'depth': current_explanation_depth}
+            explanation.set_record(record)
+
             if not explain_further:
                 explanation = explanation.consequent
             return explanation

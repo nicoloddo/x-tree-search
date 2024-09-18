@@ -251,6 +251,6 @@ class GroupComparison(Explanation):
         group_explanation = self.forward_explanation(group_pointer_adjective, node)
         comparison_explanations = self.forward_explanation(comparison_adjective, node, group)
         
-        comparison_explanations.consequent.expr = f"{self.comparison_adjective_name} them" # Remove redundant information
+        comparison_explanations.consequent.object = "them" # Remove redundant information
         explanation = And(group_explanation, comparison_explanations)
         return explanation

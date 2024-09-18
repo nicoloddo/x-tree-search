@@ -201,15 +201,9 @@ class Adjective(ABC):
         else:
             explanation = consequent
             explanation_part = 'consequent'
-        
-        explanation = apply_explanation_tactics(self, "explanation", explanation_tactics, explanation, explanation_part=explanation_part)
 
-        # Save the explanations in a lookup table
-        book_record = {'adjective': self, 'node': node, 'evaluation': evaluation, 'explanation': explanation, 'depth': current_explanation_depth}
-        if self.name not in self.explanations_book:
-            self.explanations_book[self.name] = [book_record]
-        else:
-            self.explanations_book[self.name].append(book_record)
+        # Apply tactics
+        explanation = apply_explanation_tactics(self, "explanation", explanation_tactics, explanation, explanation_part=explanation_part)
 
         return explanation
 
@@ -356,9 +350,7 @@ class ComparisonAdjective(Adjective):
         if type(other_nodes) is not list:
             other_nodes = [other_nodes]
 
-        other_nodes_string = ', '.join([str(node) for node in other_nodes])
-
-        proposition = Proposition(main_node, f"{self.name} {other_nodes_string}", evaluation)
+        proposition = Proposition(main_node, self.name, evaluation, object = other_nodes)
 
         return proposition
 
