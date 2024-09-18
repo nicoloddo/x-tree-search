@@ -394,61 +394,14 @@ class CompactCollectiveConsequences(SpecificTactic):
                     subjects_to_add = [subjects_to_add]
 
                 if isinstance(seen[key], Implies):
-                    if seen[key].consequent.subject is not list:
+                    if not isinstance(seen[key].consequent.subject, list):
                         seen[key].consequent.subject = [seen[key].consequent.subject]
                     seen[key].consequent.subject.extend(subjects_to_add) # try without linking to the consequent
                 else:
-                    if seen[key].subject is not list:
+                    if not isinstance(seen[key].subject, list):
                         seen[key].subject = [seen[key].subject]
                     seen[key].subject.extend(subjects_to_add)
                 
                 # Nullify explanation for this occurrence
                 explanation.antecedent.exprs[i].nullify()
         return explanation
-"""
-            for index, explanation_type in enumerate(explanation_types):
-                if explanation_type is RecursivePossession:
-                    recursive_possession = expr.exprs[index]
-                    propositions = [p for p in recursive_possession.exprs if type(p) is Proposition]
-                    selected_proposition = propositions[-1]
-                    break
-                elif explanation_type is Possession:
-                    possession = expr.exprs[index]
-                    if isinstance(possession, NAryOperator):
-                        propositions = [p for p in recursive_possession.exprs if type(p) is Proposition]
-                        selected_proposition = 0
-                    else:
-                        print("Explanation tactic CompactCollectiveConsequences is in a low studied branch.")
-                        proposition = None
-            
-        explanations_book = self.tactic_of_adjective.explanations_book
-
-        for adj in self.of_adjectives:
-            adj_book = explanations_book[adj]
-
-            seen = {}
-            for record in adj_book:
-                # TODO: It should actually only watch inside of 'score' explanations book
-                key = (record['depth'], len(record['evaluation'].id), record['evaluation'].id[-1])
-                
-                if key not in seen:
-                    node = record['node']
-                    seen[key] = {
-                        'node': node if type(node) is list else [node],
-                        'first_record': record                        
-                    }
-                else:
-                    # Add the subject to the list in the first occurrence
-                    seen[key]['node'].append(record['node'])
-                    
-                    # Nullify explanation for this occurrence
-                    record['explanation'].nullify()
-
-            # Update the first occurrences with the complete list of subjects
-            for info in seen.values():
-                new_nodes = info['node']
-                if type(new_nodes) is list:
-                    if len(new_nodes) > 0:
-                        info['first_record']['explanation'].subject = new_nodes
-
-        return explanation"""
