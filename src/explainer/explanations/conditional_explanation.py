@@ -228,6 +228,8 @@ class RecursivePossession(Explanation):
         
         if recursion_depth > 0:
             for e in explanation:
+                # TODO: Move this modification as a last explanation tactic to apply because
+                # the subjects of the propositions might be important for other explanation tactics.
                 e.subject = "this"
         recursion_explanations.extend(explanation)
 
