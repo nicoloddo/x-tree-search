@@ -85,28 +85,6 @@ class Possession(Explanation):
                 explanation = And(*explanations)
         
         return explanation
-    
-    def implies(self) -> LogicalExpression:
-        """ Generates a proposition that contitutes the antecedent of an
-        implication explaining why a certain adjective is attributed to
-        a node. """
-
-        adjective = self.framework.get_adjective(self.adjective_name)
-
-        if not self.pointer_adjective_name: # the possession refers to the self node
-            return adjective.implies()
-
-        else:
-            pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
-
-            if self.explanation_of_adjective == pointer_adjective:
-                # only forward the explanation without asking why this referred object
-                implication = adjective.implies() # why the referred_object has this property?
-            else:
-                implication = And(
-                    pointer_adjective.implies(), # why this referred_object?
-                    adjective.implies()) # why the referred_object has this property?
-            return implication
         
 class Comparison(Explanation):
     """Represents an explanation given by referring to 
@@ -186,18 +164,6 @@ class Comparison(Explanation):
                 explanation = self.forward_explanation(comparison_adjective, obj1, obj2, explain_further=self.explain_further)
 
         return explanation
-    
-    def implies(self) -> LogicalExpression:
-        """ Generates a proposition that contitutes the antecedent of an
-        implication explaining why a certain object referenced through a pointer adjectiv
-        is <(e.g.) better> than another."""
-        # TODO: do the implies
-        if self.obj1_pointer_adjective_name is None:
-            obj1_string = "Node"
-        else:
-            obj1_string = self.obj1_pointer_adjective_name
-
-        return Postulate(f"{obj1_string} is {self.comparison_adjective_name} than {self.obj1_pointer_adjective_name}")
 
 class ComparisonNodesPropertyPossession(Explanation):
     """Represents an explanation provided by referring to the possession
@@ -244,10 +210,6 @@ class ComparisonNodesPropertyPossession(Explanation):
 
         return explanation
 
-    def implies(self) -> LogicalExpression:
-        return self.framework.get_adjective(self.adjective_for_comparison_name).implies()
-
-
 """ Group Comparison non-straightforward Explanation """
 class GroupComparison(Explanation):
     """Represents an explanation given by referring to 
@@ -292,9 +254,3 @@ class GroupComparison(Explanation):
         comparison_explanations.consequent.expr = f"{self.comparison_adjective_name} them" # Remove redundant information
         explanation = And(group_explanation, comparison_explanations)
         return explanation
-
-    def implies(self) -> LogicalExpression:
-        is_what = self.comparison_adjective_name if self.positive_implication else f"not {self.comparison_adjective_name}"
-        return Postulate(f"Node {is_what} than all nodes in {self.group_pointer_adjective_name}")
-
-""" Composite Explanations """

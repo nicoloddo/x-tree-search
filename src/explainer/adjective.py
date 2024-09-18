@@ -107,7 +107,7 @@ class Adjective(ABC):
     def get_explanation_tactic(self, tactic_name):
         return self.explanation_tactics[tactic_name]
 
-    # evaluate, proposition, implies, explain
+    # evaluate, proposition, explain
     def evaluate(self, *args, explanation_tactics = None) -> Any:
         """
         Evaluate the adjective.
@@ -212,19 +212,6 @@ class Adjective(ABC):
             self.explanations_book[self.name].append(book_record)
 
         return explanation
-        
-    def implies(self, evaluation = None) -> Implies:
-        """ Returns an implication that leads from the explanation to 
-        the adjective. This is like an explanation but not contextualized
-        onto a specific node. """
-        antecedent = self.explanation.implies()
-
-        if self.type == AdjectiveType.COMPARISON:
-            consequent = self.proposition(evaluation, [None, None])
-        else:
-            consequent = self.proposition(evaluation, None)
-
-        return Implies(antecedent, consequent)
 
 class BooleanAdjective(Adjective):
     """Represents a boolean adjective."""

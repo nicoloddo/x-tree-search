@@ -43,28 +43,6 @@ class If(Possession):
         self.value = value
         self.explain_further=explain_further
         self.forward_pointers_explanations=forward_pointers_explanations
-    
-    def implies(self, evaluation = True) -> LogicalExpression:
-        """ Generates a proposition that contitutes the antecedent of an
-        implication explaining why a certain adjective is attributed to
-        a node. """
-
-        adjective = self.framework.get_adjective(self.adjective_name)
-
-        if not self.pointer_adjective_name: # the possession refers to the self node
-            return adjective.implies(evaluation)
-
-        else:
-            pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
-
-            if self.explanation_of_adjective == pointer_adjective:
-                # only forward the explanation without asking why this referred object
-                implication = adjective.implies() # why the referred_object has this property?
-            else:
-                implication = And(
-                    pointer_adjective.implies(), # why this referred_object?
-                    adjective.implies(evaluation)) # why the referred_object has this property?
-            return implication
 
     def evaluate(self, node: Any, explanation_tactics = None) -> bool:
         """
@@ -129,8 +107,6 @@ class ConditionalExplanation(Explanation):
         Returns:
             A LogicalExpression representing the condition and the appropriate explanation.
         """
-        if not node:
-            return self.implies()
         condition_result = self.forward_evaluation(self.condition, node)
 
         skip_condition_statement = self.skip_condition_statement or (condition_result==True and self.skip_condition_statement_if_true) or (condition_result==False and self.skip_condition_statement_if_false)
@@ -157,15 +133,6 @@ class ConditionalExplanation(Explanation):
                 explanation = And(*explanations)
 
         return explanation
-
-    def implies(self) -> LogicalExpression:
-        explanation1 = And(
-                        self.condition.implies(True), 
-                        self.explanation_if_true.implies())
-        explanation2 = And(
-                        self.condition.implies(False), 
-                        self.explanation_if_false.implies())
-        return Or(explanation1, explanation2)
 
 class RecursivePossession(Explanation):
     """
@@ -299,25 +266,3 @@ class RecursivePossession(Explanation):
     def _decontextualize(self):
         for condition in self.any_stop_conditions:
             condition.decontextualize()
-
-    def implies(self) -> LogicalExpression:
-        """ Generates a proposition that contitutes the antecedent of an
-        implication explaining why a certain adjective is attributed to
-        a node. """
-
-        adjective = self.framework.get_adjective(self.adjective_name)
-
-        if not self.pointer_adjective_name: # the possession refers to the self node
-            return adjective.implies()
-
-        else:
-            pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
-
-            if self.explanation_of_adjective == pointer_adjective:
-                # only forward the explanation without asking why this referred object
-                implication = adjective.implies() # why the referred_object has this property?
-            else:
-                implication = And(
-                    pointer_adjective.implies(), # why this referred_object?
-                    adjective.implies()) # why the referred_object has this property?
-            return implication

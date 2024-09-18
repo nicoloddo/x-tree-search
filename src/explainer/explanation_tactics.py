@@ -353,6 +353,7 @@ class CompactCollectiveConsequences(SpecificTactic):
 
             seen = {}
             for record in adj_book:
+                # TODO: It should actually only watch inside of 'score' explanations book
                 key = (record['depth'], len(record['evaluation'].id), record['evaluation'].id[-1])
                 
                 if key not in seen:

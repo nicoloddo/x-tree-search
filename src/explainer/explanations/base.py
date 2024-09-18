@@ -128,15 +128,3 @@ class Explanation(ABC):
     @abstractmethod
     def _explain(self, node: Any) -> LogicalExpression:
         pass
-
-    @abstractmethod
-    def implies(self) -> LogicalExpression:
-        """
-        Generate a propositional logic explanation decontextualized.
-        It should reflect in an abstract way the implication of the
-        explanation.
-        
-        Returns:
-            A LogicalExpression representing the explanation.
-        """
-        pass

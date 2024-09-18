@@ -45,6 +45,3 @@ class CompositeExplanation(Explanation):
                 to_forward_explanations.append((exp, node))
         explanations = self.forward_multiple_explanations(*to_forward_explanations, no_increment = True)
         return And(*explanations)
-    
-    def implies(self) -> LogicalExpression:
-        return And(*[exp.implies() for exp in self.explanations if exp is not None])

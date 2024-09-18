@@ -64,10 +64,6 @@ class Assumption(Explanation):
 
             else:
                 raise ValueError("Framework has unvalid assumptions verbosity.")
-    
-    def implies(self) -> LogicalExpression:
-        """Return the assumption as a Proposition."""
-        return self.verbose
 
 class PossessionAssumption(Assumption):
     """Represents the assumption underlying a boolean adjective attribution."""

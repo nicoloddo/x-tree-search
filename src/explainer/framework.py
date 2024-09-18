@@ -189,7 +189,6 @@ class ArgumentationFramework:
     
     def __str__(self):
         propositions = [adjective.proposition().__str__() for adjective in self.adjectives.values()]
-        implications = [adjective.implies().__str__() for adjective in self.adjectives.values()]
         
-        framework_string = 'Propositions:\n' + '\n'.join(propositions) + '\n\n\nImplications:\n' + '\n'.join(implications)
+        framework_string = 'Propositions:\n' + '\n'.join(propositions)
         return framework_string
