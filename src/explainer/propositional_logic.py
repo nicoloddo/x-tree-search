@@ -232,7 +232,7 @@ class NAryOperator(LogicalExpression):
         return joined
     
     def get_flat_exprs(self, operator=None, *, min_depth=0, max_depth=float('inf'), current_depth=0):
-        """Returns exprs contained in following exprs between min depth and max depth, flattened."""
+        """Returns exprs contained in following exprs's NAryOperators between min depth and max depth, flattened."""
         if operator is None:
             operator = self
 

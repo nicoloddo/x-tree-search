@@ -334,7 +334,7 @@ class CompactCollectiveConsequences(SpecificTactic):
     """When explaining a Comparison, compact
     explanations that lead to a similar outcome."""
 
-    def __init__(self, of_adjectives : List[str]):
+    def __init__(self, *, of_adjectives: List[str]):
         super().__init__(self.__class__.__name__)
         self.of_adjectives = of_adjectives
     
@@ -357,10 +357,12 @@ class CompactCollectiveConsequences(SpecificTactic):
         explanations_book = []
         # We need to unify similar exprs of the antecedent:
         for expr in explanation.antecedent.exprs:
+
+            # Get explanation types and subexpressions
             explanation_type = expr.record['explanation_type']
             if isinstance(expr, NAryOperator):
                 explanation_types = [e.record['explanation_type'] for e in expr.exprs]
-                sub_exprs = expr.get_flat_exprs(max_depth=2)
+                sub_exprs = expr.get_flat_exprs(max_depth=2) # go down to expr.exprs.exprs
             else:
                 explanation_types = ['None']
                 sub_exprs = []
@@ -374,6 +376,7 @@ class CompactCollectiveConsequences(SpecificTactic):
                                       'records': [expr.record for expr in sub_exprs]})
         
         seen = {}
+        # Delete already seen similar instances
         for i, expl in enumerate(explanations_book):
             if len(expl['subexpressions']) == 0:
                 continue
@@ -381,18 +384,23 @@ class CompactCollectiveConsequences(SpecificTactic):
             relevant_predicates_indexes = [p for p, predicate in enumerate(expl['predicates']) if predicate in self.of_adjectives]
             
             # For now we consider the last predicate as the most relevant:
-            most_relevant_predicate_index = relevant_predicates_indexes[-1]
+            most_relevant_predicate_index = relevant_predicates_indexes[-1] #TODO Make this customizable
 
-            key = (len(expl['evaluations'][most_relevant_predicate_index].id), 
+            key = (len(expl['evaluations'][most_relevant_predicate_index].id), #TODO Make this customizable
                    expl['evaluations'][most_relevant_predicate_index].id[-1])
             
             if key not in seen:
+                # Was not seen, we add it to the seen
                 seen[key] = expl['subexpressions'][most_relevant_predicate_index]
-            else:                
+            else:
+                # Item is similar to one already seen
+
+                # We get the subjects to add to the instance seen before
                 subjects_to_add = expl['subexpressions'][most_relevant_predicate_index].subject
                 if not isinstance(subjects_to_add, list):
                     subjects_to_add = [subjects_to_add]
 
+                # We add the subjects
                 if isinstance(seen[key], Implies):
                     if not isinstance(seen[key].consequent.subject, list):
                         seen[key].consequent.subject = [seen[key].consequent.subject]
@@ -402,6 +410,7 @@ class CompactCollectiveConsequences(SpecificTactic):
                         seen[key].subject = [seen[key].subject]
                     seen[key].subject.extend(subjects_to_add)
                 
-                # Nullify explanation for this occurrence
+                # We nullify explanation for this occurrence
                 explanation.antecedent.exprs[i].nullify()
+
         return explanation
