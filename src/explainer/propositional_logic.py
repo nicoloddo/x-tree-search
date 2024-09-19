@@ -29,8 +29,6 @@ class LogicalExpression(ABC):
     def set_record(self, record):
         if self.record is None:
             self.record = record
-        else:
-            print("record was not None")
     
     def update_record(self, record):
         if self.record is not None:
