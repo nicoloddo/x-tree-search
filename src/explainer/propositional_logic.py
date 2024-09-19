@@ -7,25 +7,34 @@ class LogicalExpression(ABC):
     print_mode = 'logic'
 
     def __init__(self):
-        self.record = None
+        self.nullified = False # Disable the expression like this
+
         self.subject = None
         self.predicate = None
         self.evaluation = None
 
-        self.nullified = False
+        self.record = None
     
-    @abstractmethod
     def __str__(self) -> str:
+        if self.nullified:
+            return None
+        else:
+            return self._to_str()
+        
+    @abstractmethod
+    def _to_str(self) -> str:
         """Return a string representation of the logical expression."""
         pass
 
     def set_record(self, record):
         if self.record is None:
             self.record = record
+        else:
+            print("record was not None")
     
     def update_record(self, record):
         if self.record is not None:
-            self.record.update = record
+            self.record.update(record)
 
     def nullify(self):
         self.nullified = True
@@ -36,7 +45,7 @@ class Postulate(LogicalExpression):
         super().__init__()
         self.predicate = predicate
     
-    def __str__(self) -> str:
+    def _to_str(self) -> str:
         return self.predicate
     
 class Proposition(LogicalExpression):
@@ -48,14 +57,14 @@ class Proposition(LogicalExpression):
         super().__init__()
         self.subject = subject
         self.predicate = predicate
-        self.object = object
-        
         self.evaluation = evaluation
+        self.object = object # Used for comparison predicates: e.g. node is better than what?
     
-    def add_tag(self, tag: str):
-        self.tag = tag
+    def add_info(self, additional_info: str):
+        # Function to add possible other info
+        self.additional_info = additional_info
 
-    def __str__(self) -> str:
+    def _to_str(self) -> str:
         if self.evaluation is None:
             self.evaluation = '?'
         elif type(self.evaluation) is list:
@@ -101,7 +110,7 @@ class Proposition(LogicalExpression):
         to_string = f"{self.subject} {string_end}"
 
         if hasattr(self, "tag"):
-            to_string += f" ({self.tag})"
+            to_string += f" ({self.additional_info})"
         return to_string
 
 class Implies(LogicalExpression):
@@ -129,7 +138,7 @@ class Implies(LogicalExpression):
         self.consequent.set_record(record)
         super().set_record(record)
 
-    def __str__(self) -> str:
+    def _to_str(self) -> str:
 
         if self.print_mode == 'logic':
             operator_string = self.symbol
@@ -203,7 +212,7 @@ class NAryOperator(LogicalExpression):
             expr.update_record(record)
         super().update_record(record)
 
-    def __str__(self) -> str:
+    def _to_str(self) -> str:
         filtered_exprs = tuple(filter(NAryOperator.is_valid_expr, self.exprs))
         if not filtered_exprs:
             return None
@@ -224,16 +233,21 @@ class NAryOperator(LogicalExpression):
         joined = joining_string.join(str(expr) for expr in filtered_exprs)
         return joined
     
-    def get_flat_exprs(self, operator=None, *, max_depth=float('inf'), current_depth=0):
+    def get_flat_exprs(self, operator=None, *, min_depth=0, max_depth=float('inf'), current_depth=0):
+        """Returns exprs contained in following exprs between min depth and max depth, flattened."""
         if operator is None:
             operator = self
 
         if current_depth >= max_depth or not isinstance(operator, NAryOperator):
-            return [operator]
+            if current_depth >= min_depth:
+                return [operator]
+            else:
+                return [] # Don't add elements if we are under the min depth
         
         flattened = []
         for expr in operator.exprs:
-            flattened.extend(self.get_flat_exprs(expr, max_depth=max_depth, current_depth=current_depth + 1))
+            flattened.extend(self.get_flat_exprs(
+                expr, min_depth=min_depth, max_depth=max_depth, current_depth=current_depth + 1))
         return flattened
 
 class And(NAryOperator):
