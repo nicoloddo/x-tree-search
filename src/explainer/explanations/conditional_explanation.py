@@ -17,7 +17,7 @@ class If(Possession):
     the condition is simply checked as a static adjective (boolean)
     """
 
-    def __init__(self, *args, value: Any = True, explain_further=True, forward_pointers_explanations=True):
+    def __init__(self, *args, value: Any = True, explain_further=True, forward_possessions_explanations=True):
         """
         Initialize the Condition.
         
@@ -42,7 +42,7 @@ class If(Possession):
         super().__init__(*args)
         self.value = value
         self.explain_further=explain_further
-        self.forward_pointers_explanations=forward_pointers_explanations
+        self.forward_possessions_explanations=forward_possessions_explanations
 
     def evaluate(self, node: Any, explanation_tactics = None) -> bool:
         """
@@ -69,7 +69,7 @@ class If(Possession):
 class ConditionalExplanation(Explanation):
     """Represents an explanation that depends on a condition."""
     
-    def __init__(self, *, condition: If, explanation_if_true: Explanation, explanation_if_false: Explanation, skip_condition_statement: bool = False, skip_condition_statement_if_true: bool = False, skip_condition_statement_if_false: bool = False):
+    def __init__(self, *, condition: If, explanation_if_true: Explanation, explanation_if_false: Explanation, explicit_condition_statement: bool = False, explicit_condition_statement_if_true: bool = False, explicit_condition_statement_if_false: bool = False):
         super().__init__()
         """
         Initialize the ConditionalExplanation.
@@ -82,9 +82,9 @@ class ConditionalExplanation(Explanation):
         self.condition = condition
         self.explanation_if_true = explanation_if_true
         self.explanation_if_false = explanation_if_false
-        self.skip_condition_statement = skip_condition_statement
-        self.skip_condition_statement_if_true = skip_condition_statement_if_true
-        self.skip_condition_statement_if_false = skip_condition_statement_if_false
+        self.explicit_condition_statement = explicit_condition_statement
+        self.explicit_condition_statement_if_true = explicit_condition_statement_if_true
+        self.explicit_condition_statement_if_false = explicit_condition_statement_if_false
 
     def _contextualize(self):
         self.condition.contextualize(self.explanation_of_adjective)
@@ -109,10 +109,10 @@ class ConditionalExplanation(Explanation):
         """
         condition_result = self.forward_evaluation(self.condition, node)
 
-        skip_condition_statement = self.skip_condition_statement or (condition_result==True and self.skip_condition_statement_if_true) or (condition_result==False and self.skip_condition_statement_if_false)
+        explicit_condition_statement = self.explicit_condition_statement or (condition_result==True and self.explicit_condition_statement_if_true) or (condition_result==False and self.explicit_condition_statement_if_false)
 
         if condition_result:
-            if skip_condition_statement:
+            if not explicit_condition_statement:
                 explanation = self.forward_explanation(self.explanation_if_true, node, no_increment=True)
             else:
                 explanations = self.forward_multiple_explanations(
@@ -122,7 +122,7 @@ class ConditionalExplanation(Explanation):
                     )
                 explanation = And(*explanations)
         else:
-            if skip_condition_statement:
+            if not explicit_condition_statement:
                 explanation = self.forward_explanation(self.explanation_if_false, node, no_increment=True)
             else:
                 explanations = self.forward_multiple_explanations(
@@ -145,7 +145,7 @@ class RecursivePossession(Explanation):
     """
     max_recursion_depth = 5
     
-    def __init__(self, *args, any_stop_conditions: list[If], explain_further=False, forward_pointers_explanations=True): #(pointer_adjective_name: str = None, adjective_name: str = None):
+    def __init__(self, *args, any_stop_conditions: list[If], explain_further=False, forward_possessions_explanations=True): #(pointer_adjective_name: str = None, adjective_name: str = None):
         super().__init__()
         """
         Initialize the RecursivePossession explanation.
@@ -166,7 +166,7 @@ class RecursivePossession(Explanation):
         Keyword argument:
             any_stop_conditions (list) (required): The conditions to stop the recursion. Any of them will stop it.
             explain_further (bool): Wether to explain the Possession or just give the consequent without antecedent.
-            forward_pointers_explanations (bool): whether it is necessary to explain why the node has the given pointer adjectives attached.
+            forward_possessions_explanations (bool): whether it is necessary to explain why the node has the given pointer adjectives attached.
         """
         
         if len(args) == 1:
@@ -181,10 +181,10 @@ class RecursivePossession(Explanation):
         
         self.any_stop_conditions = any_stop_conditions
         self.explain_further = explain_further
-        self.forward_pointers_explanations = forward_pointers_explanations
+        self.forward_possessions_explanations = forward_possessions_explanations
 
         for condition in any_stop_conditions:
-            condition.forward_pointers_explanations = False
+            condition.forward_possessions_explanations = False
 
     def _explain(self, node: Any, *, recursion_explanations=None, recursion_depth=0) -> LogicalExpression:
         """
@@ -212,7 +212,7 @@ class RecursivePossession(Explanation):
             start_pointer_adjective = self.framework.get_adjective(self.start_pointer_adjective_name)
             start_object = self.forward_evaluation(start_pointer_adjective, node)
 
-            if not self.forward_pointers_explanations:
+            if not self.forward_possessions_explanations:
                 explanation = self.forward_multiple_explanations((pointer_adjective, start_object), explain_further=self.explain_further) # why the start_object has this pointer_adjective?
             elif self.explanation_of_adjective == start_pointer_adjective:
                 # only forward the explanation without asking why this referred object
