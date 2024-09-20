@@ -28,7 +28,7 @@ class AlphaBetaExplainer:
         # Define tactics
         tactics = [
             # Add your tactics here
-            # SkipQuantitativeExplanations(),
+            SkipQuantitativeExplanations(),
         ]
         
         # Define settings
@@ -89,8 +89,9 @@ class AlphaBetaExplainer:
                             condition=If("a loss"),
                             explanation_if_true = Possession("a loss"),
                             explanation_if_false = Possession ("a draw")
-                        )
-                    ),
+                            )
+                        ),
+                    
                     explanation_if_false = ConditionalExplanation(
                         condition=If("fully searched"),
 
@@ -104,6 +105,7 @@ class AlphaBetaExplainer:
 
                         explanation_if_false = ConditionalExplanation(
                             condition = If("as next move", "leaf"),
+
                             explanation_if_true = ConditionalExplanation(
                                 condition=If("as next move", "a win"),
                                 explanation_if_true=Possession("as next move", "a win"),
@@ -111,23 +113,26 @@ class AlphaBetaExplainer:
                                     condition=If("as next move", "a loss"),
                                     explanation_if_true = Possession("as next move", "a loss"),
                                     explanation_if_false = Possession ("as next move", "a draw")
-                                )
-                            ),
+                                    )
+                                ),
+
                             explanation_if_false = ConditionalExplanation(    
                                 condition = If("opponent player turn"),
+
                                 explanation_if_true = CompositeExplanation(
                                     Possession("as next possible move", explain_further=False),
                                     Comparison("as next possible move", "worse than the alternative coming from", "upperbound",
                                                 forward_possessions_explanations=False),
                                     Assumption("The opponent can choose to do this move, or something even worse for us."),
                                     ),
+
                                 explanation_if_false = CompositeExplanation(
                                     Possession("as next possible move", explain_further=False),
                                     Comparison("as next possible move", "better than the alternative coming from", "lowerbound",
                                                 forward_possessions_explanations=False),
                                     Assumption("We could choose to do this move, or something even worse for the opponent."),                                                       
                                     ),
-                            ),
+                                ),
                         ),
                     )
                 ),
@@ -153,8 +158,9 @@ class AlphaBetaExplainer:
                         explanation_if_false = CompositeExplanation(
                             Assumption("On our turn we take the maximum rated move."),
                             Possession("as next move", "the best"))
-                    ),
-                    explanation_if_false = Assumption("The move is legal.", implicit=True))
+                        ),
+                    explanation_if_false = Assumption("The move is legal.", implicit=True)
+                    )
                 ),
             
             PointerAdjective("as next possible move",
