@@ -386,7 +386,8 @@ class CompactCollectiveConsequences(SpecificTactic):
             # For now we consider the last predicate as the most relevant:
             most_relevant_predicate_index = relevant_predicates_indexes[-1] #TODO Make this customizable
 
-            key = (len(expl['evaluations'][most_relevant_predicate_index].id), #TODO Make this customizable
+            key = (expl['depths'][most_relevant_predicate_index],
+                   len(expl['evaluations'][most_relevant_predicate_index].id), #TODO Make this customizable
                    expl['evaluations'][most_relevant_predicate_index].id[-1])
             
             if key not in seen:
