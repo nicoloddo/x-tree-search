@@ -2,7 +2,7 @@ from typing import Dict
 
 import numpy as np
 
-from games.game import Game, GameModel, GameTree, User
+from src.game.game import Game, GameModel, GameTree, User
 
 import ipywidgets as widgets
 from IPython.display import display, HTML
