@@ -59,10 +59,8 @@ class AlphaBetaExplainer:
         """
 
         adjectives = [
-            BooleanAdjective("leaf",
-                definition = "node.is_leaf"),
             BooleanAdjective("final move",
-                definition = "node.final_node"),
+                definition = "node.final_node"), # node is_leaf and not max_search_depth_reached
             BooleanAdjective("the most forward in the future I looked",
                 definition = "node.max_search_depth_reached"),
 
@@ -79,33 +77,40 @@ class AlphaBetaExplainer:
 
             QuantitativePointerAdjective("score",
                 definition = "node.score",
-
+                
+                # Explaining: why the move has this score?
                 explanation = ConditionalExplanation(
-                    condition = If("leaf"),
+                    condition = If("final move"),
+
+                    # It's a final move: we say if it is a win, loss or draw
                     explanation_if_true = ConditionalExplanation(
-                        condition=If("a win"),
+                        condition=If("a win"), # Is it a win?
                         explanation_if_true=Possession("a win"),
                         explanation_if_false= ConditionalExplanation(
-                            condition=If("a loss"),
+                            condition=If("a loss"), # It's not a win, is it a loss or a draw?
                             explanation_if_true = Possession("a loss"),
                             explanation_if_false = Possession ("a draw")
                             )
                         ),
                     
+                    # That's not a final move
                     explanation_if_false = ConditionalExplanation(
                         condition=If("fully searched"),
-
+                        
+                        # The node has not been pruned, we have the full future consequences list (until final moves or max search depth are reached)
                         explanation_if_true = CompositeExplanation(
                             Assumption("We assume the opponent will do their best move and us our best move.", necessary=True),
-                            RecursivePossession("as next move", any_stop_conditions = [If("as next move", "a win"), 
-                                                                                        If("as next move", "a loss"), 
-                                                                                        If("as next move", "a draw"), 
-                                                                                        If("as next move", "the most forward in the future I looked"), 
-                                                                                        If("as next move", "not fully searched")])),
+                            RecursivePossession("as next move", any_stop_conditions = [If("as next move", "a win"), # final move
+                                                                                        If("as next move", "a loss"), # final move
+                                                                                        If("as next move", "a draw"), # final move
+                                                                                        If("as next move", "the most forward in the future I looked"), # max search depth
+                                                                                        If("as next move", "not fully searched")])), # max search depth
 
+                        # The node has been pruned, we only have one children future consequence
                         explanation_if_false = ConditionalExplanation(
-                            condition = If("as next move", "leaf"),
+                            condition = If("as next move", "final move"), # Is the next move (the only one available) a final move?
 
+                            # Next move is a final move: we say if it is a win, loss or draw
                             explanation_if_true = ConditionalExplanation(
                                 condition=If("as next move", "a win"),
                                 explanation_if_true=Possession("as next move", "a win"),
@@ -116,20 +121,21 @@ class AlphaBetaExplainer:
                                     )
                                 ),
 
+                            # Next move is not a final move, we explain why we did not consider other moves (why we pruned)
                             explanation_if_false = ConditionalExplanation(    
                                 condition = If("opponent player turn"),
 
                                 explanation_if_true = CompositeExplanation(
                                     Possession("as next possible move", explain_further=False),
                                     Comparison("as next possible move", "worse than the alternative coming from", "upperbound",
-                                                forward_possessions_explanations=False),
+                                                forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "upperbound"
                                     Assumption("The opponent can choose to do this move, or something even worse for us."),
                                     ),
 
                                 explanation_if_false = CompositeExplanation(
                                     Possession("as next possible move", explain_further=False),
                                     Comparison("as next possible move", "better than the alternative coming from", "lowerbound",
-                                                forward_possessions_explanations=False),
+                                                forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "lowerbound"
                                     Assumption("We could choose to do this move, or something even worse for the opponent."),                                                       
                                     ),
                                 ),
@@ -154,7 +160,7 @@ class AlphaBetaExplainer:
                         condition = If("opponent player turn"),
                         explanation_if_true = CompositeExplanation(
                             Assumption("We assume the opponent will do their best move."),
-                            Possession("as next move", "the best the opponent can do")),
+                            Possession("as next move", "the best the opponent can do")), # The next move is the best the opponent can do
                         explanation_if_false = CompositeExplanation(
                             Assumption("On our turn we take the maximum rated move."),
                             Possession("as next move", "the best"))
