@@ -228,30 +228,3 @@ class AlphaBetaExplainer:
         ]
 
         return adjectives
-    
-
-
-"""Further explanation to implement:
-
-                    BooleanAdjective("not worth exploring",
-                        definition = "not node.has_score",
-                        
-                        explanation = ConditionalExplanation(
-                            condition = If("opponent player turn"),
-                            explanation_if_true = CompositeExplanation(
-                                Assumption("The opponent would choose this bad sibling, or even worse."),
-                                Comparison("bad sibling", "worse", "what we could choose at the previous move")
-                            ),
-                            explanation_if_false = CompositeExplanation(
-                                Assumption("On our turn we would choose this good sibling, or even better."),
-                                Comparison("good sibling", "better", "what the opponent could choose at the previous move")
-                        ))),
-                    
-                    PointerAdjective("good sibling",
-                        definition = "node.parent.alpha",
-                        explanation = Possession("siblings")),
-
-                    PointerAdjective("bad sibling",
-                        definition = "node.parent.beta",
-                        explanation = Possession("siblings")),
-"""
