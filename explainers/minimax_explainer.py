@@ -60,15 +60,15 @@ class MiniMaxExplainer:
                                 Possession("backpropagating child", "best"))
                         )),
 
-                    ComparisonAdjective("better", "score", ">="),
+                    ComparisonAdjective("better than", "score", ">="),
                 
                     NodesGroupPointerAdjective("siblings",
                         definition = "node.parent.children",
                         excluding = "node"),
 
-                    MaxRankAdjective("best", "better", "siblings"),
+                    MaxRankAdjective("best", "better than", "siblings"),
 
-                    MinRankAdjective("worst", "better", "siblings"),
+                    MinRankAdjective("worst", "better than", "siblings"),
                 ],
 
                 settings = {
@@ -89,14 +89,14 @@ class MiniMaxExplainer:
                         definition = "node.is_leaf"),
 
 
-                    QuantitativePointerAdjective("score",
+                    QuantitativePointerAdjective("as score",
                         definition = "node.score",
 
                         explanation = ConditionalExplanation(
                             condition = If("final move"),
                             explanation_if_true = Assumption("final moves are evaluated only looking at the final position", necessary=True),
                             explanation_if_false = CompositeExplanation(
-                                Possession("next possible move", "score"))
+                                Possession("as next possible move", "as score"))
                         )),
                     
 
@@ -104,29 +104,29 @@ class MiniMaxExplainer:
                         definition = "not node.maximizing_player_turn"),
 
 
-                    PointerAdjective("next possible move",
+                    PointerAdjective("as next possible move",
                         definition = "node.score_child",
 
                         explanation = ConditionalExplanation(
                             condition = If("opponent player turn"),
                             explanation_if_true = CompositeExplanation(
                                 Assumption("we assume the opponent will do their best move"),
-                                Possession("next possible move", "the best the opponent can do")),
+                                Possession("as next possible move", "the best the opponent can do")),
                             explanation_if_false = CompositeExplanation(
                                 Assumption("on our turn we take the maximum rated move"),
-                                Possession("next possible move", "the best"))
+                                Possession("as next possible move", "the best"))
                         )),
 
-                    ComparisonAdjective("better", "score", ">="),
+                    ComparisonAdjective("better than", "as score", ">="),
                 
-                    NodesGroupPointerAdjective("possible alternative moves",
+                    NodesGroupPointerAdjective("as possible alternative moves",
                         definition = "node.parent.children",
                         excluding = "node"),
 
-                    MaxRankAdjective("the best", "better", "possible alternative moves",
+                    MaxRankAdjective("the best", "better than", "as possible alternative moves",
                                     tactics = [OnlyRelevantComparisons(mode = "top_3")]),
 
-                    MinRankAdjective("the best the opponent can do", "better", "possible alternative moves"),
+                    MinRankAdjective("the best the opponent can do", "better than", "as possible alternative moves"),
                 ],
                 
                 tactics=[

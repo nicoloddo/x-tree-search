@@ -107,7 +107,7 @@ class Proposition(LogicalExpression):
 
         to_string = f"{self.subject} {string_end}"
 
-        if hasattr(self, "tag"):
+        if hasattr(self, "additional_info"):
             to_string += f" ({self.additional_info})"
         return to_string
 
