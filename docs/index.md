@@ -1,6 +1,6 @@
 # Introduction
 
-The Argumentation Framework API provides a flexible system for defining propositions and inferences about nodes in a tree-based structure. Given the framework you can then explain any decision made by the algorithm in an interactive argumentative way.
+The x-tree-search library provides a flexible system for defining propositions and inferences about nodes in a tree-based structure. Given the framework you can then explain any decision made by the algorithm in an interactive argumentative way.
 
 # Usage Example: MiniMax Tree Search
 
