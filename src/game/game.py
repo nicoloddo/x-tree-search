@@ -141,7 +141,7 @@ class Game:
         clear_output(wait=True)  # Clear the Jupyter output
 
 class GameAgent:
-    def __init__(self, core, *, agent_id):
+    def __init__(self, *, core, agent_id):
         self.core = core
         self.id = agent_id
 
