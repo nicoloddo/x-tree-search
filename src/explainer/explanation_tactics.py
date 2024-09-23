@@ -332,11 +332,83 @@ class SubstituteQuantitativeExplanations(GeneralTactic):
 
 class CompactCollectiveConsequences(SpecificTactic):
     """When explaining a Comparison, compact
-    explanations that lead to a similar outcome."""
+    explanations that has to a similar explanation."""
+    
+    def __init__(self, *, of_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None):
+        """
+        Build the CompactCollectiveConsequences tactic.
 
-    def __init__(self, *, of_adjectives: List[str]):
+        The tactic takes each explanation part of the adjective it was attached to (the explanation needs to be composite for this
+        to make sense applying), and it checks if those parts have analogous explanations that could be compacted.
+        To do so, you specify the adjectives which explanations might be analogous across the main adjective's explanation parts,
+        and important characteristics of the adjective, which the similarity will be based from.
+        You can specify a same_evaluation method that checks for similarity between the adjective's evaluation, in case it is needed
+        a more complex similarity check.
+
+        Parameters:
+        - of_adjectives (list of str): The adjectives which explanations should be checked for similarity.
+        - same_if_equal_keys (list): A list where each element can be:
+            - A string representing the key to be checked for equality (e.g., 'depth').
+            - A tuple where the first element is a key (str) and the second element is 
+            a list of attributes to be checked e.g. (optional).
+            
+            For now supported keys are:
+            'depth', 'explanation_type' and 'evaluation', 
+            the latter being the most important feature this tactic was created for.
+
+        - relevant_predicate_inside_list (int) Default -1: If the predicates in the explanation are multiple,
+            use this index to select the most relevant predicate among them. As default, we use the last predicate.
+            e.g. If "next move" is present multiple times in a single explanation part, which one should we consider for the comparisons?
+        - same_evaluation (callable, 2 args): Function that accepts (evaluation1, evaluation2) and returns a bool reflecting if the two are
+            to be recognized as the same evaluation. Leave blank if you can achieve this through checking keys. 
+            Adding this check slows down the application. 
+        """
         super().__init__(self.__class__.__name__)
         self.of_adjectives = of_adjectives
+
+        self.allowed_keys_to_check = ['depth', 'evaluation']
+        self.same_if_equal_keys = same_if_equal_keys
+        self.relevant_predicate_inside_list = relevant_predicate_inside_list
+        self.same_evaluation = same_evaluation
+    
+    def build_key(self, expl, most_relevant_predicate_index):
+        """
+        Build a key based on the given same_if_equal_keys definition.
+
+        Parameters:
+        - expl (dict): The dictionary containing the data.
+        - most_relevant_predicate_index (int): The index to use for retrieving values from `expl`.
+        
+        Returns:
+        - tuple: A tuple representing the key built from the provided definitions.
+        """
+        key = []
+        
+        for key_def in self.same_if_equal_keys:
+            # Handle the case where key_def is a string (e.g., 'depth')
+            if isinstance(key_def, str):
+                key_name = key_def
+                attributes = None
+            else:
+                key_name = key_def[0]
+                attributes = key_def[1] if len(key_def) > 1 else None
+            
+            if key_name not in self.allowed_keys_to_check:
+                raise SyntaxError(f"{key_name} is not an allowed key to check to CompactCollectiveConsequences.")
+            
+            # Access the key in the expl dictionary
+            value = expl[key_name][most_relevant_predicate_index]
+            
+            # If attributes are provided, access them one by one
+            if attributes:
+                # Append multiple attributes if they are provided
+                for attr in attributes:
+                    key.append(getattr(value, attr))
+            else:
+                # If no attributes, append the value directly
+                key.append(value)
+        
+        return tuple(key)
     
     @property
     def allowed_in_expl_starting_from_adjective_types(self):
@@ -350,7 +422,7 @@ class CompactCollectiveConsequences(SpecificTactic):
         if not isinstance(explanation, Implies):
             return explanation
 
-        # If the antecedent is not an And, there is nothing to compact
+        # If the antecedent is not an And, there is nothing to compact (that's not a composite explanation)
         if not isinstance(explanation.antecedent, And):
             return explanation
         
@@ -367,51 +439,73 @@ class CompactCollectiveConsequences(SpecificTactic):
                 explanation_types = ['None']
                 sub_exprs = []
             
-            explanations_book.append({'explanation_type': explanation_type, 
-                                      'subsequent_explanation_types': explanation_types, 
-                                      'subexpressions': sub_exprs,
-                                      'predicates': [expr.predicate for expr in sub_exprs],
-                                      'evaluations': [expr.evaluation for expr in sub_exprs],
-                                      'depths': [expr.record['depth'] for expr in sub_exprs],
-                                      'records': [expr.record for expr in sub_exprs]})
+            explanations_book.append({'main_explanation_type': explanation_type,
+                                      'subexpression': sub_exprs,
+                                      # Keys of subexpressions:
+                                      'explanation_type': explanation_types, # explanation_types of subexpressions
+                                      'predicate': [expr.predicate for expr in sub_exprs],
+                                      'evaluation': [expr.evaluation for expr in sub_exprs],
+                                      'depth': [expr.record['depth'] for expr in sub_exprs],
+                                      'record': [expr.record for expr in sub_exprs]})
         
-        seen = {}
         # Delete already seen similar instances
+        def compact_and_delete(current, seen, explanation_part_to_nullify_index):
+            # We get the subjects to add to the instance seen before
+            subjects_to_add = current.subject
+            if not isinstance(subjects_to_add, list):
+                subjects_to_add = [subjects_to_add]
+
+            # We add the subjects to the previously seen instance
+            if not isinstance(seen.subject, list):
+                seen.subject = [seen.subject]
+            seen.subject.extend(subjects_to_add)
+            
+            # We nullify explanation for this occurrence
+            explanation.antecedent.exprs[explanation_part_to_nullify_index].nullify()
+
+        seen = {}
+        most_relevant_predicate_indexes = []
         for i, expl in enumerate(explanations_book):
-            if len(expl['subexpressions']) == 0:
+            if len(expl['subexpression']) == 0:
                 continue
 
-            relevant_predicates_indexes = [p for p, predicate in enumerate(expl['predicates']) if predicate in self.of_adjectives]
+            relevant_predicates_indexes = [p for p, predicate in enumerate(expl['predicate']) if predicate in self.of_adjectives]
             
-            # For now we consider the last predicate as the most relevant:
-            most_relevant_predicate_index = relevant_predicates_indexes[-1] #TODO Make this customizable
+            # Select the most relevant predicate by getting its index among subexpressions. 
+            # By default we consider the last predicate as the most relevant.
+            most_relevant_predicate_index = relevant_predicates_indexes[self.relevant_predicate_inside_list]
+            most_relevant_predicate_indexes.append(most_relevant_predicate_index)
+            most_relevant_subexpression = expl['subexpression'][most_relevant_predicate_index]
 
-            key = (expl['depths'][most_relevant_predicate_index],
-                   len(expl['evaluations'][most_relevant_predicate_index].id), #TODO Make this customizable
-                   expl['evaluations'][most_relevant_predicate_index].id[-1])
+            key = self.build_key(expl, most_relevant_predicate_index)
             
             if key not in seen:
-                # Was not seen, we add it to the seen
-                seen[key] = expl['subexpressions'][most_relevant_predicate_index]
-            else:
-                # Item is similar to one already seen
-
-                # We get the subjects to add to the instance seen before
-                subjects_to_add = expl['subexpressions'][most_relevant_predicate_index].subject
-                if not isinstance(subjects_to_add, list):
-                    subjects_to_add = [subjects_to_add]
-
-                # We add the subjects
-                if isinstance(seen[key], Implies):
-                    if not isinstance(seen[key].consequent.subject, list):
-                        seen[key].consequent.subject = [seen[key].consequent.subject]
-                    seen[key].consequent.subject.extend(subjects_to_add) # try without linking to the consequent
-                else:
-                    if not isinstance(seen[key].subject, list):
-                        seen[key].subject = [seen[key].subject]
-                    seen[key].subject.extend(subjects_to_add)
+                # This key was never seen before
                 
-                # We nullify explanation for this occurrence
-                explanation.antecedent.exprs[i].nullify()
+                if self.same_evaluation is not None: 
+                    # The key was not seen before, but it could still be the same 
+                    # because of the more complex same_evaluation assessment
+                    current_evaluation = expl['evaluation'][most_relevant_predicate_index]
+
+                    # Iterate through previous explanations until the current one
+                    for j in range(i):
+                        previous_relevant_predicate_index = most_relevant_predicate_indexes[j]
+                        previous_evaluation = explanations_book[j]['evaluation'][previous_relevant_predicate_index]
+                        previous_relevant_subexpression = explanations_book[j]['subexpression'][previous_relevant_predicate_index]
+                        
+                        # Compare evaluations using the provided function
+                        if self.same_evaluation(current_evaluation, previous_evaluation):
+                            compact_and_delete(most_relevant_subexpression, previous_relevant_subexpression, i)
+                            break
+                    else:
+                        # Was definitely not seen, we add it to the seen
+                        seen[key] = most_relevant_subexpression
+                else:
+                    # The key was not seen before and there is no further check to do
+                    seen[key] = most_relevant_subexpression
+
+            else:
+                # Item is similar to one already seen (has the same key)
+                compact_and_delete(most_relevant_subexpression, seen[key], i)
 
         return explanation

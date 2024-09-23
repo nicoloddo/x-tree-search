@@ -55,6 +55,14 @@ class MiniMaxNode:
         return self.node.id
     
     @property
+    def id_length(self):
+        return len(self.node.id)
+    
+    @property
+    def last_move_id(self):
+        return self.node.id[-1]
+    
+    @property
     def action(self):
         return self.node.action
 

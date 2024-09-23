@@ -184,10 +184,20 @@ class AlphaBetaExplainer:
                 excluding = "node"),
 
             MaxRankAdjective("the best", "better or equal than", "possible alternative moves",
-                tactics = [CompactCollectiveConsequences(of_adjectives=["as next move", "as next possible move"])]),
+                tactics = [
+                    CompactCollectiveConsequences(of_adjectives=["as next move", "as next possible move"], 
+                                                  same_if_equal_keys=['depth', ('evaluation', ['id_length', 'last_move_id'])]
+                    )
+                ]
+            ),
 
             MaxRankAdjective("the best the opponent can do", "worse or equal than", "possible alternative moves",
-                tactics = [CompactCollectiveConsequences(of_adjectives=["as next move", "as next possible move"])]),
+                tactics = [
+                    CompactCollectiveConsequences(of_adjectives=["as next move", "as next possible move"], 
+                                                  same_if_equal_keys=['depth', ('evaluation', ['id_length', 'last_move_id'])]
+                    )
+                ]
+            )
         ]
 
         return adjectives
