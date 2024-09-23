@@ -330,13 +330,13 @@ class SubstituteQuantitativeExplanations(GeneralTactic):
         return explanation
     
 
-class CompactCollectiveConsequences(SpecificTactic):
+class CompactSameExplanations(SpecificTactic):
     """When explaining a Comparison, compact
     explanations that has to a similar explanation."""
     
     def __init__(self, *, of_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None):
         """
-        Build the CompactCollectiveConsequences tactic.
+        Build the CompactSameExplanations tactic.
 
         The tactic takes each explanation part of the adjective it was attached to (the explanation needs to be composite for this
         to make sense applying), and it checks if those parts have analogous explanations that could be compacted.
@@ -350,7 +350,7 @@ class CompactCollectiveConsequences(SpecificTactic):
         - same_if_equal_keys (list): A list where each element can be:
             - A string representing the key to be checked for equality (e.g., 'depth').
             - A tuple where the first element is a key (str) and the second element is 
-            a list of attributes to be checked e.g. (optional).
+            the list of attributes to be checked. All must be the same for two explanations to be recognized as the same.
             
             For now supported keys are:
             'depth', 'explanation_type' and 'evaluation', 
@@ -394,7 +394,7 @@ class CompactCollectiveConsequences(SpecificTactic):
                 attributes = key_def[1] if len(key_def) > 1 else None
             
             if key_name not in self.allowed_keys_to_check:
-                raise SyntaxError(f"{key_name} is not an allowed key to check to CompactCollectiveConsequences.")
+                raise SyntaxError(f"{key_name} is not an allowed key to check to CompactSameExplanations.")
             
             # Access the key in the expl dictionary
             value = expl[key_name][most_relevant_predicate_index]

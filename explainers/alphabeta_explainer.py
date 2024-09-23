@@ -4,7 +4,7 @@ from src.explainer.framework import ArgumentationFramework
 from src.explainer.adjective import BooleanAdjective, PointerAdjective, QuantitativePointerAdjective, NodesGroupPointerAdjective, ComparisonAdjective, MaxRankAdjective, MinRankAdjective
 from src.explainer.explanation import Possession, RecursivePossession, Assumption, Comparison, If, ConditionalExplanation, CompositeExplanation
 
-from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, CompactCollectiveConsequences
+from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, CompactSameExplanations
 
 class AlphaBetaExplainer:
     """
@@ -191,7 +191,7 @@ class AlphaBetaExplainer:
 
             MaxRankAdjective("the best", "better or equal than", "possible alternative moves",
                 tactics = [
-                    CompactCollectiveConsequences(of_adjectives=["as next move", "as next possible move"], 
+                    CompactSameExplanations(of_adjectives=["as next move", "as next possible move"], 
                                                   same_if_equal_keys=['depth', ('evaluation', ['id_length', 'last_move_id'])]
                     )
                 ]
@@ -199,7 +199,7 @@ class AlphaBetaExplainer:
 
             MaxRankAdjective("the best the opponent can do", "worse or equal than", "possible alternative moves",
                 tactics = [
-                    CompactCollectiveConsequences(of_adjectives=["as next move", "as next possible move"], 
+                    CompactSameExplanations(of_adjectives=["as next move", "as next possible move"], 
                                                   same_if_equal_keys=['depth', ('evaluation', ['id_length', 'last_move_id'])]
                     )
                 ]
