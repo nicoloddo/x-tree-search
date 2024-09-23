@@ -334,7 +334,7 @@ class CompactSameExplanations(SpecificTactic):
     """When explaining a Comparison, compact
     explanations that has to a similar explanation."""
     
-    def __init__(self, *, of_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None):
+    def __init__(self, *, from_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None):
         """
         Build the CompactSameExplanations tactic.
 
@@ -346,7 +346,7 @@ class CompactSameExplanations(SpecificTactic):
         a more complex similarity check.
 
         Parameters:
-        - of_adjectives (list of str): The adjectives which explanations should be checked for similarity.
+        - from_adjectives (list of str): The adjectives which explanations should be checked for similarity.
         - same_if_equal_keys (list): A list where each element can be:
             - A string representing the key to be checked for equality (e.g., 'depth').
             - A tuple where the first element is a key (str) and the second element is 
@@ -355,6 +355,7 @@ class CompactSameExplanations(SpecificTactic):
             For now supported keys are:
             'depth', 'explanation_type' and 'evaluation', 
             the latter being the most important feature this tactic was created for.
+            Depth is by default inserted, meaning that only explanation at the same explanation depth will be considered for compacting.
 
         - relevant_predicate_inside_list (int) Default -1: If the predicates in the explanation are multiple,
             use this index to select the most relevant predicate among them. As default, we use the last predicate.
@@ -364,10 +365,13 @@ class CompactSameExplanations(SpecificTactic):
             Adding this check slows down the application. 
         """
         super().__init__(self.__class__.__name__)
-        self.of_adjectives = of_adjectives
+        self.from_adjectives = from_adjectives
 
         self.allowed_keys_to_check = ['depth', 'evaluation']
-        self.same_if_equal_keys = same_if_equal_keys
+
+        default_same_if_equal_keys = ['depth']
+        self.same_if_equal_keys = default_same_if_equal_keys + same_if_equal_keys
+
         self.relevant_predicate_inside_list = relevant_predicate_inside_list
         self.same_evaluation = same_evaluation
     
@@ -428,18 +432,20 @@ class CompactSameExplanations(SpecificTactic):
         
         explanations_book = []
         # We need to unify similar exprs of the antecedent:
-        for expr in explanation.antecedent.exprs:
+        for explanation_part in explanation.antecedent.exprs:
 
             # Get explanation types and subexpressions
-            explanation_type = expr.record['explanation_type']
-            if isinstance(expr, NAryOperator):
-                explanation_types = [e.record['explanation_type'] for e in expr.exprs]
-                sub_exprs = expr.get_flat_exprs(max_depth=2) # go down to expr.exprs.exprs
-            else:
-                explanation_types = ['None']
-                sub_exprs = []
+            explanation_part_type = explanation_part.record['explanation_type']
+
+            # Start with the explanation part itself
+            explanation_types = [explanation_part_type]
+            sub_exprs = [explanation_part]
             
-            explanations_book.append({'main_explanation_type': explanation_type,
+            if isinstance(explanation_part, NAryOperator):
+                explanation_types.extend([e.record['explanation_type'] for e in explanation_part.exprs])
+                sub_exprs.extend(explanation_part.get_flat_exprs(max_depth=2)) # go down to explanation_part.exprs.exprs and add them
+            
+            explanations_book.append({'explanation_part_type': explanation_part_type,
                                       'subexpression': sub_exprs,
                                       # Keys of subexpressions:
                                       'explanation_type': explanation_types, # explanation_types of subexpressions
@@ -469,7 +475,9 @@ class CompactSameExplanations(SpecificTactic):
             if len(expl['subexpression']) == 0:
                 continue
 
-            relevant_predicates_indexes = [p for p, predicate in enumerate(expl['predicate']) if predicate in self.of_adjectives]
+            relevant_predicates_indexes = [p for p, predicate in enumerate(expl['predicate']) if predicate in self.from_adjectives]
+            if len(relevant_predicates_indexes) == 0: # No predicates found from the given adjectives 
+                continue
             
             # Select the most relevant predicate by getting its index among subexpressions. 
             # By default we consider the last predicate as the most relevant.
