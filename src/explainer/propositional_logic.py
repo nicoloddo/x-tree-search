@@ -120,12 +120,37 @@ class Implies(LogicalExpression):
         super().__init__()
         self.antecedent = antecedent
         self.consequent = consequent
-
-        self.predicate = consequent.predicate
-        self.subject = consequent.subject
-        self.evaluation = consequent.evaluation
-
         self._str_settings_list = {}
+        
+    # Property for subject
+    @property
+    def subject(self):
+        return self.consequent.subject
+
+    @subject.setter
+    def subject(self, value):
+        if hasattr(self, "consequent"):
+            self.consequent.subject = value
+
+    # Property for predicate
+    @property
+    def predicate(self):
+        return self.consequent.predicate
+
+    @predicate.setter
+    def predicate(self, value):
+        if hasattr(self, "consequent"):
+            self.consequent.predicate = value
+
+    # Property for evaluation
+    @property
+    def evaluation(self):
+        return self.consequent.evaluation
+
+    @evaluation.setter
+    def evaluation(self, value):
+        if hasattr(self, "consequent"):
+            self.consequent.evaluation = value
 
     def _str_settings(self, **kwargs):
         for key, value in kwargs.items():
