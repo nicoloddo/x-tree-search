@@ -29,7 +29,7 @@ class Adjective(ABC):
     def init_explanations_book(self): # Initialize the book keeping for all Adjective instances
         Adjective.explanations_book = {}
 
-    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, tactics: List['Tactic'], *, definition: str):
+    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, tactics: List['Tactic'], *, definition: str, skip_statement = False):
         """
         Initialize the Adjective.
         
@@ -40,6 +40,7 @@ class Adjective(ABC):
         Properties:
             framework: The Argumentation framework the Adjective belongs to.
             getter: The getter function for the Adjective to be evaluated with an existing node.
+            skip_statement: Skip the consequent in the explanation of this adjective.
         """
         if name == '':
             raise ValueError("The name of Adjectives needs to have at least one character.")
@@ -48,6 +49,8 @@ class Adjective(ABC):
         self.explanation = explanation
         self.framework = None
         self.definition = definition
+        self.skip_statement = skip_statement
+
         self.getter = None
         self.set_getter(definition)
 
@@ -98,7 +101,15 @@ class Adjective(ABC):
     def _add_explanation_tactics(self, tactics):
         for tactic in tactics:
             tactic.contextualize(self)
-            self.explanation_tactics[tactic.name] = tactic
+            if tactic.name in self.explanation_tactics:
+                # Count how many times tactic.name already exists in self.explanation_tactics
+                count = sum(1 for t in self.explanation_tactics if t.startswith(tactic.name))
+                
+                # Append the count as an index to make the name unique
+                tactic_name = f"{tactic.name}_{count}"
+            else:
+                tactic_name = tactic.name
+            self.explanation_tactics[tactic_name] = tactic
     
     def _del_explanation_tactics(self, tactic_names):
         for tactic_name in tactic_names:
@@ -106,6 +117,10 @@ class Adjective(ABC):
         
     def get_explanation_tactic(self, tactic_name):
         return self.explanation_tactics[tactic_name]
+    
+    def list_explanation_tactics(self):
+        for name, expl in self.explanation_tactics.items:
+            print(f"{name}: {expl}")
 
     # evaluate, proposition, explain
     def evaluate(self, *args, explanation_tactics = None) -> Any:
@@ -189,21 +204,30 @@ class Adjective(ABC):
                 antecedent = self.explanation.explain(node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
             else:
                 antecedent = None
-
+        
         if antecedent is not None: # If the explanation was given
-            implication = Implies(antecedent, consequent)
+            if self.skip_statement: # If we should skip the consequent
+                explanation = antecedent
+                explanation_part = 'antecedent'
+            else:
+                implication = Implies(antecedent, consequent)
 
-            if self.framework.settings.print_depth:
-                implication._str_settings(print_depth = self.framework.settings.print_depth)
+                if self.framework.settings.print_depth:
+                    implication._str_settings(print_depth = self.framework.settings.print_depth)
 
-            explanation = implication
-            explanation_part = 'whole'
-        else:
-            explanation = consequent
-            explanation_part = 'consequent'
+                explanation = implication
+                explanation_part = 'whole'
+        else: # There is no antecedent
+            if self.skip_statement: # If we should skip the consequent
+                explanation = None
+                explanation_part = 'None'
+            else:
+                explanation = consequent
+                explanation_part = 'consequent'
 
         # Apply tactics
-        explanation = apply_explanation_tactics(self, "explanation", explanation_tactics, explanation, explanation_part=explanation_part)
+        if explanation is not None:
+            explanation = apply_explanation_tactics(self, "explanation", explanation_tactics, explanation, explanation_part=explanation_part)
 
         return explanation
 
@@ -236,7 +260,7 @@ class BooleanAdjective(Adjective):
 class PointerAdjective(Adjective):
     """Represents a pointer adjective that references a specific attribute or object."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None, *, _custom_getter = None):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None, *, _custom_getter = None, skip_statement = False):
         """
         Initialize the PointerAdjective.
         
@@ -247,9 +271,10 @@ class PointerAdjective(Adjective):
             tactics: Tactics to use with the adjective.
             _custom_getter: Parameter to use for internal scopes, can override the getter attribute of the adjective.
                             It is suggested to not use externally.
+            skip_statement: Skip the consequent in the explanation of this adjective.
         """
         explanation = explanation or PossessionAssumption(name, definition)
-        super().__init__(name, AdjectiveType.POINTER, explanation, tactics, definition = definition)
+        super().__init__(name, AdjectiveType.POINTER, explanation, tactics, definition = definition, skip_statement = skip_statement)
         if _custom_getter is not None:
             self.getter = _custom_getter
 
