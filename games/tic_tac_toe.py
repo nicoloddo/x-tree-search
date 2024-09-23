@@ -141,7 +141,7 @@ class TicTacToe(Game):
             sign = self.model.agents[current_player_id, 1]  # Get the correct sign from the game model
             
             if isinstance(current_player, User):
-                action = {'who': current_player_id, 'where': (i, j), 'what': sign}
+                action = {'who': current_player_id, 'where': (i, j), 'what': sign, 'action_space': "board"}
                 self.act(action)
                 asyncio.create_task(self.continue_game())
         return handle_click
