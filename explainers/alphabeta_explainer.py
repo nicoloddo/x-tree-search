@@ -143,16 +143,16 @@ class AlphaBetaExplainer:
 
                     explanation_if_true = CompositeExplanation(
                         Possession("as next possible move", explain_further=False),
-                        Comparison("as next possible move", "worse than the alternative coming from", "upperbound",
-                                    forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "upperbound"
                         Assumption("The opponent can choose to do this move, or something even worse for us."),
+                        Comparison("as next possible move", "already worse than the alternative coming from", "upperbound",
+                                    forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "upperbound"
                         ),
 
                     explanation_if_false = CompositeExplanation(
                         Possession("as next possible move", explain_further=False),
-                        Comparison("as next possible move", "better than the alternative coming from", "lowerbound",
-                                    forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "lowerbound"
-                        Assumption("We could choose to do this move, or something even worse for the opponent."),                                                       
+                        Assumption("We could choose to do this move, or something even worse for the opponent."),  
+                        Comparison("as next possible move", "already better than the alternative coming from", "lowerbound",
+                                    forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "lowerbound"                                                     
                         ),
                     ),
             ),
@@ -191,8 +191,8 @@ class AlphaBetaExplainer:
             ComparisonAdjective("better or equal than", "score", ">="),
             ComparisonAdjective("worse or equal than", "score", "<="),
 
-            ComparisonAdjective("better than the alternative coming from", "score", ">="),
-            ComparisonAdjective("worse than the alternative coming from", "score", "<="),
+            ComparisonAdjective("already better than the alternative coming from", "score", ">="),
+            ComparisonAdjective("already worse than the alternative coming from", "score", "<="),
         
             NodesGroupPointerAdjective("possible alternative moves",
                 definition = "node.parent.children",
