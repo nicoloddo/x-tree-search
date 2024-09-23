@@ -464,7 +464,9 @@ class CompactSameExplanations(SpecificTactic):
             # We add the subjects to the previously seen instance
             if not isinstance(seen.subject, list):
                 seen.subject = [seen.subject]
-            seen.subject.extend(subjects_to_add)
+            seen.subject.extend(subjects_to_add) 
+            #TODO: Handle the case the subjects were already a list and we are adding a new list,
+            # Like in the case of NodesGroupPointerAdjective
             
             # We nullify explanation for this occurrence
             explanation.antecedent.exprs[explanation_part_to_nullify_index].nullify()
