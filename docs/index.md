@@ -82,5 +82,5 @@ knowledgebase.add_adjective(
 :maxdepth: 2
 :caption: Contents:
 
-adjective
+rst/adjective
 ```

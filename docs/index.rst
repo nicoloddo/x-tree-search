@@ -3,4 +3,4 @@
    :caption: Contents:
 
    index.md
-   adjective
+   rst/adjective
