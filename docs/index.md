@@ -132,7 +132,10 @@ You can check the respective documentations of the [Adjectives](rst/adjective), 
 :maxdepth: 2
 :caption: Contents:
 
+rst/explainer
 rst/framework
+rst/settings
 rst/adjective
 rst/explanation
+rst/tactic
 ```
