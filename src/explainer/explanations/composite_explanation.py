@@ -10,9 +10,6 @@ class CompositeExplanation(Explanation):
     This class combines multiple :class:`Explanation` objects to create a composite
     explanation. It handles the contextualization, decontextualization, and 
     explanation generation for all sub-explanations.
-
-    :param explanations: Variable number of :class:`Explanation` objects to be combined.
-    :type explanations: Explanation
     """
     
     def __init__(self, *explanations: Explanation):
