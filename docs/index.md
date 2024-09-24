@@ -78,10 +78,8 @@ knowledgebase.add_adjective(
 ```
 
 # Modules
-
 ```{toctree}
 :maxdepth: 2
 :caption: Contents:
 
-alphabeta_explainer
-```
+adjectives
