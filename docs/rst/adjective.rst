@@ -1,4 +1,4 @@
-Adjective classes for public use
+Adjectives
 =================================
 
 BooleanAdjective
@@ -60,11 +60,10 @@ MinRankAdjective
 
 
 Adjective classes for internal use
-==================================
-
+----------------------------------
 
 Main Adjective Class
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: src.explainer.adjective.Adjective
     :members: __init__
@@ -72,7 +71,7 @@ Main Adjective Class
     :show-inheritance:
 
 AuxiliaryAdjective
-------------------
+~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: src.explainer.adjective.AuxiliaryAdjective
     :members: __init__
@@ -80,7 +79,7 @@ AuxiliaryAdjective
     :show-inheritance:
 
 _RankAdjective
---------------
+~~~~~~~~~~~~~~
 
 .. autoclass:: src.explainer.adjective._RankAdjective
     :members: __init__
