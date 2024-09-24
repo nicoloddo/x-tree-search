@@ -11,22 +11,22 @@ Only Assumptions don't, stopping the explanation inception.
 Assumptions
 -----------
 
-.. autoclass:: src.explainer.explanations.assumption.Assumption
+.. autoclass:: src.explainer.explanation.Assumption
     :members: __init__
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: src.explainer.explanations.assumption.PossessionAssumption
+.. autoclass:: src.explainer.explanation.PossessionAssumption
     :members: __init__
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: src.explainer.explanations.assumption.ComparisonAssumption
+.. autoclass:: src.explainer.explanation.ComparisonAssumption
     :members: __init__
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: src.explainer.explanations.assumption.RankAssumption
+.. autoclass:: src.explainer.explanation.RankAssumption
     :members: __init__
     :undoc-members:
     :show-inheritance:
@@ -34,22 +34,27 @@ Assumptions
 Fundamental Explanations
 -------------------
 
-.. autoclass:: src.explainer.explanations.fundamental_explanation.Possession
+.. autoclass:: src.explainer.explanation.Possession
     :members: __init__
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: src.explainer.explanations.fundamental_explanation.Comparison
+.. autoclass:: src.explainer.explanation.Comparison
     :members: __init__
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: src.explainer.explanations.fundamental_explanation.ComparisonNodesPropertyPossession
+.. autoclass:: src.explainer.explanation.ComparisonNodesPropertyPossession
     :members: __init__
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: src.explainer.explanations.fundamental_explanation.GroupComparison
+.. autoclass:: src.explainer.explanation.GroupComparison
+    :members: __init__
+    :undoc-members:
+    :show-inheritance:
+
+.. autoclass:: src.explainer.explanation.RecursivePossession
     :members: __init__
     :undoc-members:
     :show-inheritance:
@@ -57,7 +62,7 @@ Fundamental Explanations
 Composite Explanations
 ----------------------
 
-.. autoclass:: src.explainer.explanations.composite_explanation.CompositeExplanation
+.. autoclass:: src.explainer.explanation.CompositeExplanation
     :members: __init__
     :undoc-members:
     :show-inheritance:
@@ -65,17 +70,12 @@ Composite Explanations
 Conditional Explanations
 ------------------------
 
-.. autoclass:: src.explainer.explanations.conditional_explanation.If
+.. autoclass:: src.explainer.explanation.If
     :members: __init__
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: src.explainer.explanations.conditional_explanation.ConditionalExplanation
-    :members: __init__
-    :undoc-members:
-    :show-inheritance:
-
-.. autoclass:: src.explainer.explanations.conditional_explanation.RecursivePossession
+.. autoclass:: src.explainer.explanation.ConditionalExplanation
     :members: __init__
     :undoc-members:
     :show-inheritance:
@@ -83,7 +83,7 @@ Conditional Explanations
 Main Explanation Class (internal use only)
 ------------------------------------------
 
-.. autoclass:: src.explainer.explanations.base.Explanation
+.. autoclass:: src.explainer.explanation.Explanation
     :members: __init__
     :undoc-members:
     :show-inheritance:
