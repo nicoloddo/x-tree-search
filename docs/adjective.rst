@@ -9,52 +9,82 @@ adjective module
 Classes
 -------
 
-.. autoclass:: Adjective
+Adjective
+---------
+
+.. autoclass:: src.explainer.adjective.Adjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: BooleanAdjective
+BooleanAdjective
+----------------
+
+.. autoclass:: src.explainer.adjective.BooleanAdjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: PointerAdjective
+PointerAdjective
+----------------
+
+.. autoclass:: src.explainer.adjective.PointerAdjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: QuantitativePointerAdjective
+QuantitativePointerAdjective
+----------------------------
+
+.. autoclass:: src.explainer.adjective.QuantitativePointerAdjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: AuxiliaryAdjective
+AuxiliaryAdjective
+------------------
+
+.. autoclass:: src.explainer.adjective.AuxiliaryAdjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: NodesGroupPointerAdjective
+NodesGroupPointerAdjective
+--------------------------
+
+.. autoclass:: src.explainer.adjective.NodesGroupPointerAdjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: ComparisonAdjective
+ComparisonAdjective
+-------------------
+
+.. autoclass:: src.explainer.adjective.ComparisonAdjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: _RankAdjective
+_RankAdjective
+--------------
+
+.. autoclass:: src.explainer.adjective._RankAdjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: MaxRankAdjective
+MaxRankAdjective
+----------------
+
+.. autoclass:: src.explainer.adjective.MaxRankAdjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: MinRankAdjective
+MinRankAdjective
+----------------
+
+.. autoclass:: src.explainer.adjective.MinRankAdjective
     :members:
     :undoc-members:
     :show-inheritance:

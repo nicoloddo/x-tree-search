@@ -73,7 +73,8 @@
 <li class="toctree-l2"><a class="reference internal" href="#src.explainer.adjective.NodesGroupPointerAdjective"><code class="docutils literal notranslate"><span class="pre">NodesGroupPointerAdjective</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#src.explainer.adjective.PointerAdjective"><code class="docutils literal notranslate"><span class="pre">PointerAdjective</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#src.explainer.adjective.QuantitativePointerAdjective"><code class="docutils literal notranslate"><span class="pre">QuantitativePointerAdjective</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#classes">Classes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#classes">Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adjective">Adjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">Adjective</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">Adjective.add_explanation_tactic()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#id2"><code class="docutils literal notranslate"><span class="pre">Adjective.add_explanation_tactics()</span></code></a></li>
@@ -90,17 +91,44 @@
 <li class="toctree-l4"><a class="reference internal" href="#id13"><code class="docutils literal notranslate"><span class="pre">Adjective.set_getter()</span></code></a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#booleanadjective">BooleanAdjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id14"><code class="docutils literal notranslate"><span class="pre">BooleanAdjective</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pointeradjective">PointerAdjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id15"><code class="docutils literal notranslate"><span class="pre">PointerAdjective</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#quantitativepointeradjective">QuantitativePointerAdjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id16"><code class="docutils literal notranslate"><span class="pre">QuantitativePointerAdjective</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#auxiliaryadjective">AuxiliaryAdjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id17"><code class="docutils literal notranslate"><span class="pre">AuxiliaryAdjective</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#id18"><code class="docutils literal notranslate"><span class="pre">AuxiliaryAdjective.add_getter()</span></code></a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#nodesgrouppointeradjective">NodesGroupPointerAdjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id19"><code class="docutils literal notranslate"><span class="pre">NodesGroupPointerAdjective</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#comparisonadjective">ComparisonAdjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id20"><code class="docutils literal notranslate"><span class="pre">ComparisonAdjective</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#rankadjective">_RankAdjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#src.explainer.adjective._RankAdjective"><code class="docutils literal notranslate"><span class="pre">_RankAdjective</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#maxrankadjective">MaxRankAdjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id21"><code class="docutils literal notranslate"><span class="pre">MaxRankAdjective</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#minrankadjective">MinRankAdjective</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id22"><code class="docutils literal notranslate"><span class="pre">MinRankAdjective</span></code></a></li>
 </ul>
 </li>
@@ -313,6 +341,9 @@ You can specify an object to not include from the group definition through the �
 
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
+</section>
+<section id="adjective">
+<h2>Adjective<a class="headerlink" href="#adjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="id0">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">Adjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjective_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">AdjectiveType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explanation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Explanation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tactics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tactic</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">definition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_statement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#Adjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
@@ -427,6 +458,9 @@ the getter function that permits to evaluate the adjective.</p>
 
 </dd></dl>
 
+</section>
+<section id="booleanadjective">
+<h2>BooleanAdjective<a class="headerlink" href="#booleanadjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="id14">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">BooleanAdjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">definition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'node.no_getter_provided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explanation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Explanation</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tactics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#BooleanAdjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id14" title="Link to this definition"></a></dt>
@@ -434,6 +468,9 @@ the getter function that permits to evaluate the adjective.</p>
 <p>Represents a boolean adjective.</p>
 </dd></dl>
 
+</section>
+<section id="pointeradjective">
+<h2>PointerAdjective<a class="headerlink" href="#pointeradjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="id15">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">PointerAdjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">definition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'node.no_getter_provided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explanation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Explanation</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tactics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_custom_getter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_statement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#PointerAdjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id15" title="Link to this definition"></a></dt>
@@ -441,12 +478,18 @@ the getter function that permits to evaluate the adjective.</p>
 <p>Represents a pointer adjective that references a specific attribute or object.</p>
 </dd></dl>
 
+</section>
+<section id="quantitativepointeradjective">
+<h2>QuantitativePointerAdjective<a class="headerlink" href="#quantitativepointeradjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="id16">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">QuantitativePointerAdjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">definition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'node.no_getter_provided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explanation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Explanation</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tactics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_custom_getter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_statement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#QuantitativePointerAdjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id16" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#id15" title="src.explainer.adjective.PointerAdjective"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointerAdjective</span></code></a></p>
 </dd></dl>
 
+</section>
+<section id="auxiliaryadjective">
+<h2>AuxiliaryAdjective<a class="headerlink" href="#auxiliaryadjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="id17">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">AuxiliaryAdjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">getter</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#AuxiliaryAdjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id17" title="Link to this definition"></a></dt>
@@ -459,6 +502,9 @@ the getter function that permits to evaluate the adjective.</p>
 
 </dd></dl>
 
+</section>
+<section id="nodesgrouppointeradjective">
+<h2>NodesGroupPointerAdjective<a class="headerlink" href="#nodesgrouppointeradjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="id19">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">NodesGroupPointerAdjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">definition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'node.no_getter_provided'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explanation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Explanation</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tactics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">excluding</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#NodesGroupPointerAdjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id19" title="Link to this definition"></a></dt>
@@ -469,6 +515,9 @@ You can specify an object to not include from the group definition through the �
 <p>NodesGroupPointerAdjective(“siblings”, definition = “node.parent.children”, excluding = “node”)</p>
 </dd></dl>
 
+</section>
+<section id="comparisonadjective">
+<h2>ComparisonAdjective<a class="headerlink" href="#comparisonadjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="id20">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">ComparisonAdjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">property_pointer_adjective_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">operator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explanation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tactics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#ComparisonAdjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id20" title="Link to this definition"></a></dt>
@@ -478,6 +527,9 @@ Comparison nodes do not need a getter to be evaluated.</p>
 <p>While explaining a Comparison Adjective you can refer to an auxiliary adjective called “compared to”.</p>
 </dd></dl>
 
+</section>
+<section id="rankadjective">
+<h2>_RankAdjective<a class="headerlink" href="#rankadjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="src.explainer.adjective._RankAdjective">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">_RankAdjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comparison_adjective_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_pointer_adjective_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">explanation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Explanation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tactics</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tactic</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#id20" title="src.explainer.adjective.ComparisonAdjective"><span class="pre">ComparisonAdjective</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#id15" title="src.explainer.adjective.PointerAdjective"><span class="pre">PointerAdjective</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#_RankAdjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.explainer.adjective._RankAdjective" title="Link to this definition"></a></dt>
@@ -487,12 +539,18 @@ property of being x ranked in a group, based on a given comparison adjective
 and the evaluator function. This is parent class of MaxRankAdjective and MinRankAdjective.</p>
 </dd></dl>
 
+</section>
+<section id="maxrankadjective">
+<h2>MaxRankAdjective<a class="headerlink" href="#maxrankadjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="id21">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">MaxRankAdjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comparison_adjective_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#id20" title="src.explainer.adjective.ComparisonAdjective"><span class="pre">ComparisonAdjective</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_group_pointer_adjective_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#id15" title="src.explainer.adjective.PointerAdjective"><span class="pre">PointerAdjective</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tactics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#MaxRankAdjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id21" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#src.explainer.adjective._RankAdjective" title="src.explainer.adjective._RankAdjective"><code class="xref py py-class docutils literal notranslate"><span class="pre">_RankAdjective</span></code></a></p>
 </dd></dl>
 
+</section>
+<section id="minrankadjective">
+<h2>MinRankAdjective<a class="headerlink" href="#minrankadjective" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="id22">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.explainer.adjective.</span></span><span class="sig-name descname"><span class="pre">MinRankAdjective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comparison_adjective_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#id20" title="src.explainer.adjective.ComparisonAdjective"><span class="pre">ComparisonAdjective</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_group_pointer_adjective_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#id15" title="src.explainer.adjective.PointerAdjective"><span class="pre">PointerAdjective</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">tactics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/explainer/adjective.html#MinRankAdjective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id22" title="Link to this definition"></a></dt>
