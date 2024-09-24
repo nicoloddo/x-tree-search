@@ -1,8 +1,5 @@
-Adjectives
-==========
-
-Classes for public use
-======================
+Adjective classes for public use
+=================================
 
 BooleanAdjective
 -----------------
@@ -62,8 +59,8 @@ MinRankAdjective
     :show-inheritance:
 
 
-Classes for internal use
-========================
+Adjective classes for internal use
+==================================
 
 
 Main Adjective Class

@@ -80,7 +80,8 @@ knowledgebase.add_adjective(
 # Modules
 ```{toctree}
 :maxdepth: 2
-:caption: Contents:
+:caption: Contents
 
+index.md
 rst/adjective
 ```
