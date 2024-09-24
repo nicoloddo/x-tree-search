@@ -86,7 +86,8 @@ PointerAdjective("backpropagating child",
 ```
 Check the documentation of [Explanations](rst/explanation) for more details on how to create explanations.
 
-When giving an explanation, think of explanation classes as providing a statement like "because the node possesses this backpropagating child, and this backpropagating child is the best option (possesses the adjective "best")"
+When giving an explanation, think of explanation classes as providing a statement like:<br>
+> "because the node possesses this backpropagating child, and this backpropagating child is the best option (possesses the adjective 'best')" 
 
 Adjectives must be added to an ArgumentationFramework, which will be attached to an ArgumentativeExplainer, that can then be used to explain a decision. ArgumentativeExplaners support multiple frameworks, which can be switched at runtime. The first framework attached to the explainer will be used as default. Different frameworks can be useful if we want to explain the same decision to different types of users, with different levels of expertise: one could be to explain a decision to a game playing user, another for debugging purposes for the search tree developer.
 
