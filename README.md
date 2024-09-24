@@ -79,7 +79,7 @@ Installation guidance will be added soon.
 
 We welcome contributions! Please contact me for more information at nicoloddo.r@gmail.com
 
-## License and Citation
+## License
 
 This project is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
 
@@ -89,3 +89,5 @@ This means you are free to:
 
 Under the following terms:
 - Attribution — You must give appropriate credit citing the repository and authors.
+
+You can find more information about the license [here](https://creativecommons.org/licenses/by/4.0/).
