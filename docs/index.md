@@ -42,8 +42,10 @@ With these adjectives, the explainer will be able to reply to the query "Why is 
 > Therefore the node is better than all its siblings.<br>
 > Since "best" is the best node among its siblings, the node is best.<br>
 
-Given this explanation, it is natural for the user to ask why a node has the score it has.<br>
-While comparison adjectives and rank adjectives have inherent explanations coming from their definition, pointer adjectives might need an explanation of their own. By default, pointer adjectives are explained by their definition. But we can provide a more detailed explanation mechanism by utilizing the explanation parameter of the PointerAdjective constructor:
+The above explanation, though, does not explain why the node has the score it has, nor why it has the children it has.
+
+While comparison adjectives and rank adjectives can usually be inherently explained by their definition, pointer adjectives often need an explanation of their own.<br>
+By default, adjectives in the framework are explained by their definition. But we can provide a more detailed explanation mechanism by utilizing the explanation parameter in any adjective's constructor:
 ```python
 QuantitativePointerAdjective("score",
     definition = "node.score",
@@ -58,9 +60,11 @@ QuantitativePointerAdjective("score",
     )
 )
 ```
-We have thus introduced a mechanism to explain the score of a node. In this case, the explanation is conditional on the node being a leaf or not. 
+We have thus specified a mechanism to explain the score of a node by referring to other adjectives.<br>
+In this case, the explanation is conditional on the node being a leaf or not:
 - If the node is a leaf, we explain the score with an assumption: the score simply comes from the evaluation function.
 - If the node is not a leaf, the score comes from a selected child, we thus refer to the backpropagating child's possession of the score.
+
 The Possession explanation refers to the node's possession of the backpropagating child adjective, and the backpropagating child's possession of the score adjective. Both these adjectives will need to be explained further, and so on until we reach an assumption, or a recursion limit.
 
 All explanations need to refer to other adjectives except assumptions, which are the base of the explanation hierarchy.
