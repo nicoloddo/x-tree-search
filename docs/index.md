@@ -121,4 +121,5 @@ You can check the respective documentations of the [Adjectives](rst/adjective), 
 :caption: Contents:
 
 rst/adjective
+rst/explanation
 ```
