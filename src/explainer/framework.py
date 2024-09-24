@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Union
 
 from src.explainer.explanation_settings import ExplanationSettings
 from src.explainer.common.utils import AdjectiveType
@@ -138,7 +138,7 @@ class ArgumentationFramework:
 
         self.add_explanation_tactics(tactic_tuples)
     
-    def add_explanation_tactics(self, tactics: List['Tactic' | Tuple['Tactic', str]]):
+    def add_explanation_tactics(self, tactics: List[Union['Tactic', Tuple['Tactic', str]]]):
         """Adds explanation tactics from a list of tactics or tuple of tactic and adjective to add it to."""
         for tactic_input in tactics:
             if isinstance(tactic_input, tuple):
