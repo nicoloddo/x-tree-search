@@ -23,26 +23,36 @@ def _validate_print_mode(value):
         raise ValueError(f"Print mode must be one of: {', '.join(allowed_values)}")
 
 class ExplanationSettings:
+    """
+    Explanation settings:
+
+    - with_framework :
+    The name of the framework to use in the explanations.
+
+    - explanation_depth : 
+    Sets the depth of explanations, how deep towards the assumptions it should go.
+
+    - assumptions_verbosity: 
+    Set to 'verbose', 'minimal', 'no' or 'if_asked.
+    The setting decides how much of the assumptions to print.
+
+    - print_depth:
+    Set to True or False.
+    Decided if you want to explicitly print the depth at each explanation step.
+    Useful for debugging purposes and clarify on the explanation's recursion.
+
+    - print_implicit_assumptions:
+    Set to True or False.
+    Decided if you want to print the implicit assumptions.
+    Implicit assumptions are assumptions that are often not necessary to be stated explicitly.
+    Internal explanations' assumptions are always implicit. 
+    Assumptions added by the user are by default explicit, but they can be set to implicit in the Assumption constructor.
+
+    - print_mode:
+    Set to 'logic' or 'verbal'.
+    Decided if you want to print the explanation in logic form or verbally in natural language.
+    """  
     def __init__(self):
-        """
-        Explanation settings:
-
-        - with_framework :
-        The name of the framework to use in the explanations.
-
-        - explanation_depth : 
-        Sets the depth of explanations, how deep towards the assumptions it should go.
-
-        - assumptions_verbosity: 
-        Set to 'verbose', 'minimal', 'no' or 'if_asked.
-        The setting decides how much of the assumptions to print.
-
-        - print_depth:
-        Set to True or False.
-        Decided if you want to explicitly print the depth at each explanation step.
-        Useful for debugging purposes and clarify on the explanation's recursion.
-        """        
-
         self._settings = {
             'with_framework' : None,
             'explanation_depth': 8,

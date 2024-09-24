@@ -27,6 +27,22 @@ The primary way to use the ``ArgumentationFramework`` class is to create an inst
 - ``tactics``: A list of explanation tactics (either :class:`Tactic` objects or tuples of (:class:`Tactic`, str)) for the framework.
 - ``settings``: A dictionary of framework-specific settings.
 
+Settings
+-------------------
+
+.. autoclass:: ExplanationSettings
+
+Example of settings:
+
+.. code-block:: python
+
+    settings = {
+        'explanation_depth': 4,
+        'print_implicit_assumptions': False,
+        'assumptions_verbosity': 'verbose',
+        'print_mode': 'verbal',
+    }
+
 Internal Methods
 ----------------
 
