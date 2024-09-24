@@ -1,11 +1,6 @@
 Adjectives
 ==========
 
-.. automodule:: src.explainer.adjective
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 Classes for public use
 ======================
 
