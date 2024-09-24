@@ -87,7 +87,7 @@ class Assumption(Explanation):
                 raise ValueError("Invalid assumptions verbosity setting.")
 
 class PossessionAssumption(Assumption):
-    """Represents the assumption underlying a boolean adjective attribution.
+    """Represents the assumption underlying a possession adjective attribution.
     
     Example:
         "Definition of 'score' is node.score"
