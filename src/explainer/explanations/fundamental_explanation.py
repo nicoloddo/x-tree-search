@@ -20,18 +20,19 @@ class Possession(Explanation):
             Possession(adjective_name)
             Possession(pointer_adjective_name, adjective_name)
         
-        Args:
-            *args: Either one or two string arguments.
-                   If one argument: adjective_name
-                   If two arguments: pointer_adjective_name, adjective_name
+        :param args: Either one or two string arguments.
+                     If one argument: adjective_name
+                     If two arguments: pointer_adjective_name, adjective_name
+        :type args: str
+        :param explain_further: Whether to explain the Possession or just give the consequent without antecedent, optional.
+        :type explain_further: bool
+        :param forward_possessions_explanations: Whether it is necessary to explain why the node has the given pointer adjectives attached, optional.
+        :type forward_possessions_explanations: bool
+        :raises ValueError: If more than 2 non-keyword arguments are provided.
 
-            pointer_adjective_name: The name of the pointer adjective that selects the object.
-                                    If not given the node itself will be checked.
-            adjective_name: The name of the adjective to explain for the selected object.
-
-        Keyword argument:
-            explain_further (bool): Wether to explain the Possession or just give the consequent without antecedent.
-            forward_possessions_explanations (bool): whether it is necessary to explain why the node has the given pointer adjectives attached.
+        pointer_adjective_name: The name of the pointer adjective that selects the object.
+                                If not given the node itself will be checked.
+        adjective_name: The name of the adjective to explain for the selected object.
         """
         super().__init__()
         if len(args) == 1:
@@ -52,12 +53,10 @@ class Possession(Explanation):
         Generate an explanation by explaining the underlying possession adjectives.
         Only Assumptions don't redirect to other explanations.
         
-        Args:
-            node: The node containing the pointer adjective.
-            
-        
-        Returns:
-            A LogicalExpression representing the explanation of the specified adjective for the selected object.
+        :param node: The node containing the pointer adjective.
+        :type node: Any
+        :return: A :class:`LogicalExpression` representing the explanation of the specified adjective for the selected object.
+        :rtype: LogicalExpression
         """        
         adjective = self.framework.get_adjective(self.adjective_name)
 
@@ -99,19 +98,20 @@ class Comparison(Explanation):
 
             The first case takes the current node as first object of comparison
         
-        Args:
-            *args: Either two or three string arguments.
-                   If two argument: comparison_adjective_name, obj2_pointer_adjective_name
-                   If three arguments: obj1_pointer_adjective_name, comparison_adjective_name, obj2_pointer_adjective_name)
+        :param args: Either two or three string arguments.
+                     If two argument: comparison_adjective_name, obj2_pointer_adjective_name
+                     If three arguments: obj1_pointer_adjective_name, comparison_adjective_name, obj2_pointer_adjective_name)
+        :type args: str
+        :param explain_further: Whether to explain the Possession or just give the consequent without antecedent, optional.
+        :type explain_further: bool
+        :param forward_possessions_explanations: Whether it is necessary to explain why the objects have the given adjectives attached, optional.
+        :type forward_possessions_explanations: bool
+        :raises ValueError: If less than 2 or more than 3 arguments are provided.
 
-            obj1_pointer_adjective_name: The name of the pointer adjective that selects the first object to compare.
-                                        If not given the node itself will be used.
-            comparison_adjective_name: The name of the adjective to use for the comparison.
-            obj2_pointer_adjective_name : The name of the pointer adjective that selects the second object to compare.7
-
-        Keyword argument:
-            explain_further (bool): Wether to explain the Possession or just give the consequent without antecedent.
-            forward_possessions_explanations (bool): whether it is necessary to explain why the objects have the given adjectives attached.
+        obj1_pointer_adjective_name: The name of the pointer adjective that selects the first object to compare.
+                                    If not given the node itself will be used.
+        comparison_adjective_name: The name of the adjective to use for the comparison.
+        obj2_pointer_adjective_name : The name of the pointer adjective that selects the second object to compare.7
         """
         super().__init__()
         if len(args) == 2:
@@ -171,8 +171,8 @@ class ComparisonNodesPropertyPossession(Explanation):
         """
         Initialize the ComparisonNodesPropertyPossession Explanation.
         
-        Args:
-            adjective_for_comparison_name: The adjective name of the property to compare.
+        :param adjective_for_comparison_name: The adjective name of the property to compare.
+        :type adjective_for_comparison_name: str
         """
         super().__init__()
         self.adjective_for_comparison_name = adjective_for_comparison_name
@@ -181,13 +181,10 @@ class ComparisonNodesPropertyPossession(Explanation):
         """
         Generate an explanation for the possession of a property on a node and another node to be compared to.
         
-        Args:
-            node: The main node to explain.
-            other_nodes: The nodes that it is compared to.
-            
-        
-        Returns:
-            A Proposition explaining the possession of the property values for both nodes.
+        :param node: The main node to explain.
+        :type node: Any
+        :return: A :class:`Proposition` explaining the possession of the property values for both nodes.
+        :rtype: Proposition
         """
         adjective_for_comparison = self.framework.get_adjective(self.adjective_for_comparison_name)
         if self.explanation_of_adjective.type == AdjectiveType.COMPARISON:
@@ -217,12 +214,14 @@ class GroupComparison(Explanation):
         """
         Initialize the Group Comparison explanation.
         
-        Args:
-            comparison_adjective_name: The name of the comparison adjective.
-            group_pointer_adjective_name: a callable that given a node returns an array of objects to compare
-            positive_implication: If the implication in the framework is seeking for a positive implication of
-                                inference of the comparison adjective or a negative implication:
-                                e.g. better than OR not(better than)?
+        :param comparison_adjective_name: The name of the comparison adjective.
+        :type comparison_adjective_name: str
+        :param group_pointer_adjective_name: a callable that given a node returns an array of objects to compare
+        :type group_pointer_adjective_name: str
+        :param positive_implication: If the implication in the framework is seeking for a positive implication of
+                                    inference of the comparison adjective or a negative implication:
+                                    e.g. better than OR not(better than)? Optional.
+        :type positive_implication: bool
         """
         super().__init__()
         self.comparison_adjective_name = comparison_adjective_name
@@ -234,11 +233,10 @@ class GroupComparison(Explanation):
         Generate an explanation for the comparison between a node and all nodes pointed at
         by the group pointer adjective specified.
         
-        Args:
-            node: The node to explain.            
-        
-        Returns:
-            A Proposition explaining the comparison.
+        :param node: The node to explain.
+        :type node: Any
+        :return: A :class:`Proposition` explaining the comparison.
+        :rtype: Proposition
         """
 
         comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
@@ -272,19 +270,21 @@ class RecursivePossession(Explanation):
             RecursivePossession(pointer_adjective_name, any_stop_conditions=[If(adjective)])
             RecursivePossession(start_pointer_adjective_name, pointer_adjective_name, any_stop_conditions=[If(adjective)])
         
-        Args:
-            *args: Either one or two string arguments.
-                   If one argument: pointer_adjective_name
-                   If two arguments: start_pointer_adjective_name, pointer_adjective_name
+        :param args: Either one or two string arguments.
+                     If one argument: pointer_adjective_name
+                     If two arguments: start_pointer_adjective_name, pointer_adjective_name
+        :type args: str
+        :param any_stop_conditions: The conditions to stop the recursion. Any of them will stop it.
+        :type any_stop_conditions: list['If']
+        :param explain_further: Whether to explain the Possession or just give the consequent without antecedent, optional.
+        :type explain_further: bool
+        :param forward_possessions_explanations: Whether it is necessary to explain why the node has the given pointer adjectives attached, optional.
+        :type forward_possessions_explanations: bool
+        :raises ValueError: If more than 2 non-keyword arguments are provided.
 
-            start_pointer_adjective_name: The name of the pointer adjective that selects the object from which to start.
-                                        If not given, the node itself will be checked.
-            pointer_adjective_name: The name of the adjective to explain for the selected object.
-
-        Keyword argument:
-            any_stop_conditions (list) (required): The conditions to stop the recursion. Any of them will stop it.
-            explain_further (bool): Wether to explain the Possession or just give the consequent without antecedent.
-            forward_possessions_explanations (bool): whether it is necessary to explain why the node has the given pointer adjectives attached.
+        start_pointer_adjective_name: The name of the pointer adjective that selects the object from which to start.
+                                    If not given, the node itself will be checked.
+        pointer_adjective_name: The name of the adjective to explain for the selected object.
         """
         super().__init__()
         if len(args) == 1:
