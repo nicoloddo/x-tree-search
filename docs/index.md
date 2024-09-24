@@ -84,7 +84,9 @@ QuantitativePointerAdjective("score",
         )
     )
 )
-
+```
+Since we referred to an adjective "backpropagating child" in the explanation of "score", we need to define it:
+```python
 PointerAdjective("backpropagating child",
     definition = "node.score_child",
     explanation = ConditionalExplanation(
@@ -98,6 +100,8 @@ PointerAdjective("backpropagating child",
     )
 )
 ```
+Explanations will continue to be created recursively, as they refer to other adjectives.<br>
+Only assumptions stop the recursions since they don't refer to other adjectives.
 
 For more details on creating explanations, refer to the [Explanations](rst/explanation) documentation.
 
