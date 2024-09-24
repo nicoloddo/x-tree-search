@@ -12,8 +12,8 @@ class ArgumentationFramework:
     settings and provides methods for interacting with the framework's components.
 
     :ivar refer_to_nodes_as: How to refer to nodes when printing explanations.
-    :ivar adjectives: A dictionary of :class:`Adjective` objects in the framework.
-    :ivar general_explanation_tactics: A dictionary of general explanation tactics.
+    :ivar adjectives: A dictionary of :class:`Adjective` objects in the framework with their name as key.
+    :ivar general_explanation_tactics: A dictionary of general explanation tactics with their name as key.
     :ivar settings: An :class:`ExplanationSettings` object for framework-specific settings.
     :ivar framework_specific_settings: A boolean indicating if framework-specific settings are used.
     """
