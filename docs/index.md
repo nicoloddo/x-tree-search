@@ -2,86 +2,123 @@
 
 The x-tree-search library provides a flexible system for defining propositions and inferences about nodes in a tree-based structure. Given the framework you can then explain any decision made by the algorithm in an interactive argumentative way.
 
-# Usage Example: MiniMax Tree Search
+# Usage
 
-Here's an example of how to use the Argumentation Framework API to represent a minimax tree search reasoning.
-Suppose to have a MiniMax algorithm that gives scores to the leaf nodes and backpropagates the score of the best or worst child depending on if the maximizing or minimizing player is playing.
+To explain the usage of the library, it is best to refer to a concrete example.
 
-To argumentatively explain a decision made by our minimax, we have to define where do the adjectives "best" and "worst" come from for a node.
-1. Thus, we declare a "score" adjective, linked to the node.score parameter.
-2. Then we provide an explanation to why a node has a specific score.
-3. This includes explaining what a leaf is,
-4. And explaining how to choose the child from which the score has been backpropagated.
-5. We then define what does it mean for a node to have a better score,
-6. And finally define the "best" and "worst" adjectives.
+Suppose to have a MiniMax algorithm.
+The algorithm gives scores to the leaf nodes based on a scoring function. For non-leaf nodes, it backpropagates the score of the best or worst child, depending on if the maximizing or minimizing player is playing.
+The nodes of the tree built by the algorithm can be seen as moves in the game, where the score is the outcome of the game from the perspective of the main (maximizing) player.
+If the main player is playing, the move will be the best move available, while if the opponent is playing, their move will be the worst move available from our perspective.
 
+When the algorithm takes a decision, it inherently finds a node/move which could be described as the "best".
+To argumentatively explain the decision made by our minimax, we therefore have to define where do the adjectives "best" and "worst" come from for a node.
+Thus:
+1. We declare a quantitative "score" adjective, defined by the node.score parameter.
 ```python
-knowledgebase = ArgumentationFramework()
+QuantitativePointerAdjective("score",
+    definition = "node.score")
+```
+2. With this quantitative adjective, we can then define what does it mean for a node to be better or worse with a comparison adjective.
+```python
+ComparisonAdjective("better", "score", ">")
+```
+3. With a comparison adjective, we can define the "best" and "worst" adjectives.    
+```python
+MaxRankAdjective("best", "better", "siblings")
+MinRankAdjective("worst", "better", "siblings")
+```
+4. Note that for a node to be defined as "best" or "worst", it must be the best or worst score among a group of nodes, which in this case is defined by the "siblings" adjective.
+```python
+PointerAdjective("siblings",
+    definition = "[sibling for sibling in node.parent.children if sibling is not node]")
+```
 
-# Define "score" adjective
-knowledgebase.add_adjective( 
-    PointerAdjective("score",
-        definition = "node.score",
+With these adjectives, the explainer will be able to reply to the query "Why is this node/move "best"?" with the following argument:
+> The node has these siblings: [list of siblings]
+> The node is better than sibling1 because node's score > sibling1's score
+> The node is better than sibling2 because node's score > sibling2's score
+> ...   
+> Therefore the node is better than all its siblings.
+> Since "best" is the best node among its siblings, the node is best.
 
-        explanation = ConditionalExplanation(
-            condition = If("leaf"),
-            explanation_if_true = Assumption("Leaf nodes have scores from the evaluation function"),
+Given this explanation, it is natural for the user to ask why a node has the score it has.
+While comparison adjectives and rank adjectives have inherent explanations coming from their definition, pointer adjectives might need an explanation of their own. By default, pointer adjectives are explained by their definition. But we can provide a more detailed explanation mechanism by utilizing the explanation parameter of the PointerAdjective constructor:
+```python
+QuantitativePointerAdjective("score",
+    definition = "node.score",
+
+    explanation = ConditionalExplanation(
+        condition = If("leaf"),
+        explanation_if_true = Assumption("Leaf nodes have scores from the evaluation function"),
             explanation_if_false = CompositeExplanation(
                 Assumption("Internal nodes have scores from children"),
-                Possession("backtracing child"))
-        ))
-)
-
-# Define "leaf" adjective
-knowledgebase.add_adjective( 
-    BooleanAdjective("leaf",
-        definition = "node.is_leaf")
-)
-
-# Define "opponent player turn" adjective
-knowledgebase.add_adjective(
-    BooleanAdjective("opponent player turn",
-        definition = "not node.maximizing_player_turn")
-)
-
-# Define "backtracing child" adjective
-knowledgebase.add_adjective( 
-    PointerAdjective("backtracing child",
-        definition = "node.score_child",
-        explanation = ConditionalExplanation(
-            condition = If("opponent player turn"),
-            explanation_if_true = CompositeExplanation(
-                Assumption("We assume the opponent will do their best move."),
-                Possession("backtracing child", "worst")),
-            explanation_if_false = CompositeExplanation(
-                Assumption("On our turn we take the maximum rated move."),
-                Possession("backtracing child", "best"))
-        ))
-)
-
-# Define "better" comparison adjective
-knowledgebase.add_adjective(
-    ComparisonAdjective("better", "score", ">")
-)
-
-knowledgebase.add_adjective( 
-    PointerAdjective("siblings",
-        definition = "[sibling for sibling in node.parent.children if sibling is not node]")
-)
-
-knowledgebase.add_adjective(
-    MaxRankAdjective("best", "better", "siblings")
-)
-knowledgebase.add_adjective(
-    MinRankAdjective("worst", "better", "siblings")
+                Possession("backpropagating child", "score")
+            )
+    )
 )
 ```
+We have thus introduced a mechanism to explain the score of a node. In this case, the explanation is conditional on the node being a leaf or not. 
+- If the node is a leaf, we explain the score with an assumption: the score simply comes from the evaluation function.
+- If the node is not a leaf, the score comes from a selected child, we thus refer to the backpropagating child's possession of the score.
+The Possession explanation refers to the node's possession of the backpropagating child adjective, and the backpropagating child's possession of the score adjective. Both these adjectives will need to be explained further, and so on until we reach an assumption, or a recursion limit.
+All explanations need to refer to other adjectives except assumptions, which are the base of the explanation hierarchy.
+Notice that the backpropagating child adjective has to be defined for this explanation to work, but the order of definition of the adjectives does not matter.
+```python
+PointerAdjective("backpropagating child",
+    definition = "node.score_child",
+    explanation = ConditionalExplanation(
+        condition = If("opponent player turn"),
+        explanation_if_true = CompositeExplanation(
+            Assumption("We assume the opponent will do their best move."),
+            Possession("backpropagating child", "worst")),
+        explanation_if_false = CompositeExplanation(
+            Assumption("On our turn we take the maximum rated move."),
+            Possession("backpropagating child", "best"))
+    )
+)
+```
+Check the documentation of [Explanations](rst/explanation) for more details on how to create explanations.
+When giving an explanation, think of explanation classes as providing a statement like "because the node possesses this backpropagating child, and this backpropagating child is the best option (possesses the adjective "best")"
+
+Adjectives must be added to an ArgumentationFramework, which will be attached to an ArgumentativeExplainer, that can then be used to explain a decision. ArgumentativeExplaners support multiple frameworks, which can be switched at runtime. The first framework attached to the explainer will be used as default. Different frameworks can be useful if we want to explain the same decision to different types of users, with different levels of expertise: one could be to explain a decision to a game playing user, another for debugging purposes for the search tree developer.
+
+The definition of the adjectives must be a valid python expression, using the node object to refer to the current node being explained.
+
+To declare an explainer and a framework, we can use the following code:
+```python
+# Create explainer
+explainer = ArgumentativeExplainer()
+# Create argumentation framework
+highlevel_framework = ArgumentationFramework(
+    refer_to_nodes_as='move',
+    adjectives=adjectives,
+    tactics=tactics,
+    settings=settings,
+)
+# Add framework to explainer
+explainer.add_framework("highlevel", highlevel_framework)
+```
+The adjectives must be a list of instances declared like in the examples above.
+The tactics must be a list of instances of ArgumentationTactic.
+The settings must be a dictionary containing the settings for the framework.
+
+```python
+# Define settings
+settings = {
+    'explanation_depth': 4,
+    'print_implicit_assumptions': False,
+    'assumptions_verbosity': 'verbose',
+    'print_mode': 'verbal',
+}
+```
+You can check the respective documentations of the [Adjectives](rst/adjective), [Tactics](rst/tactic) and [Settings](rst/setting) for more details.
+
 
 # Modules
 ```{toctree}
 :maxdepth: 2
-:caption: Contents
+:caption: Contents:
 
-index.md
 rst/adjective
 ```
