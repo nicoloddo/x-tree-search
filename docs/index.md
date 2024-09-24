@@ -47,7 +47,8 @@ With these adjectives, the explainer will be able to reply to the query "Why is 
 
 The above explanation, though, does not explain why the node has the score it has, nor why it has the children it has.
 
-While comparison adjectives and rank adjectives can usually be inherently explained by their definition, pointer adjectives often need an explanation of their own.<br>
+While comparison adjectives (e.g. "better") and rank adjectives (e.g. "best") can usually be inherently explained by their definition, pointer adjectives (e.g. "score") often need an explanation of their own: why does the node have this score?
+
 By default, adjectives in the framework are explained by their definition. But we can provide a more detailed explanation mechanism by utilizing the explanation parameter in any adjective's constructor:
 ```python
 QuantitativePointerAdjective("score",
