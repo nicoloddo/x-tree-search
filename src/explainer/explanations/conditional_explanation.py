@@ -24,18 +24,21 @@ class If(Possession):
             Conditon("backtracing child", "minoptimal")
             Condition("backtracing child", "score", value = 5)
 
-        Args:
-            *args: Either one or two string arguments.
-                   If one argument: adjective_name
-                   If two arguments: pointer_adjective_name, adjective_name
-            value: Any, optional keyword-only argument
-                   An optional value associated with the adjective explanation.
-                   Must be specified as a keyword argument if provided.
+        :param args: Either one or two string arguments.
+                     If one argument: adjective_name
+                     If two arguments: pointer_adjective_name, adjective_name
+        :type args: str
+        :param value: An optional value associated with the adjective explanation, defaults to True.
+                      Must be specified as a keyword argument if provided.
+        :type value: Any, optional
+        :param explain_further: Whether to explain the condition further, defaults to True.
+        :type explain_further: bool, optional
+        :param forward_possessions_explanations: Whether to forward possession explanations, defaults to True.
+        :type forward_possessions_explanations: bool, optional
 
-            pointer_adjective_name: The name of the pointer adjective to the object to check.
-            adjective_name: The name of the static adjective to check.
-            value: The expected value of the adjective.
-            
+        pointer_adjective_name: The name of the pointer adjective to the object to check.
+        adjective_name: The name of the static adjective to check.
+        value: The expected value of the adjective.
         """
         super().__init__(*args)
         self.value = value
@@ -46,11 +49,12 @@ class If(Possession):
         """
         Evaluate if the given node possess the given static adjective.
         
-        Args:
-            node: The node to evaluate.            
-        
-        Returns:
-            True if the adjective's value matches the expected value, False otherwise.
+        :param node: The node to evaluate.
+        :type node: Any
+        :param explanation_tactics: Explanation tactics, defaults to None.
+        :type explanation_tactics: Any, optional
+        :return: True if the adjective's value matches the expected value, False otherwise.
+        :rtype: bool
         """
 
         if not self.pointer_adjective_name:        
@@ -71,10 +75,18 @@ class ConditionalExplanation(Explanation):
         """
         Initialize the ConditionalExplanation.
         
-        Args:
-            condition: The condition to evaluate.
-            explanation_if_true: The explanation to use when the condition is true.
-            explanation_if_false: The explanation to use when the condition is false.
+        :param condition: The condition to evaluate.
+        :type condition: If
+        :param explanation_if_true: The explanation to use when the condition is true.
+        :type explanation_if_true: Explanation
+        :param explanation_if_false: The explanation to use when the condition is false.
+        :type explanation_if_false: Explanation
+        :param explicit_condition_statement: Whether to explicitly state the condition, defaults to False.
+        :type explicit_condition_statement: bool, optional
+        :param explicit_condition_statement_if_true: Whether to explicitly state the condition if true, defaults to False.
+        :type explicit_condition_statement_if_true: bool, optional
+        :param explicit_condition_statement_if_false: Whether to explicitly state the condition if false, defaults to False.
+        :type explicit_condition_statement_if_false: bool, optional
         """
         super().__init__()
         self.condition = condition
@@ -98,12 +110,10 @@ class ConditionalExplanation(Explanation):
         """
         Generate an explanation based on the condition's evaluation.
         
-        Args:
-            node: The node to explain.
-            
-        
-        Returns:
-            A LogicalExpression representing the condition and the appropriate explanation.
+        :param node: The node to explain.
+        :type node: Any
+        :return: A :class:`LogicalExpression` representing the condition and the appropriate explanation.
+        :rtype: LogicalExpression
         """
         condition_result = self.forward_evaluation(self.condition, node)
 
