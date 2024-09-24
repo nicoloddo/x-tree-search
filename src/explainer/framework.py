@@ -145,7 +145,7 @@ class ArgumentationFramework:
     
     def add_explanation_tactics(self, tactics: List[Union['Tactic', Tuple['Tactic', str]]]) -> None:
         """
-        Add explanation tactics from a list of tactics or tuple of tactic and adjective.
+        Add explanation tactics from a list of tactics or tuple of tactic and adjective for specific adjectives' tactics.
 
         :param tactics: A list of :class:`Tactic` objects or tuples of (:class:`Tactic`, str).
         """

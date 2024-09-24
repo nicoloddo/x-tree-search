@@ -24,7 +24,7 @@ The primary way to use the ``ArgumentationFramework`` class is to create an inst
 
 - ``refer_to_nodes_as``: Specifies how to refer to nodes when printing explanations (e.g., 'move', 'position', 'node').
 - ``adjectives``: A list of :class:`Adjective` objects to be added to the framework.
-- ``tactics``: A list of explanation tactics (either :class:`Tactic` objects or tuples of (:class:`Tactic`, str)) for the framework.
+- ``tactics``: A list of explanation tactics (either :class:`Tactic` objects or tuples of (:class:`Tactic`, str name of adjective to apply it to)) for the framework.
 - ``settings``: A dictionary of framework-specific settings.
 
 Settings
