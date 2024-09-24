@@ -12,7 +12,7 @@ Classes
 Adjective
 ---------
 
-.. autoclass:: src.explainer.adjective.Adjective
+.. autoclass:: ..src.explainer.adjective.Adjective
     :members:
     :undoc-members:
     :show-inheritance:
