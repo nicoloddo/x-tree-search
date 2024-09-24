@@ -1,27 +1,19 @@
-adjective module
-================
+Adjectives
+==========
 
 .. automodule:: src.explainer.adjective
     :members:
     :undoc-members:
     :show-inheritance:
 
-Classes
--------
-
-Adjective
----------
-
-.. autoclass:: src.explainer.adjective.Adjective
-    :members:
-    :undoc-members:
-    :show-inheritance:
+Classes for public use
+======================
 
 BooleanAdjective
-----------------
+-----------------
 
 .. autoclass:: src.explainer.adjective.BooleanAdjective
-    :members:
+    :members: __init__
     :undoc-members:
     :show-inheritance:
 
@@ -29,7 +21,7 @@ PointerAdjective
 ----------------
 
 .. autoclass:: src.explainer.adjective.PointerAdjective
-    :members:
+    :members: __init__
     :undoc-members:
     :show-inheritance:
 
@@ -37,15 +29,7 @@ QuantitativePointerAdjective
 ----------------------------
 
 .. autoclass:: src.explainer.adjective.QuantitativePointerAdjective
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-AuxiliaryAdjective
-------------------
-
-.. autoclass:: src.explainer.adjective.AuxiliaryAdjective
-    :members:
+    :members: __init__
     :undoc-members:
     :show-inheritance:
 
@@ -53,7 +37,7 @@ NodesGroupPointerAdjective
 --------------------------
 
 .. autoclass:: src.explainer.adjective.NodesGroupPointerAdjective
-    :members:
+    :members: __init__
     :undoc-members:
     :show-inheritance:
 
@@ -61,23 +45,16 @@ ComparisonAdjective
 -------------------
 
 .. autoclass:: src.explainer.adjective.ComparisonAdjective
-    :members:
+    :members: __init__
     :undoc-members:
     :show-inheritance:
 
-_RankAdjective
---------------
-
-.. autoclass:: src.explainer.adjective._RankAdjective
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 MaxRankAdjective
 ----------------
 
 .. autoclass:: src.explainer.adjective.MaxRankAdjective
-    :members:
+    :members: __init__
     :undoc-members:
     :show-inheritance:
 
@@ -85,6 +62,35 @@ MinRankAdjective
 ----------------
 
 .. autoclass:: src.explainer.adjective.MinRankAdjective
-    :members:
+    :members: __init__
+    :undoc-members:
+    :show-inheritance:
+
+
+Classes for internal use
+========================
+
+
+Main Adjective Class
+--------------------
+
+.. autoclass:: src.explainer.adjective.Adjective
+    :members: __init__
+    :undoc-members:
+    :show-inheritance:
+
+AuxiliaryAdjective
+------------------
+
+.. autoclass:: src.explainer.adjective.AuxiliaryAdjective
+    :members: __init__
+    :undoc-members:
+    :show-inheritance:
+
+_RankAdjective
+--------------
+
+.. autoclass:: src.explainer.adjective._RankAdjective
+    :members: __init__
     :undoc-members:
     :show-inheritance:
