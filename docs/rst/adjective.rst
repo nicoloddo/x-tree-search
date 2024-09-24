@@ -1,11 +1,5 @@
 Adjectives
 =================================
-Adjectives constitute predicates by getting attributed to a node.
-Only nodes can have adjectives.
-A predicate in the Framework looks like:
-node is <adjective> (BooleanAdjective)
-node has <adjective> = value (PointerAdjective)
-node <adjective> than node2 (RankingAdjective)
 
 BooleanAdjective
 -----------------
