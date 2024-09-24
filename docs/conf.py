@@ -6,6 +6,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../src'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -19,11 +20,13 @@ release = '0.1'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.napoleon',
-    'myst_parser'
+    'sphinx.ext.autodoc',        # Core Sphinx extension for auto-documenting
+    'sphinx.ext.napoleon',       # Support for Google and NumPy docstrings
+    'sphinx.ext.viewcode',       # Add links to highlighted source code
+    'sphinx.ext.autosummary',    # Generate summary tables
 ]
+
+autosummary_generate = True  # Enable autosummary generation
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
