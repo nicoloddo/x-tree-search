@@ -55,7 +55,7 @@ class ArgumentativeExplainer:
         Be aware that no safeness checks are performed when setting the getter directly."""
         self.framework.get_adjective(adjective_name)._set_getter(getter)
 
-    def evaluate(self, node: Any, adjective_name: str, comparison_node: Any = None) -> bool:
+    def evaluate(self, node: Any, adjective_name: str, comparison_node: Any = None) -> Any:
         adjective = self.framework.get_adjective(adjective_name)
 
         if comparison_node:

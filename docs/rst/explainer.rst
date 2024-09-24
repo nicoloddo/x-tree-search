@@ -5,7 +5,7 @@ Different frameworks can be useful if we want to explain the same decision to di
 
 .. autoclass:: src.explainer.explainer.ArgumentativeExplainer
     :members:
-    :undoc-members:
+    :undoc-members: set_getter
     :show-inheritance:
 
 
