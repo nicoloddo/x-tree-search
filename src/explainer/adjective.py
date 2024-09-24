@@ -23,24 +23,36 @@ COMPARISON_AUXILIARY_ADJECTIVE = "compared to"
 Explanation.COMPARISON_AUXILIARY_ADJECTIVE = COMPARISON_AUXILIARY_ADJECTIVE
 
 class Adjective(ABC):
-    """Abstract base class for all types of adjectives."""
+    """
+    Abstract base class for all types of adjectives.
+
+    This class defines the basic structure and methods for adjectives in the argumentation framework.
+    """
     refer_to_nodes_as = None
     explanations_book = None
-    def init_explanations_book(self): # Initialize the book keeping for all Adjective instances
+
+    def init_explanations_book(self):
+        """Initialize the book keeping for all Adjective instances."""
         Adjective.explanations_book = {}
 
-    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, tactics: List['Tactic'], *, definition: str, skip_statement = False):
+    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, tactics: List['Tactic'], *, definition: str, skip_statement: bool = False):
         """
         Initialize the Adjective.
         
-        Args:
-            name: The name of the adjective.
-            adjective_type: The type of the adjective (STATIC, POINTER, or RANKING).
-            explanation: A callable that takes a node and context and returns a Proposition.
-        Properties:
-            framework: The Argumentation framework the Adjective belongs to.
-            getter: The getter function for the Adjective to be evaluated with an existing node.
-            skip_statement: Skip the consequent in the explanation of this adjective.
+        :param name: The name of the adjective.
+        :type name: str
+        :param adjective_type: The type of the adjective (STATIC, POINTER, or RANKING).
+        :type adjective_type: AdjectiveType
+        :param explanation: A callable that takes a node and context and returns a Proposition.
+        :type explanation: Explanation
+        :param tactics: List of tactics to be applied to the adjective.
+        :type tactics: List['Tactic']
+        :param definition: The definition of the adjective, used to set the getter.
+        :type definition: str
+        :param skip_statement: Skip the consequent in the explanation of this adjective.
+        :type skip_statement: bool, optional
+
+        :raises ValueError: If the name is an empty string.
         """
         if name == '':
             raise ValueError("The name of Adjectives needs to have at least one character.")
@@ -234,14 +246,18 @@ class Adjective(ABC):
 class BooleanAdjective(Adjective):
     """Represents a boolean adjective."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None):
         """
         Initialize the BooleanAdjective.
         
-        Args:
-            name: The name of the adjective.
-            definition: The correspondant node attribute (use the keyword "node" to refer to one of its elements).
-            explanation: An explanation for the adjective.
+        :param name: The name of the adjective.
+        :type name: str
+        :param definition: The correspondent node attribute (use the keyword "node" to refer to one of its elements).
+        :type definition: str, optional
+        :param explanation: An explanation for the adjective.
+        :type explanation: Explanation | None, optional
+        :param tactics: Tactics to use with the adjective.
+        :type tactics: List['Tactic'] | None, optional
         """
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.STATIC, explanation, tactics, definition = definition)
@@ -252,7 +268,15 @@ class BooleanAdjective(Adjective):
         return proposition
 
     def _evaluate(self, node: Any) -> bool:
-        """Evaluate the boolean adjective for a given node."""
+        """
+        Evaluate the boolean adjective for a given node.
+
+        :param node: The node to evaluate.
+        :type node: Any
+        :return: The boolean value of the adjective for the given node.
+        :rtype: bool
+        :raises ValueError: If the getter doesn't return a boolean value.
+        """
         if not isinstance(self.getter(node), bool):
             raise ValueError("Boolean adjectives should evaluate as a bool.")
         return self.getter(node)
@@ -260,18 +284,23 @@ class BooleanAdjective(Adjective):
 class PointerAdjective(Adjective):
     """Represents a pointer adjective that references a specific attribute or object."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None, *, _custom_getter = None, skip_statement = False):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None, *, _custom_getter: Callable[[Any], Any] | None = None, skip_statement: bool = False):
         """
         Initialize the PointerAdjective.
         
-        Args:
-            name: The name of the adjective.
-            definition: The correspondant node attribute (use the keyword "node" to refer to one of its elements).
-            explanation: An explanation for the adjective.
-            tactics: Tactics to use with the adjective.
-            _custom_getter: Parameter to use for internal scopes, can override the getter attribute of the adjective.
-                            It is suggested to not use externally.
-            skip_statement: Skip the consequent in the explanation of this adjective.
+        :param name: The name of the adjective.
+        :type name: str
+        :param definition: The correspondent node attribute (use the keyword "node" to refer to one of its elements).
+        :type definition: str, optional
+        :param explanation: An explanation for the adjective.
+        :type explanation: Explanation | None, optional
+        :param tactics: Tactics to use with the adjective.
+        :type tactics: List['Tactic'] | None, optional
+        :param _custom_getter: Parameter to use for internal scopes, can override the getter attribute of the adjective.
+                               It is suggested to not use externally.
+        :type _custom_getter: Callable[[Any], Any] | None, optional
+        :param skip_statement: Skip the consequent in the explanation of this adjective.
+        :type skip_statement: bool, optional
         """
         explanation = explanation or PossessionAssumption(name, definition)
         super().__init__(name, AdjectiveType.POINTER, explanation, tactics, definition = definition, skip_statement = skip_statement)
@@ -284,7 +313,14 @@ class PointerAdjective(Adjective):
         return proposition
 
     def _evaluate(self, node: Any) -> Any:
-        """Evaluate the pointer adjective for a given node."""
+        """
+        Evaluate the pointer adjective for a given node.
+
+        :param node: The node to evaluate.
+        :type node: Any
+        :return: The value pointed to by the adjective for the given node.
+        :rtype: Any
+        """
         return self.getter(node)
 
 class QuantitativePointerAdjective(PointerAdjective):
@@ -292,31 +328,69 @@ class QuantitativePointerAdjective(PointerAdjective):
 
 class AuxiliaryAdjective(PointerAdjective):
     """Auxiliary Adjectives are created dynamically during explanations. They have as getter a queue system."""
-    def __init__(self, name, getter):
+    def __init__(self, name: str, getter: Callable[[Any], Any]):
+        """
+        Initialize the AuxiliaryAdjective.
+
+        :param name: The name of the adjective.
+        :type name: str
+        :param getter: The initial getter function for the adjective.
+        :type getter: Callable[[Any], Any]
+        """
         super().__init__(name, _custom_getter = getter)
         self.getter = [self.getter]
         self.type = AdjectiveType.AUXILIARY
         self.empty = False
 
-    def add_getter(self, new_getter):            
+    def add_getter(self, new_getter: Callable[[Any], Any]):
+        """
+        Add a new getter to the queue.
+
+        :param new_getter: The new getter function to add.
+        :type new_getter: Callable[[Any], Any]
+        """
         self.getter.append(new_getter)
         self.empty = False
     
-    def _evaluate(self, node: Any):
+    def _evaluate(self, node: Any) -> Any:
+        """
+        Evaluate the auxiliary adjective for a given node.
+
+        :param node: The node to evaluate.
+        :type node: Any
+        :return: The result of applying the current getter to the node.
+        :rtype: Any
+        :raises ValueError: If the getter queue is empty.
+        """
         if self.empty:
-            ValueError(f"The Auxiliary Adjective {self.name} is empty while evaluating {node}.")
+            raise ValueError(f"The Auxiliary Adjective {self.name} is empty while evaluating {node}.")
         current_getter = self.getter.pop()
         if len(self.getter) == 0:
             self.empty = True
         return current_getter(node)
 
 class NodesGroupPointerAdjective(PointerAdjective):
-    """Represents a pointer adjective that references a group of objects. 
+    """
+    Represents a pointer adjective that references a group of objects. 
     You can specify an object to not include from the group definition through the "excluding" parameter.
     Example:
         NodesGroupPointerAdjective("siblings", definition = "node.parent.children", excluding = "node")
     """
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation = None, tactics = None, *, excluding: str):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None, *, excluding: str = ''):
+        """
+        Initialize the NodesGroupPointerAdjective.
+
+        :param name: The name of the adjective.
+        :type name: str
+        :param definition: The definition of the group.
+        :type definition: str, optional
+        :param explanation: An explanation for the adjective.
+        :type explanation: Explanation | None, optional
+        :param tactics: Tactics to use with the adjective.
+        :type tactics: List['Tactic'] | None, optional
+        :param excluding: An object to exclude from the group definition.
+        :type excluding: str, optional
+        """
         explanation = explanation or PossessionAssumption(name, definition + " excluding " + excluding)
         if excluding:
             composite_definition = f"[element for element in {definition} if element is not {excluding}]"
@@ -325,30 +399,45 @@ class NodesGroupPointerAdjective(PointerAdjective):
         super().__init__(name, composite_definition, explanation, tactics)
     
     def _proposition(self, evaluation: Any = None, node: Any = None) -> Proposition:
+        """
+        Returns a proposition reflecting the pointer value.
+
+        :param evaluation: The evaluated value of the adjective.
+        :type evaluation: Any, optional
+        :param node: The node for which the proposition is created.
+        :type node: Any, optional
+        :return: A proposition reflecting the pointer value.
+        :rtype: Proposition
+        :raises ValueError: If the evaluation is not a list.
+        """
         if evaluation is not None and type(evaluation) is not list:
             raise ValueError(f"{self.name} NodesGroupPointerAdjective should evaluate to a list. Check your definition.")
 
-        """ Returns a proposition reflecting the pointer value """
         proposition = Proposition(node or self.refer_to_nodes_as, self.name, evaluation)
         return proposition
 
 class ComparisonAdjective(Adjective):
-    """Represents a ranking adjective used for comparing nodes.
+    """
+    Represents a ranking adjective used for comparing nodes.
     Comparison nodes do not need a getter to be evaluated.
     
     While explaining a Comparison Adjective you can refer to an auxiliary adjective called "compared to".
     """
     
-    def __init__(self, name: str, property_pointer_adjective_name: str, operator: str, *, explanation = None, tactics = None):
+    def __init__(self, name: str, property_pointer_adjective_name: str, operator: str, *, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None):
         """
-        Initialize the RankingAdjective.
+        Initialize the ComparisonAdjective.
         
-        Args:
-            name: The name of the adjective.
-            property_pointer_adjective_name: The name of the pointer adjective to use for comparison.
-            operator: A string with the boolean operator to utilize.
-            explanation: An explanation for the comparison result. Do not provide to use the default explanation.
-            tactics: Tactics for the adjective, refer to the main Adjective class.
+        :param name: The name of the adjective.
+        :type name: str
+        :param property_pointer_adjective_name: The name of the pointer adjective to use for comparison.
+        :type property_pointer_adjective_name: str
+        :param operator: A string with the boolean operator to utilize.
+        :type operator: str
+        :param explanation: An explanation for the comparison result. Do not provide to use the default explanation.
+        :type explanation: Explanation | None, optional
+        :param tactics: Tactics for the adjective, refer to the main Adjective class.
+        :type tactics: List['Tactic'] | None, optional
         """
         if explanation is None:
             explanation = CompositeExplanation(
@@ -383,12 +472,13 @@ class ComparisonAdjective(Adjective):
         """
         Evaluate the comparison between two nodes.
         
-        Args:
-            node1: The first node to compare.
-            other_nodes: The other nodes to compare to the first one.
-        
-        Returns:
-            A boolean indicating how node1 compares to node2 with the given operator.
+        :param node1: The first node to compare.
+        :type node1: Any
+        :param other_nodes: The other nodes to compare to the first one.
+        :type other_nodes: Any
+        :return: A boolean indicating how node1 compares to node2 with the given operator.
+        :rtype: bool
+        :raises SyntaxError: If the ComparisonAdjective is linked to a non-quantitative adjective.
         """
         property_pointer_adjective = self.framework.get_adjective(self.property_pointer_adjective_name)
 
@@ -404,18 +494,28 @@ class ComparisonAdjective(Adjective):
         return all([self.comparison_operator(value1, value2) for value2 in other_values])
 
 class _RankAdjective(BooleanAdjective):
-    """Represents a static (boolean) adjective that specifically refers to the
+    """
+    Represents a static (boolean) adjective that specifically refers to the
     property of being x ranked in a group, based on a given comparison adjective
-    and the evaluator function. This is parent class of MaxRankAdjective and MinRankAdjective."""
+    and the evaluator function. This is parent class of MaxRankAdjective and MinRankAdjective.
+    """
     
     def __init__(self, name: str, comparison_adjective_name: str, group_pointer_adjective_name: str, explanation: Explanation, tactics: List['Tactic'], evaluator: Callable[[Any, ComparisonAdjective, PointerAdjective], bool]):
         """
-        Initialize the MaxRankAdjective.
+        Initialize the _RankAdjective.
         
-        Args:
-            name: The name of the adjective.
-            comparison_adjective:
-            group_pointer_adjective:
+        :param name: The name of the adjective.
+        :type name: str
+        :param comparison_adjective_name: The name of the comparison adjective.
+        :type comparison_adjective_name: str
+        :param group_pointer_adjective_name: The name of the group pointer adjective.
+        :type group_pointer_adjective_name: str
+        :param explanation: An explanation for the adjective.
+        :type explanation: Explanation | None, optional
+        :param tactics: Tactics for the adjective.
+        :type tactics: List['Tactic'] | None, optional
+        :param evaluator: A function to evaluate the rank.
+        :type evaluator: Callable[[Any, ComparisonAdjective, PointerAdjective], bool]
         """
         explanation = explanation or PossessionAssumption(name)
         super().__init__(name, explanation=explanation, tactics=tactics)
@@ -424,7 +524,14 @@ class _RankAdjective(BooleanAdjective):
         self.evaluator = evaluator
 
     def _evaluate(self, node: Any) -> bool:
-        """Evaluate the static adjective for a given node."""
+        """
+        Evaluate the static adjective for a given node.
+
+        :param node: The node to evaluate.
+        :type node: Any
+        :return: The boolean result of the rank evaluation.
+        :rtype: bool
+        """
         comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
 
         group = self.framework.get_adjective(self.group_pointer_adjective_name).evaluate(node)
@@ -432,7 +539,19 @@ class _RankAdjective(BooleanAdjective):
         return self.evaluator(node, comparison_adjective, group)
 
 class MaxRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective, tactics = None):
+    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective, tactics: List['Tactic'] | None = None):
+        """
+        Initialize the MaxRankAdjective.
+
+        :param name: The name of the adjective.
+        :type name: str
+        :param comparison_adjective_name: The name of the comparison adjective.
+        :type comparison_adjective_name: ComparisonAdjective
+        :param nodes_group_pointer_adjective_name: The name of the nodes group pointer adjective.
+        :type nodes_group_pointer_adjective_name: PointerAdjective
+        :param tactics: Tactics for the adjective.
+        :type tactics: List['Tactic'] | None, optional
+        """
         explanation = CompositeExplanation(
             RankAssumption('max', name, comparison_adjective_name, nodes_group_pointer_adjective_name),
             GroupComparison(comparison_adjective_name, nodes_group_pointer_adjective_name))
@@ -440,7 +559,22 @@ class MaxRankAdjective(_RankAdjective):
         super().__init__(name, comparison_adjective_name, nodes_group_pointer_adjective_name, explanation, tactics, evaluator)
 
 class MinRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective, tactics = None):
+    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective, tactics: List['Tactic'] | None = None):
+        """
+        Initialize the MinRankAdjective.
+
+        :param name: The name of the adjective.
+        :type name: str
+        :param comparison_adjective_name: The name of the comparison adjective used for ranking.
+        :type comparison_adjective_name: ComparisonAdjective
+        :param nodes_group_pointer_adjective_name: The name of the pointer adjective that references the group of nodes to compare.
+        :type nodes_group_pointer_adjective_name: PointerAdjective
+        :param tactics: List of tactics to be applied to the adjective, optional.
+        :type tactics: List['Tactic'] | None
+
+        The MinRankAdjective represents the property of having the minimum rank
+        within a group based on a given comparison adjective.
+        """
         explanation = CompositeExplanation(
             RankAssumption('min', name, comparison_adjective_name, nodes_group_pointer_adjective_name),
             GroupComparison(comparison_adjective_name, nodes_group_pointer_adjective_name, positive_implication=False))
