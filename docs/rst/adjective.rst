@@ -1,5 +1,6 @@
 Adjectives
 =================================
+The definition of the adjectives must be a valid python expression, using the node object to refer to the current node being explained.
 
 BooleanAdjective
 -----------------

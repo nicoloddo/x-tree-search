@@ -7,7 +7,10 @@ Why is a node better than another?
 
 All Explanations redirect to underlying explanations because they refer to other adjectives.
 Only Assumptions don't, stopping the explanation inception.
-
+When giving an explanation, think of explanation classes as providing a statement like:
+"because the node possesses this score"
+or 
+"because the node is a leaf"
 Assumptions
 -----------
 
