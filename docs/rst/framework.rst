@@ -1,7 +1,7 @@
 ArgumentationFramework
 ======================
 
-.. currentmodule:: src.explainer
+.. currentmodule:: src.explainer.framework
 
 .. autoclass:: ArgumentationFramework
 
