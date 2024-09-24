@@ -68,7 +68,6 @@ class ConditionalExplanation(Explanation):
     """Represents an explanation that depends on a condition."""
     
     def __init__(self, *, condition: If, explanation_if_true: Explanation, explanation_if_false: Explanation, explicit_condition_statement: bool = False, explicit_condition_statement_if_true: bool = False, explicit_condition_statement_if_false: bool = False):
-        super().__init__()
         """
         Initialize the ConditionalExplanation.
         
@@ -77,6 +76,7 @@ class ConditionalExplanation(Explanation):
             explanation_if_true: The explanation to use when the condition is true.
             explanation_if_false: The explanation to use when the condition is false.
         """
+        super().__init__()
         self.condition = condition
         self.explanation_if_true = explanation_if_true
         self.explanation_if_false = explanation_if_false

@@ -9,13 +9,13 @@ class CompositeExplanation(Explanation):
     """Represents an explanation composed of multiple sub-explanations."""
     
     def __init__(self, *explanations: Explanation):
-        super().__init__()
         """
         Initialize the CompositeExplanation.
         
         Args:
             *explanations: Variable number of Explanation objects to be combined.
         """
+        super().__init__()
         self.explanations = explanations
 
     def _contextualize(self):

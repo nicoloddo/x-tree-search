@@ -13,7 +13,6 @@ class Possession(Explanation):
     """
     
     def __init__(self, *args, explain_further=True, forward_possessions_explanations=True): #(pointer_adjective_name: str = None, adjective_name: str = None):
-        super().__init__()
         """
         Initialize the Possession explanation.
 
@@ -34,7 +33,7 @@ class Possession(Explanation):
             explain_further (bool): Wether to explain the Possession or just give the consequent without antecedent.
             forward_possessions_explanations (bool): whether it is necessary to explain why the node has the given pointer adjectives attached.
         """
-        
+        super().__init__()
         if len(args) == 1:
             # If they did not provide 2 arguments, the first is the adjective name
             self.pointer_adjective_name = None
@@ -91,7 +90,6 @@ class Comparison(Explanation):
     a comparison between a node and another."""
 
     def __init__(self, *args, explain_further = True, forward_possessions_explanations = True): #(obj1_pointer_adjective_name: str, comparison_adjective_name: str, obj2_pointer_adjective_name: str)
-        super().__init__()
         """
         Initialize the Comparison explanation.
 
@@ -115,7 +113,7 @@ class Comparison(Explanation):
             explain_further (bool): Wether to explain the Possession or just give the consequent without antecedent.
             forward_possessions_explanations (bool): whether it is necessary to explain why the objects have the given adjectives attached.
         """
-        
+        super().__init__()
         if len(args) == 2:
             # If they did not provide 2 arguments, the first is the comparison_adjective_name
             self.obj1_pointer_adjective_name = None
@@ -170,13 +168,13 @@ class ComparisonNodesPropertyPossession(Explanation):
     of a specific adjective value by two nodes that are to be compared."""
     
     def __init__(self, adjective_for_comparison_name: str):
-        super().__init__()
         """
         Initialize the ComparisonNodesPropertyPossession Explanation.
         
         Args:
             adjective_for_comparison_name: The adjective name of the property to compare.
         """
+        super().__init__()
         self.adjective_for_comparison_name = adjective_for_comparison_name
 
     def _explain(self, node: Any) -> Proposition:
@@ -216,7 +214,6 @@ class GroupComparison(Explanation):
     a comparison between a node and all nodes of a group."""
     
     def __init__(self, comparison_adjective_name: str, group_pointer_adjective_name: str, positive_implication: bool = True):
-        super().__init__()
         """
         Initialize the Group Comparison explanation.
         
@@ -227,6 +224,7 @@ class GroupComparison(Explanation):
                                 inference of the comparison adjective or a negative implication:
                                 e.g. better than OR not(better than)?
         """
+        super().__init__()
         self.comparison_adjective_name = comparison_adjective_name
         self.group_pointer_adjective_name = group_pointer_adjective_name
         self.positive_implication = positive_implication
@@ -267,7 +265,6 @@ class RecursivePossession(Explanation):
     max_recursion_depth = 5
     
     def __init__(self, *args, any_stop_conditions: list['If'], explain_further=False, forward_possessions_explanations=True): #(pointer_adjective_name: str = None, adjective_name: str = None):
-        super().__init__()
         """
         Initialize the RecursivePossession explanation.
 
@@ -289,7 +286,7 @@ class RecursivePossession(Explanation):
             explain_further (bool): Wether to explain the Possession or just give the consequent without antecedent.
             forward_possessions_explanations (bool): whether it is necessary to explain why the node has the given pointer adjectives attached.
         """
-        
+        super().__init__()
         if len(args) == 1:
             # If they did not provide 2 arguments, the first is the adjective name
             self.start_pointer_adjective_name = None
