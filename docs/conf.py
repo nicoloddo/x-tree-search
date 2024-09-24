@@ -24,9 +24,16 @@ extensions = [
     'sphinx.ext.napoleon',       # Support for Google and NumPy docstrings
     'sphinx.ext.viewcode',       # Add links to highlighted source code
     'sphinx.ext.autosummary',    # Generate summary tables
+    'myst_parser',
 ]
 
 autosummary_generate = True  # Enable autosummary generation
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
+}
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
