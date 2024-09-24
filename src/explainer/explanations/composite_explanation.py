@@ -1,5 +1,4 @@
 from .base import Explanation
-from .simple_explanation import ComparisonNodesPropertyPossession
 from src.explainer.common.utils import AdjectiveType
 
 from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And

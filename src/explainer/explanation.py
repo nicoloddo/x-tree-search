@@ -14,11 +14,11 @@ __all__ = ['Explanation']
 from .explanations.assumption import Assumption, PossessionAssumption, ComparisonAssumption, RankAssumption
 __all__.extend(['Assumption', 'PossessionAssumption', 'ComparisonAssumption', 'RankAssumption'])
                 
-from .explanations.simple_explanation import Possession, Comparison, ComparisonNodesPropertyPossession, GroupComparison
-__all__.extend(['Possession', 'Comparison', 'ComparisonNodesPropertyPossession', 'GroupComparison'])
+from .explanations.fundamental_explanation import Possession, Comparison, ComparisonNodesPropertyPossession, GroupComparison, RecursivePossession
+__all__.extend(['Possession', 'Comparison', 'ComparisonNodesPropertyPossession', 'GroupComparison', 'RecursivePossession'])
 
 from .explanations.composite_explanation import CompositeExplanation
 __all__.extend(['CompositeExplanation'])
 
-from .explanations.conditional_explanation import If, ConditionalExplanation, RecursivePossession
-__all__.extend(['If', 'ConditionalExplanation', 'RecursivePossession'])
+from .explanations.conditional_explanation import If, ConditionalExplanation
+__all__.extend(['If', 'ConditionalExplanation'])
