@@ -30,7 +30,7 @@ The primary way to use the ``ArgumentationFramework`` class is to create an inst
 Settings
 -------------------
 
-.. autoclass:: ExplanationSettings
+.. autoclass:: src.explainer.explanation_settings.ExplanationSettings
 
 Example of settings:
 
@@ -51,38 +51,38 @@ While the main usage is straightforward, the ``ArgumentationFramework`` class pr
 Adjective Management
 ^^^^^^^^^^^^^^^^^^^^
 
-.. automethod:: ArgumentationFramework.add_adjective
-.. automethod:: ArgumentationFramework.del_adjective
-.. automethod:: ArgumentationFramework.has_adjective
-.. automethod:: ArgumentationFramework.add_adjectives
-.. automethod:: ArgumentationFramework.rename_adjective
-.. automethod:: ArgumentationFramework.get_adjective
+.. automethod:: src.explainer.framework.ArgumentationFramework.add_adjective
+.. automethod:: src.explainer.framework.ArgumentationFramework.del_adjective
+.. automethod:: src.explainer.framework.ArgumentationFramework.has_adjective
+.. automethod:: src.explainer.framework.ArgumentationFramework.add_adjectives
+.. automethod:: src.explainer.framework.ArgumentationFramework.rename_adjective
+.. automethod:: src.explainer.framework.ArgumentationFramework.get_adjective
 
 These methods allow for adding, removing, checking, and retrieving adjectives within the framework.
 
 Explanation Tactics
 ^^^^^^^^^^^^^^^^^^^
 
-.. automethod:: ArgumentationFramework.add_explanation_tactics_to_adjective
-.. automethod:: ArgumentationFramework.add_explanation_tactics
-.. automethod:: ArgumentationFramework.add_explanation_tactic
-.. automethod:: ArgumentationFramework.del_explanation_tactic
-.. automethod:: ArgumentationFramework.get_explanation_tactic
+.. automethod:: src.explainer.framework.ArgumentationFramework.add_explanation_tactics_to_adjective
+.. automethod:: src.explainer.framework.ArgumentationFramework.add_explanation_tactics
+.. automethod:: src.explainer.framework.ArgumentationFramework.add_explanation_tactic
+.. automethod:: src.explainer.framework.ArgumentationFramework.del_explanation_tactic
+.. automethod:: src.explainer.framework.ArgumentationFramework.get_explanation_tactic
 
 These methods provide functionality for managing explanation tactics, both general and adjective-specific.
 
 Settings Management
 ^^^^^^^^^^^^^^^^^^^
 
-.. automethod:: ArgumentationFramework.set_settings
-.. automethod:: ArgumentationFramework.actuate_settings
+.. automethod:: src.explainer.framework.ArgumentationFramework.set_settings
+.. automethod:: src.explainer.framework.ArgumentationFramework.actuate_settings
 
 These methods handle the framework-specific settings.
 
 Additional Methods
 ^^^^^^^^^^^^^^^^^^
 
-.. automethod:: ArgumentationFramework.__str__
+.. automethod:: src.explainer.framework.ArgumentationFramework.__str__
 
 This method provides a string representation of the framework, listing all adjective propositions.
 
