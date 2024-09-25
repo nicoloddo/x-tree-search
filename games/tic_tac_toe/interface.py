@@ -216,6 +216,7 @@ class TicTacToeGradioInterface(GameInterface):
         Initializes the game state and launches the Gradio interface.
         """
         self.started = True
+        self.update()
         iface = gr.Interface(
             fn=self.process_move,
             inputs=gr.Textbox(label="Enter move (row,col)"),
