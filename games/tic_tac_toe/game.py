@@ -1,0 +1,141 @@
+import numpy as np
+
+from src.game.game import Game, GameModel, User
+from .interface import TicTacToeJupyterInterface
+
+FREE_LABEL = ' '
+class TicTacToe(Game):
+    def __init__(self, interface_mode='jupyter'):
+        super().__init__()
+        self.interface_mode = interface_mode
+        self.select_interface(interface_mode)
+        
+    def select_interface(self, interface_mode):
+        if interface_mode == 'jupyter':
+            self.interface = TicTacToeJupyterInterface(self)
+        else:
+            raise ValueError(f"Unsupported interface mode: {interface_mode}")
+
+    def action_print_attributes(self):
+        """Which attributes to print when printing an action"""
+        return ['what', 'where']
+    
+    def expansion_constraints_self(self, agent_id):
+        "Get expansion constraints for the current player"
+        return {'who': agent_id}
+    
+    def expansion_constraints_other(self, agent_id):
+        "Get expansion constraints for the other player"
+        not_agent_ids = [key for key in self.players.keys() if key != agent_id]
+        if len(not_agent_ids) == 1:
+            other_id = not_agent_ids[0]
+            return {'who': other_id}
+        else:
+            raise ValueError("A TicTacToe game should have a maximum of two players.")
+    
+    def _game_model_definition(self) -> GameModel:
+        gm = GameModel( 
+        agents_number=2, default_agent_features=['not starter', 'X'], additional_agent_features=[['starter'], ['O']], 
+        agent_features_descriptions="2 players with feature 1 indicating who is starting, and feature 2 indicating their symbol.",
+        game_name="tic-tac-toe")
+        gm.add_action_space("board", dimensions=[3, 3], default_labels=[FREE_LABEL], additional_labels=[['X', 'O']], dimensions_descriptions="3x3 board.")
+
+        # Disable actions on the agent feature space.
+        gm.disable_actions(on="agent")
+        gm.agents[1, 1] = 'O'
+        gm.agents[1, 0] = 'starter'
+
+        # Set Endgame
+        def tic_tac_toe_endgame(game):
+            board = game.action_spaces["board"]
+            # Check rows for winning condition
+            for row in board:
+                if row[0] == row[1] == row[2] != FREE_LABEL:
+                    return True
+
+            # Check columns for winning condition
+            for col in range(3):
+                if board[0][col] == board[1][col] == board[2][col] != FREE_LABEL:
+                    return True
+
+            # Check diagonals for winning condition
+            if board[0][0] == board[1][1] == board[2][2] != FREE_LABEL:
+                return True
+            if board[0][2] == board[1][1] == board[2][0] != FREE_LABEL:
+                return True
+            
+            full_board = np.all(board != FREE_LABEL)
+            if full_board:
+                return True
+
+            # If no winner and not full_board, return False
+            return False
+
+        gm.set_endgame(tic_tac_toe_endgame)
+
+        # Set rules
+        gm.action_is_violation_if(lambda who, where, what, game: not game.started and game.agents[who][0] != 'starter', rule_description="This is not the starting player and this is the first turn.")
+        gm.action_is_violation_if(lambda who, where, what, game: game.started and who == game.actions[-1]['who'], rule_description="Players cannot play two times consecutively")
+        gm.action_is_violation_if(lambda who, where, what, game: where != FREE_LABEL, "board", rule_description="The space needs to be free to put a sign on it.")
+        gm.action_is_violation_if(lambda who, where, what, game: game.agents[who][1] != what, rule_description="Agents can only put their own sign.")
+
+        return gm
+    
+    def _act(self, action) -> None:
+        player = action['who']
+        coordinates = action['where']
+
+        if player == 0:
+            sign = 'X'
+        elif player == 1:
+            sign = 'O'
+        else:
+            raise ValueError("Player variable has to be 0 or 1")
+
+        return "board", player, coordinates, sign
+    
+    def winner(self):
+        if np.all(self.model.action_spaces["board"] != FREE_LABEL):
+            return None
+        else:
+            return self.model.actions[-1]['who']
+    
+    def get_current_player(self):
+        """
+        Get the current player.
+
+        :return: The current player
+        :rtype: Player class
+        """
+        if not self.started:
+            return next(player for id, player in self.players.items() if self.model.agents[id, 0] == 'starter')
+        else:
+            last_player = self.model.actions[-1]['who']
+            return next(player for player in self.players.values() if player.id != last_player) 
+    
+    """Turn taking logic"""
+    async def start_game(self):
+        self.interface.start()
+        await self.process_turn()       
+
+    async def process_turn(self) -> None:
+        """
+        Process a single turn in the game.
+        """
+        current_player = self.get_current_player()
+        sign = self.model.agents[current_player.id, 1]
+
+        self.interface.update_board_output(f"{'AI' if not isinstance(current_player, User) else 'User'} player {sign} is thinking...")
+
+        if not isinstance(current_player, User):
+            await current_player.play(self)
+
+        self.interface.update_game_state()
+
+    async def continue_game(self) -> None:
+        """
+        Continue the game after a move has been made.
+        """
+        self.interface.update_game_state()
+        if not self.ended:
+            await self.process_turn()
