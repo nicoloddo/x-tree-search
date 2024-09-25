@@ -23,6 +23,22 @@ class Game:
         self.clear_console = self.clear_cmd  # To keep track of the previous state
         self._previous_state = None
 
+    @property
+    def started(self):
+        return self.gm.started
+    
+    @property
+    def ended(self):
+        return self.gm.ended
+
+    @property
+    def model(self):
+        return self.gm
+    
+    @property
+    def tree(self):
+        return GameTree(self.gm, "board", self.action_print_attributes())
+    
     @abstractmethod
     def _game_model_definition(self) -> GameModel:
         """Method that builds the game model of the game."""
@@ -51,22 +67,6 @@ class Game:
         """
         pass
 
-    @property
-    def started(self):
-        return self.gm.started
-    
-    @property
-    def ended(self):
-        return self.gm.ended
-
-    @property
-    def model(self):
-        return self.gm
-    
-    @property
-    def tree(self):
-        return GameTree(self.gm, "board", self.action_print_attributes())
-    
     def action_print_attributes(self):
         """Which attributes to print when printing an action"""
         return ['who', 'what', 'where', 'on', 'what_before']
@@ -82,22 +82,20 @@ class Game:
     def set_players(self, players):
         for player in players:
             self.players[player.id] = player
+    
+    def winner(self):
+        """Method to determine the winner of the game.
+        Override in the specific game if you want to change its way of determining the winner."""
+        return None
 
+    """Interface methods"""
+    #TODO: Make separate Interface class for these methods
     def start(self):
-        """This does not run on Jupyter"""
         self.clear_console = self.clear_cmd
         self.update_display = self.print_state
         asyncio.run(self._start_game())
     
-    def start_on_jupyter(self):
-        self.clear_console = self.clear_jupyter
-        self.update_display = self.update_display_jupyter
-        return asyncio.ensure_future(self._start_game())
-    
     def print_state(self, current_state):
-        """Override in the specific game if you want to change its way of display"""
-        print(current_state)
-    def update_display_jupyter(self, current_state):
         """Override in the specific game if you want to change its way of display"""
         print(current_state)
 
@@ -137,8 +135,6 @@ class Game:
     
     def clear_cmd(self):
         os.system('cls' if os.name == 'nt' else 'clear')  # Clear the console
-    def clear_jupyter(self):
-        clear_output(wait=True)  # Clear the Jupyter output
 
 class GameAgent:
     def __init__(self, *, core, agent_id):
@@ -180,7 +176,7 @@ class User:
         self.pause_first_turn = pause_first_turn
 
     async def play(self, game):
-        if self.jupyter_interactive:
+        if game.interface_mode == 'jupyter':
             return
         
         if self.pause_first_turn:
