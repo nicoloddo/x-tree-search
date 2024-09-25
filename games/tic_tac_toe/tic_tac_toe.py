@@ -119,22 +119,20 @@ class TicTacToe(Game):
     
     """Turn taking logic"""
     async def start_game(self):
-        self.interface.start()
-        await self.process_turn()       
+        await self.process_turn()  
+        self.interface.start()          
 
     async def process_turn(self) -> None:
         """
         Process a single turn in the game.
         """
         current_player = self.get_current_player()
-        sign = self.model.agents[current_player.id, 1]
 
-        self.interface.output(f"{'AI' if not isinstance(current_player, User) else 'User'} player {sign} is thinking...")
-
-        if not isinstance(current_player, User):
+        if not isinstance(current_player, User): # User is handled by the interface
             await current_player.play(self)
 
-        self.interface.update()
+        if self.interface.started:
+            self.interface.update()
 
     async def continue_game(self) -> None:
         """

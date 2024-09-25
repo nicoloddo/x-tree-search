@@ -48,6 +48,7 @@ class TicTacToeJupyterInterface(GameInterface):
         self.started = True
         self.board_widget = self.create_board_widget()
         display(self.board_widget)
+        self.update()
 
     def create_board_widget(self) -> widgets.VBox:
         """
@@ -179,7 +180,6 @@ class TicTacToeJupyterInterface(GameInterface):
 import gradio as gr
 
 class TicTacToeGradioInterface(GameInterface):
-    #TODO: This interface is not working. Fix it.
     """
     Interface for the Tic Tac Toe game using Gradio.
 
@@ -195,7 +195,7 @@ class TicTacToeGradioInterface(GameInterface):
         """
         Initialize the TicTacToeGradioInterface.
 
-        Sets up the game instance and initializes Gradio components.
+        Sets up the game instance and initializes necessary attributes.
 
         :param game: The TicTacToe game instance
         :type game: TicTacToe
@@ -205,133 +205,107 @@ class TicTacToeGradioInterface(GameInterface):
         if not hasattr(self.game, 'get_current_player'):
             raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the Gradio interface.")
         
-        self.board = None
-        self.status_label = None
+        self.board_html = None
+        self.status = None
         self.output_text = None
-        self.coordinates_input = None
 
     def start(self):
         """
         Start the game interface.
 
-        Creates the Gradio interface and launches it.
+        Initializes the game state and launches the Gradio interface.
         """
         self.started = True
-        with gr.Blocks() as demo:
-            gr.Markdown("# Tic Tac Toe")
-            
-            self.turn = gr.Textbox("X", interactive=False, label="Turn")
-            self.board = gr.HTML(self.get_board_html())
-            self.status_label = gr.Label("Player X's turn")
-            self.output_text = gr.Textbox(label="Game Output", interactive=False)
-            self.coordinates_input = gr.Textbox(label="Enter coordinates (row,col)", placeholder="e.g. 0,1")
+        iface = gr.Interface(
+            fn=self.process_move,
+            inputs=gr.Textbox(label="Enter move (row,col)"),
+            outputs=[
+                gr.HTML(label="Board", value=self.board_html),
+                gr.Textbox(label="Status", value=self.status),
+                gr.Textbox(label="Output", value=self.output_text)
+            ],
+            live=False
+        )
+        iface.launch()
 
-            self.coordinates_input.submit(self.handle_move, inputs=[self.coordinates_input], outputs=[self.board, self.turn, self.status_label, self.output_text])
-
-        demo.launch()
-
-    def get_board_html(self):
+    def update(self):
         """
-        Generate HTML for the Tic Tac Toe board.
+        Update the game state in the interface.
 
-        :return: HTML string representing the current board state
+        Refreshes the board display, status, and output based on the current game state.
+        This method can be called from outside classes to update the interface.
+        """
+        self.update_board()
+        if self.game.ended:
+            self.update_end_game_status()
+        else:
+            self.update_next_player_status()
+
+    def update_board(self):
+        """
+        Update the HTML representation of the game board.
         """
         board_state = self.game.model.action_spaces["board"]
         html = "<table style='border-collapse: collapse; font-size: 24px;'>"
         for i in range(3):
             html += "<tr>"
             for j in range(3):
-                cell_value = board_state[i, j] if board_state[i, j] != "" else "&nbsp;"
+                cell_value = board_state[i, j]
                 html += f"<td style='width: 50px; height: 50px; text-align: center; vertical-align: middle; border: 1px solid black;'>{cell_value}</td>"
             html += "</tr>"
         html += "</table>"
-        return html
-
-    def handle_move(self, coordinates):
-        """
-        Handle moves based on input coordinates.
-
-        :param coordinates: String containing row and column, e.g. "0,1"
-        :return: Updated values for board, turn, status label, and output text
-        """
-        if self.game.ended:
-            return self.get_board_html(), self.turn.value, self.status_label.value, "Game has ended."
-
-        try:
-            i, j = map(int, coordinates.split(','))
-            if not (0 <= i < 3 and 0 <= j < 3):
-                raise ValueError("Coordinates out of range")
-        except ValueError:
-            return self.get_board_html(), self.turn.value, self.status_label.value, "Invalid coordinates. Use format: row,col (e.g. 0,1)"
-
-        current_player = self.game.get_current_player()
-        sign = self.game.model.agents[current_player.id, 1]
-
-        if isinstance(current_player, User):
-            if self.game.model.action_spaces["board"][i, j] == "":
-                action = {'who': current_player.id, 'where': (i, j), 'what': sign, 'action_space': "board"}
-                self.game.act(action)
-                asyncio.create_task(self.game.continue_game())
-            else:
-                return self.get_board_html(), self.turn.value, self.status_label.value, "This cell is already occupied."
-
-        return self.get_updated_values()
-
-    def update(self):
-        """
-        Update the game state in the interface.
-
-        Refreshes the board display to reflect the current game state,
-        updates the turn indicator, and changes the status label based on
-        whether the game has ended or it's the next player's turn.
-        """
-        self.board.value = self.get_board_html()
-
-        current_player = self.game.get_current_player()
-        self.turn.value = self.game.model.agents[current_player.id, 1]
-
-        if self.game.ended:
-            self.update_end_game_status()
-        else:
-            self.update_next_player_status()
+        self.board_html = html
 
     def update_end_game_status(self):
         """
-        Update the status label for game end scenarios.
-
-        Sets the status label to display the game result, either declaring
-        the winner or announcing a draw.
+        Update the status for game end scenarios.
         """
         winner = self.game.winner()
         if winner is None:
-            self.status_label.value = "Game Over! It's a draw!"
+            self.status = "Game Over! It's a draw!"
         else:
-            self.winner_sign = self.game.model.agents[winner, 1]
-            self.status_label.value = f"Game Over! Player {self.winner_sign} wins!"
+            self.status = f"Game Over! Player {'X' if winner == 0 else 'O'} wins!"
 
     def update_next_player_status(self):
         """
-        Update the status label for the next player's turn.
-
-        Changes the status label to indicate which player (X or O) should make
-        the next move.
+        Update the status for the next player's turn.
         """
-        next_player = self.game.model.agents[self.game.get_current_player().id, 1]
-        self.status_label.value = f"Player {next_player}'s turn"
+        next_player = 'X' if self.game.get_current_player().id == 0 else 'O'
+        self.status = f"Player {next_player}'s turn"
 
     def output(self, text: str):
         """
-        Update the output text in the Gradio interface.
+        Update the output text.
 
         :param text: The text to display in the output area
         :type text: str
         """
-        self.output_text.value = text
+        self.output_text = text
 
-    def get_updated_values(self):
+    async def process_move(self, move_input: str):
         """
-        Get the current values of all interface components.
+        Process a move input from the user and handle AI moves.
 
-        :return: List of current values for board, turn, status label, and output text
+        :param move_input: The move input in the format "row,col"
+        :type move_input: str
+        :return: Updated board HTML, status, and output
+        :rtype: tuple
         """
-        return [self.get_board_html(), self.turn.value, self.status_label.value, self.output_text.value]
+        try:
+            row, col = map(int, move_input.split(','))
+            current_player = self.game.get_current_player()
+            
+            if isinstance(current_player, User):
+                sign = self.game.model.agents[current_player.id, 1]
+                action = {'who': current_player.id, 'where': (row, col), 'what': sign, 'action_space': "board"}
+                self.game.act(action)
+                self.update()  # Update after user's move
+                await self.game.continue_game()
+                self.update()  # Update again after AI's move
+
+        except ValueError:
+            self.output("Invalid input. Please enter row,col (e.g., 0,0)")
+        except Exception as e:
+            self.output(str(e))
+
+        return self.board_html, self.status, self.output_text
