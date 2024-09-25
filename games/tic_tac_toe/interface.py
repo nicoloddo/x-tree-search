@@ -252,7 +252,7 @@ class TicTacToeGradioInterface(GameInterface):
             html += "<tr>"
             for j in range(3):
                 cell_value = board_state[i, j]
-                html += f"<td style='width: 50px; height: 50px; text-align: center; vertical-align: middle; border: 1px solid black;'>{cell_value}</td>"
+                html += f"<td style='width: 50px; height: 50px; text-align: center; vertical-align: middle; border: 1px solid white;'>{cell_value}</td>"
             html += "</tr>"
         html += "</table>"
         self.board_html = html
