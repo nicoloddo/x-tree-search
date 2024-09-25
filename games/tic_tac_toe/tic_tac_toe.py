@@ -130,6 +130,8 @@ class TicTacToe(Game):
 
         if not isinstance(current_player, User): # User is handled by the interface
             await current_player.play(self)
+            if self.interface.started:
+                self.interface.output("")
 
         if self.interface.started:
             self.interface.update()
