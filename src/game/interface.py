@@ -3,9 +3,12 @@ from abc import ABC, abstractmethod
 class GameInterface(ABC):
     def __init__(self, game):
         self.game = game
+        self.started = False
 
     @abstractmethod
     def start(self):
+        # Set started to True
+        self.started = True
         pass
 
     @abstractmethod

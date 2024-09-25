@@ -178,18 +178,19 @@ class GameModel:
                     if 'what' in constraints:
                         if what != constraints['what']:
                             continue
-
-                    if not self.__break_rules(who, where, what, action_space, action_space_id, verbose=False):
+                    
+                    break_rules, _ = self.__break_rules(who, where, what, action_space, action_space_id, verbose=False)
+                    if not break_rules:
                         # found available action
                         theoretical_game = copy.deepcopy(self)
-                        action_dict = theoretical_game.action(action_space_id, who, where, what) # We already know the action will not break any rules
+                        action_dict, _ = theoretical_game.action(action_space_id, who, where, what) # We already know the action will not break any rules
 
                         available_actions_and_states.append({"action": action_dict, "state": theoretical_game.action_spaces[action_space_id], "game": theoretical_game})
         
         return available_actions_and_states
 
     ''' Actions dynamics'''
-    def action(self, action_space_id, who, where, what):
+    def action(self, action_space_id, who, where, what, *, return_broken_rule_string=False):
         """
         Executes an action within the given action_space, modifying its state if the action does not break any rules.
 
@@ -200,14 +201,19 @@ class GameModel:
             action_space_id (str): The id of the action space on which perform the action.
 
         Returns:
-            False if the action breaks any rules; otherwise, returns the action.
+            None if the action breaks any rules; otherwise, returns the action.
         """
         action_space = self.action_spaces[action_space_id]
         where = tuple(where)
 
-        if self.__break_rules(who, where, what, action_space, action_space_id):
-            print("This action is not permitted.\n")
-            return False
+        break_rules, broken_rule_string = self.__break_rules(who, where, what, action_space, action_space_id)
+        if break_rules:
+            if return_broken_rule_string:
+                return None, broken_rule_string
+            else:
+                print("This action is not permitted.\n")
+                print(broken_rule_string)
+                return None, None
         else:
             what_before = action_space[where]
             self.__apply_action(action_space, where, what)
@@ -217,7 +223,7 @@ class GameModel:
             self.check_started()
             self.check_ended()
 
-            return action_dict
+            return action_dict, None
             
     def __action_to_dict(self, who, where, what, what_before, action_space_id):
         action_dict = {'who':who, 'where':where, 'what':what, 'what_before':what_before, 'on':action_space_id}
@@ -348,22 +354,29 @@ class GameModel:
             bool: Returns True if any rule is violated, otherwise False.
         """
         if not action_space.actions_enabled: # First check if actions are allowed in the space
-            print("Actions are not allowed in this Action Space.")
-            return True
+            broken_rule_string = "Actions are not allowed in this Action Space."
+            return True, broken_rule_string
 
         # If they are allowed check rules on the action space
         try:
             for i, rule in enumerate(self.rules["general"]): # Check general rules
                 if rule['broken'](who, where, what, self):
                     if verbose:
-                        print("Broke general rule " + str(i+1) + ': ' + rule['description'])
-                    return True
+                        broken_rule_string = "Broke general rule " + str(i+1) + ': ' + rule['description']
+                    else:
+                        broken_rule_string = ""
+                    return True, broken_rule_string
+                    
 
             for i, rule in enumerate(self.rules[rules_action_space_id]): # Check rules specific to that action space
                 if rule['broken'](who, where, what, self):
                     if verbose:
-                        print("Broke rule " + str(i+1) + ': ' + rule['description'])
-                    return True
+                        broken_rule_string = "Broke rule " + str(i+1) + ': ' + rule['description']
+                    else:
+                        broken_rule_string = ""
+                    return True, broken_rule_string
+        
+            return False, ""
 
         except Exception as e:
             # Log the error and possibly re-raise or handle it as necessary

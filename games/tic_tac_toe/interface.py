@@ -29,13 +29,14 @@ class TicTacToeJupyterInterface(GameInterface):
         :type game: TicTacToe
         :raises AttributeError: If the game instance doesn't have a 'get_current_player' method
         """
-        self.game = game
+        super().__init__(game)
         if not hasattr(self.game, 'get_current_player'):
             raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the jupyter interface.")
         
         self.buttons: Dict[tuple, widgets.Button] = {}
         self.status_label: widgets.Label = None
         self.board_output: widgets.Output = None
+        self.board_widget: widgets.VBox = None
 
     def start(self) -> None:
         """
@@ -44,8 +45,9 @@ class TicTacToeJupyterInterface(GameInterface):
         Creates the board widget and displays it in the Jupyter notebook.
         This method should be called to initiate the game UI.
         """
-        board_widget = self.create_board_widget()
-        display(board_widget)
+        self.started = True
+        self.board_widget = self.create_board_widget()
+        display(self.board_widget)
 
     def create_board_widget(self) -> widgets.VBox:
         """
@@ -214,6 +216,7 @@ class TicTacToeGradioInterface(GameInterface):
 
         Creates the Gradio interface and launches it.
         """
+        self.started = True
         with gr.Blocks() as demo:
             gr.Markdown("# Tic Tac Toe")
             

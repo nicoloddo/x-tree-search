@@ -83,7 +83,7 @@ class TicTacToe(Game):
 
         return gm
     
-    def _act(self, action) -> None:
+    def act(self, action) -> None:
         player = action['who']
         coordinates = action['where']
 
@@ -94,7 +94,9 @@ class TicTacToe(Game):
         else:
             raise ValueError("Player variable has to be 0 or 1")
 
-        return "board", player, coordinates, sign
+        action_dict, broken_rule_string = self.model.action("board", player, coordinates, sign, return_broken_rule_string=self.interface.started)
+        if broken_rule_string:
+            self.interface.output(broken_rule_string)
     
     def winner(self):
         if np.all(self.model.action_spaces["board"] != FREE_LABEL):
