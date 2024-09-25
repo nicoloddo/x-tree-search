@@ -1,7 +1,7 @@
 import numpy as np
 
 from src.game.game import Game, GameModel, User
-from .interface import TicTacToeJupyterInterface
+from .interface import TicTacToeJupyterInterface, TicTacToeGradioInterface
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
@@ -13,6 +13,8 @@ class TicTacToe(Game):
     def select_interface(self, interface_mode):
         if interface_mode == 'jupyter':
             self.interface = TicTacToeJupyterInterface(self)
+        elif interface_mode == 'gradio':
+            self.interface = TicTacToeGradioInterface(self)
         else:
             raise ValueError(f"Unsupported interface mode: {interface_mode}")
 
@@ -125,17 +127,17 @@ class TicTacToe(Game):
         current_player = self.get_current_player()
         sign = self.model.agents[current_player.id, 1]
 
-        self.interface.update_board_output(f"{'AI' if not isinstance(current_player, User) else 'User'} player {sign} is thinking...")
+        self.interface.output(f"{'AI' if not isinstance(current_player, User) else 'User'} player {sign} is thinking...")
 
         if not isinstance(current_player, User):
             await current_player.play(self)
 
-        self.interface.update_game_state()
+        self.interface.update()
 
     async def continue_game(self) -> None:
         """
         Continue the game after a move has been made.
         """
-        self.interface.update_game_state()
+        self.interface.update()
         if not self.ended:
             await self.process_turn()
