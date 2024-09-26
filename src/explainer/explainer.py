@@ -155,7 +155,7 @@ class ArgumentativeExplainer:
                 explanation._str_settings(print_first=True)
 
             if hasattr(node, "parent_state"): # Add context to the explanation if there is
-                context = Proposition(predicate="the context", subject=node.parent_state, evaluation=True)
+                context = Proposition(subject=node.parent_state, predicate="the context", evaluation=True)
                 explanation.add_info("in this context")
                 explanation = And(context, explanation)
 
