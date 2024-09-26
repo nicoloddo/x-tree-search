@@ -1,5 +1,5 @@
 from typing import Any, Callable, Dict
-from src.explainer.propositional_logic import Implies
+from src.explainer.propositional_logic import Implies, Postulate
 from src.explainer.explanation_settings import ExplanationSettings
 from src.explainer.common.exceptions import CannotBeEvaluated
 
@@ -155,14 +155,15 @@ class ArgumentativeExplainer:
                 explanation._str_settings(print_first=True)
 
             context_str = f"Given:\n {node.parent_state}\n" if hasattr(node, "parent_state") else ""
-            print(f"{context_str}{explanation}")
+            return f"{context_str}{explanation}"
 
-            return explanation
+            #return explanation
 
         except CannotBeEvaluated as e:
-            print(f"The adjective \"{adjective_name}\" cannot be evaluated on the {self.framework.refer_to_nodes_as} {node}.")
+            to_return = f"The adjective \"{adjective_name}\" cannot be evaluated on the {self.framework.refer_to_nodes_as} {node}."
             if adjective_name != e.adjective_name:
-                print(f"That is because {e.message}")
+                to_return += f" That is because {e.message}"
+            return to_return
         except Exception as e:
             print(f"An unexpected error occurred while generating the explanation: {str(e)}")
             raise

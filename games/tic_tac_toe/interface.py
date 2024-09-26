@@ -4,7 +4,7 @@ from IPython.display import display
 import asyncio
 
 from src.game.interface import GameInterface
-from src.game.game import User
+from src.game.agents import User
 
 class TicTacToeJupyterInterface(GameInterface):
     """
@@ -184,11 +184,8 @@ class TicTacToeGradioInterface(GameInterface):
     Interface for the Tic Tac Toe game using Gradio.
 
     This class handles the game's user interface, including the board display,
-    player interactions, and game flow. It provides methods to create and update
-    the game board, handle user inputs, and display game status.
-
-    :param game: The TicTacToe game instance
-    :type game: TicTacToe
+    player interactions, game flow, and AI move explanations. It provides methods to create and update
+    the game board, handle user inputs, display game status, and explain AI moves.
     """
 
     def __init__(self, game):
@@ -208,8 +205,11 @@ class TicTacToeGradioInterface(GameInterface):
         self.board_html = None
         self.status = None
         self.output_text = None
+        self.ai_explanation = None
+        self.skip_score_statement = True
+        self.explainer = game.explainer
 
-    def start(self):
+    def start(self, share_gradio=False):
         """
         Start the game interface.
 
@@ -217,17 +217,33 @@ class TicTacToeGradioInterface(GameInterface):
         """
         self.started = True
         self.update()
-        iface = gr.Interface(
-            fn=self.process_move,
-            inputs=gr.Textbox(label="Enter move (row,col)"),
-            outputs=[
-                gr.HTML(label="Board", value=self.board_html),
-                gr.Textbox(label="Status", value=self.status),
-                gr.Textbox(label="Output", value=self.output_text)
-            ],
-            live=False
-        )
-        iface.launch()
+        with gr.Blocks() as iface:
+            with gr.Tab("Game"):
+                gr.Markdown("# Tic Tac Toe")
+                move_input = gr.Textbox(label="Enter move (row,col)")
+                board_output = gr.HTML(label="Board", value=self.board_html)
+                status_output = gr.Textbox(label="Status", value=self.status)
+                game_output = gr.Textbox(label="Output", value=self.output_text)
+                move_button = gr.Button("Make Move")
+            
+            with gr.Tab("Explain"):
+                gr.Markdown("# AI Move Explanation")
+                explanation_output = gr.Markdown(value=self.ai_explanation, label="AI move explanation")
+                skip_score_toggle = gr.Checkbox(label="Skip Score Statement", value=True)
+            
+            move_button.click(
+                self.process_move,
+                inputs=[move_input],
+                outputs=[board_output, status_output, game_output, explanation_output]
+            )
+            
+            skip_score_toggle.change(
+                self.toggle_skip_score,
+                inputs=[skip_score_toggle],
+                outputs=[explanation_output]
+            )
+
+        iface.launch(share=share_gradio)
 
     def update(self):
         """
@@ -237,6 +253,7 @@ class TicTacToeGradioInterface(GameInterface):
         This method can be called from outside classes to update the interface.
         """
         self.update_board()
+        self.update_ai_explanation()
         if self.game.ended:
             self.update_end_game_status()
         else:
@@ -274,6 +291,14 @@ class TicTacToeGradioInterface(GameInterface):
         next_player = 'X' if self.game.get_current_player().id == 0 else 'O'
         self.status = f"Player {next_player}'s turn"
 
+    def update_ai_explanation(self):
+        """
+        Update the AI explanation.
+        """
+        opponent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
+        if opponent:
+            self.ai_explanation = self.game.explainer.explain(opponent.choice, 'the best')
+
     def output(self, text: str):
         """
         Update the output text.
@@ -283,13 +308,31 @@ class TicTacToeGradioInterface(GameInterface):
         """
         self.output_text = text
 
+    def toggle_skip_score(self, skip_score: bool):
+        """
+        Toggle the skip score statement setting and update the explanation.
+
+        :param skip_score: Whether to skip the score statement or not
+        :type skip_score: bool
+        :return: Updated AI explanation
+        :rtype: str
+        """
+        self.skip_score_statement = skip_score
+        self.game.explainer.frameworks['highlevel'].get_adjective('score').skip_statement = skip_score
+        
+        # Update the explanation if there's a current AI move
+        if self.ai_explanation:
+            self.update_ai_explanation()
+        
+        return self.ai_explanation
+
     async def process_move(self, move_input: str):
         """
         Process a move input from the user and handle AI moves.
 
         :param move_input: The move input in the format "row,col"
         :type move_input: str
-        :return: Updated board HTML, status, and output
+        :return: Updated board HTML, status, output, and AI explanation
         :rtype: tuple
         """
         try:
@@ -309,4 +352,4 @@ class TicTacToeGradioInterface(GameInterface):
         except Exception as e:
             self.output(str(e))
 
-        return self.board_html, self.status, self.output_text
+        return self.board_html, self.status, self.output_text, self.ai_explanation

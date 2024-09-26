@@ -1,16 +1,32 @@
 import numpy as np
 
-from src.game.game import Game, GameModel, User
+from src.game.game import Game, GameModel
+from src.game.agents import User
 from .interface import TicTacToeJupyterInterface, TicTacToeGradioInterface
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
-    def __init__(self, interface_mode='jupyter'):
+    def __init__(self, explainer=None, interface_mode='jupyter'):
+        """
+        Initialize the TicTacToe game.
+
+        :param explainer: The explainer to use for the game.
+        :type explainer: Explainer
+        :param interface_mode: The interface mode to use for the game.
+        :type interface_mode: str
+        """
         super().__init__()
+        self.explainer = explainer
         self.interface_mode = interface_mode
         self.select_interface(interface_mode)
-        
+
     def select_interface(self, interface_mode):
+        """
+        Select the interface for the game.
+
+        :param interface_mode: The interface mode to use for the game.
+        :type interface_mode: str
+        """
         if interface_mode == 'jupyter':
             self.interface = TicTacToeJupyterInterface(self)
         elif interface_mode == 'gradio':
@@ -118,9 +134,12 @@ class TicTacToe(Game):
             return next(player for player in self.players.values() if player.id != last_player) 
     
     """Turn taking logic"""
-    async def start_game(self):
+    async def start_game(self, share_gradio=False):
         await self.process_turn()  
-        self.interface.start()          
+        if self.interface_mode == 'gradio':
+            self.interface.start(share_gradio=share_gradio)          
+        else:
+            self.interface.start()          
 
     async def process_turn(self) -> None:
         """
