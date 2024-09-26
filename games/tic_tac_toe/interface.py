@@ -299,7 +299,8 @@ class TicTacToeGradioInterface(GameInterface):
         """
         opponent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
         if opponent:
-            self.ai_explanation = self.game.explainer.explain(opponent.choice, 'the best')
+            explanation = self.game.explainer.explain(opponent.choice, 'the best')
+            self.ai_explanation = f"```markdown\n{explanation}\n```"
 
     def output(self, text: str):
         """
