@@ -88,7 +88,7 @@ class TicTacToeJupyterInterface(GameInterface):
         )
         return widgets.VBox([board_widget, self.status_label, self.board_output])
 
-    def create_button_click_handler(self, i: int, j: int):
+    def create_button_click_handler(self, row: int, col: int):
         """
         Create a click handler for a board button.
 
@@ -103,13 +103,15 @@ class TicTacToeJupyterInterface(GameInterface):
         :rtype: function
         """
         def handle_click(b):
-            current_player = self.game.get_current_player()
-            sign = self.game.model.agents[current_player.id, 1]
-            
-            if isinstance(current_player, User):
-                action = {'who': current_player.id, 'where': (i, j), 'what': sign, 'action_space': "board"}
-                self.game.act(action)
-                asyncio.create_task(self.game.continue_game())
+            try:
+                current_player = self.game.get_current_player()
+                sign = self.game.model.agents[current_player.id, 1]
+                inputs = {'what': sign, 'where': (row, col), 'action_space': "board"}
+                asyncio.create_task(current_player.play(self.game, inputs))
+
+            except Exception as e:
+                self.output(str(e))
+
         return handle_click
     
     def update(self) -> None:
@@ -338,14 +340,9 @@ class TicTacToeGradioInterface(GameInterface):
         try:
             row, col = map(int, move_input.split(','))
             current_player = self.game.get_current_player()
-            
-            if isinstance(current_player, User):
-                sign = self.game.model.agents[current_player.id, 1]
-                action = {'who': current_player.id, 'where': (row, col), 'what': sign, 'action_space': "board"}
-                self.game.act(action)
-                self.update()  # Update after user's move
-                await self.game.continue_game()
-                self.update()  # Update again after AI's move
+            sign = self.game.model.agents[current_player.id, 1]
+            inputs = {'what': sign, 'where': (row, col), 'action_space': "board"}
+            await current_player.play(self.game, inputs)
 
         except ValueError:
             self.output("Invalid input. Please enter row,col (e.g., 0,0)")
