@@ -121,6 +121,10 @@ class Implies(LogicalExpression):
         self.antecedent = antecedent
         self.consequent = consequent
         self._str_settings_list = {}
+
+    def add_info(self, additional_info: str):
+        # Function to add possible other info
+        self.consequent.additional_info = additional_info
         
     # Property for subject
     @property
