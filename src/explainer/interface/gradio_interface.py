@@ -243,10 +243,13 @@ class ExplainerGradioInterface:
             else:
                 return template.format(explanation="No opponent was found.")
 
+    #-----------------------------------------------------------------------------------------------------------
+    """INTERFACE BUILDER METHODS"""
     def build_ai_explanation_tab(self, tab_label: str = "Explain", toggles: Dict[str, tuple[str, bool]] = None):
         """
         Build the AI explanation tab.
 
+        :param tab_label: The label of the tab.
         :param toggles: A dictionary of toggles to add to the interface. 
         The key is the name of the toggle, the value is a tuple of the label and the value.
         """
@@ -265,6 +268,11 @@ class ExplainerGradioInterface:
         }
 
     def build_add_adjective_tab(self, tab_label: str = "Add Adjective"):
+        """
+        Build the add adjective tab.
+
+        :param tab_label: The label of the tab.
+        """
         with gr.Tab(tab_label):
             adj_name = gr.Textbox(label="Adjective Name")
             adj_type = gr.Dropdown(list(adjective_classes.keys()), label="Adjective Type")
@@ -285,6 +293,13 @@ class ExplainerGradioInterface:
         }
 
     def build_add_update_explanation_tab(self, tab_label: str = "Add/Update Explanation"):
+        """
+        Build the add/update explanation tab.
+        TODO: The CompositeExplanation and ConditionalExplanations need to be handled differently
+
+        :param tab_label: The label of the tab.
+        """
+        # TODO: The CompositeExplanation and ConditionalExplanations need to be handled differently
         with gr.Tab(tab_label):
             exp_name = gr.Dropdown(choices=self.get_adjective_names(), label="Adjective Name", allow_custom_value=True)
             exp_type = gr.Dropdown(list(explanation_classes.keys()), label="Explanation Type")
@@ -300,23 +315,29 @@ class ExplainerGradioInterface:
             "exp_output": exp_output
         }
 
-    def build_delete_tab(self, tab_label: str = "Delete"):
+    def build_delete_tab(self, tab_label: str = "Delete Adjective"):
+        """
+        Build the delete tab.
+
+        :param tab_label: The label of the tab.
+        """
         with gr.Tab(tab_label):
             del_adj_name = gr.Dropdown(choices=self.get_adjective_names(), label="Adjective Name to Delete", allow_custom_value=True)
             del_adj_button = gr.Button("Delete Adjective")
-            del_exp_name = gr.Dropdown(choices=self.get_adjective_names(), label="Adjective Name to Delete Explanation", allow_custom_value=True)
-            del_exp_button = gr.Button("Delete Explanation")
             del_output = gr.Textbox(label="Output")
 
         return {
             "del_adj_name": del_adj_name,
             "del_adj_button": del_adj_button,
-            "del_exp_name": del_exp_name,
-            "del_exp_button": del_exp_button,
             "del_output": del_output
         }
 
     def build_visualize_tab(self, tab_label: str = "Visualize"):
+        """
+        Build the visualize tab.
+
+        :param tab_label: The label of the tab.
+        """
         with gr.Tab(tab_label):
             root_adjective = gr.Dropdown(choices=self.get_adjective_names(), label="Select Root Adjective (optional)")
             visualize_button = gr.Button("Visualize Framework")
@@ -329,6 +350,11 @@ class ExplainerGradioInterface:
         }
 
     def connect_components(self, components):
+        """
+        Connect the components of the interface.
+
+        :param components: The components to connect.
+        """
         # Add Adjective
         if "adj_button" in components:
             components["adj_button"].click(
@@ -355,14 +381,6 @@ class ExplainerGradioInterface:
                 outputs=[components["del_output"]]
             )
 
-        # Delete Explanation
-        if "del_exp_button" in components:
-            components["del_exp_button"].click(
-                self.delete_explanation, 
-                inputs=[components["del_exp_name"]], 
-                outputs=[components["del_output"]]
-            )
-
         # Visualize
         if "visualize_button" in components:
             components["visualize_button"].click(
@@ -373,7 +391,7 @@ class ExplainerGradioInterface:
 
         # Update dropdowns
         dropdown_components = [comp for comp in [components.get("exp_name"), components.get("del_adj_name"), 
-                                                 components.get("del_exp_name"), components.get("root_adjective")] if comp is not None]
+                                                 components.get("root_adjective")] if comp is not None]
         if dropdown_components:
             for button in [components.get("adj_button"), components.get("del_adj_button")]:
                 if button:
@@ -416,12 +434,6 @@ class ExplainerGradioInterface:
                 outputs=[components["del_output"]]
             )
 
-            components["del_exp_button"].click(
-                self.delete_explanation, 
-                inputs=[components["del_exp_name"]], 
-                outputs=[components["del_output"]]
-            )
-
             components["visualize_button"].click(
                 self.visualize_graph, 
                 inputs=[components["root_adjective"]], 
@@ -430,7 +442,7 @@ class ExplainerGradioInterface:
 
             # Update dropdowns
             dropdown_components = [components["exp_name"], components["del_adj_name"], 
-                                   components["del_exp_name"], components["root_adjective"]]
+                                   components["root_adjective"]]
             components["adj_button"].click(self.update_dropdowns, outputs=dropdown_components)
             components["del_adj_button"].click(self.update_dropdowns, outputs=dropdown_components)
 
