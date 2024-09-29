@@ -6,6 +6,9 @@ import asyncio
 from src.game.interface import GameInterface
 from src.game.agents import User
 
+import gradio as gr
+from src.explainer.interface.gradio_interface import ExplainerGradioInterface
+
 class TicTacToeJupyterInterface(GameInterface):
     """
     Interface for the Tic Tac Toe game in Jupyter notebooks.
@@ -179,9 +182,9 @@ class TicTacToeJupyterInterface(GameInterface):
         with self.board_output:
             print(text)
 
-import gradio as gr
 
 class TicTacToeGradioInterface(GameInterface):
+
     """
     Interface for the Tic Tac Toe game using Gradio.
 
@@ -210,6 +213,7 @@ class TicTacToeGradioInterface(GameInterface):
         self.ai_explanation = None
         self.skip_score_statement = True
         self.explainer = game.explainer
+        self.explainer_interface = ExplainerGradioInterface(game=self.game, explanation_depth=3)
 
     def start(self, share_gradio=False):
         """
@@ -228,21 +232,22 @@ class TicTacToeGradioInterface(GameInterface):
                 game_output = gr.Textbox(label="Output", value=self.output_text)
                 move_button = gr.Button("Make Move")
             
-            with gr.Tab("Explain"):
-                gr.Markdown("# AI Move Explanation")
-                explanation_output = gr.Markdown(value=self.ai_explanation, label="AI move explanation")
-                skip_score_toggle = gr.Checkbox(label="Skip Score Statement", value=True)
+            # Build all tabs or select specific ones
+            ai_explanation_components = self.explainer_interface.build_ai_explanation_tab(tab_label="Explain", toggles={"skip_score_toggle": ("Skip Score Statement", True)})
+            visualize_components = self.explainer_interface.build_visualize_tab(tab_label="Visualize Explanation Framework")
+            self.explainer_interface.connect_components({**visualize_components, **ai_explanation_components})
             
             move_button.click(
                 self.process_move,
                 inputs=[move_input],
-                outputs=[board_output, status_output, game_output, explanation_output]
+                outputs=[board_output, status_output, game_output, ai_explanation_components["explanation_output"]]
             )
             
+            skip_score_toggle = ai_explanation_components["skip_score_toggle"]
             skip_score_toggle.change(
                 self.toggle_skip_score,
                 inputs=[skip_score_toggle],
-                outputs=[explanation_output]
+                outputs=[ai_explanation_components["explanation_output"]]
             )
 
         iface.launch(share=share_gradio)
@@ -255,7 +260,10 @@ class TicTacToeGradioInterface(GameInterface):
         This method can be called from outside classes to update the interface.
         """
         self.update_board()
-        self.update_ai_explanation()
+
+        opponent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
+        self.ai_explanation = self.explainer_interface.update_ai_explanation(opponent)
+
         if self.game.ended:
             self.update_end_game_status()
         else:
@@ -293,15 +301,6 @@ class TicTacToeGradioInterface(GameInterface):
         next_player = 'X' if self.game.get_current_player().id == 0 else 'O'
         self.status = f"Player {next_player}'s turn"
 
-    def update_ai_explanation(self):
-        """
-        Update the AI explanation.
-        """
-        opponent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
-        if opponent:
-            explanation = self.game.explainer.explain(opponent.choice, 'the best')
-            self.ai_explanation = f"```markdown\n{explanation}\n```"
-
     def output(self, text: str):
         """
         Update the output text.
@@ -324,8 +323,8 @@ class TicTacToeGradioInterface(GameInterface):
         self.game.explainer.frameworks['highlevel'].get_adjective('score').skip_statement = skip_score
         
         # Update the explanation if there's a current AI move
-        if self.ai_explanation:
-            self.update_ai_explanation()
+        opponent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
+        self.ai_explanation = self.explainer_interface.update_ai_explanation(opponent)
         
         return self.ai_explanation
 
