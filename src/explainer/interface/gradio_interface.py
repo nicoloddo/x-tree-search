@@ -28,7 +28,7 @@ class Node:
 
 class ExplainerGradioInterface:
     """Main class for building and managing the explainer interface."""
-    def __init__(self, *, game=None, explanation_depth=2, framework=None, explaining_agent, explain_in_interface_mode=False):
+    def __init__(self, *, game=None, explanation_depth=2, framework=None, explaining_agent, explain_in_hyperlink_mode=True):
         """Initialize the ExplainerInterface with an optional game to explain.
         
         :param game: The game to explain.
@@ -44,7 +44,7 @@ class ExplainerGradioInterface:
         else:
             self.framework = framework or ArgumentationFramework(refer_to_nodes_as="node")
         self.explaining_agent = explaining_agent
-        self.explain_in_interface_mode = explain_in_interface_mode
+        self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
 
         self.nodes = {}
         self.demo = gr.Blocks()
@@ -240,7 +240,7 @@ class ExplainerGradioInterface:
         :param node_id: The ID of the node to explain.
         :param adjective: The adjective to use in the explanation.
         """
-        code_markdown_block = not self.explain_in_interface_mode
+        code_markdown_block = not self.explain_in_hyperlink_mode
         template = "```markdown\n{explanation}\n```" if code_markdown_block else "{explanation}"
 
         if not self.game:
@@ -257,8 +257,8 @@ class ExplainerGradioInterface:
                 return template.format(explanation="No node was found.")
             
             # All is good, we can explain
-            if self.explain_in_interface_mode:
-                activated = LogicalExpression.set_interface_mode(self.explain_in_interface_mode, node.__class__)
+            if self.explain_in_hyperlink_mode:
+                activated = LogicalExpression.set_hyperlink_mode(self.explain_in_hyperlink_mode, node.__class__)
             else:
                 activated = False
 
@@ -266,7 +266,7 @@ class ExplainerGradioInterface:
 
             # If we are in interface mode, we need to replace the node references with hyperlinks
             if activated:
-                LogicalExpression.set_interface_mode(False)
+                LogicalExpression.set_hyperlink_mode(False)
 
                 # Replace node references with Markdown hyperlinks
                 explanation = re.sub(
@@ -303,7 +303,7 @@ class ExplainerGradioInterface:
         The key is the name of the toggle, the value is a tuple of the label and the value.
         """
         with gr.Tab(tab_label):
-            if self.explain_in_interface_mode:
+            if self.explain_in_hyperlink_mode:
                 with gr.Row():
                     with gr.Column(scale=1):
                         id_input = gr.Textbox(label="Node ID")
@@ -326,7 +326,7 @@ class ExplainerGradioInterface:
             **new_toggles
         }
         
-        if self.explain_in_interface_mode:
+        if self.explain_in_hyperlink_mode:
             components.update({
                 "id_input": id_input,
                 "ai_exp_adj_name": ai_exp_adj_name,

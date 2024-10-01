@@ -5,7 +5,7 @@ import textwrap
 class LogicalExpression(ABC):
     """Abstract base class for all logical expressions."""
     print_mode = 'logic'
-    interface_mode = False
+    hyperlink_mode = False
 
     def __init__(self):
         self.nullified = False # Disable the expression like this
@@ -17,26 +17,26 @@ class LogicalExpression(ABC):
         self.record = None
 
     @classmethod
-    def set_interface_mode(cls, value: bool, tree_node_cls = None) -> bool:
+    def set_hyperlink_mode(cls, value: bool, tree_node_cls = None) -> bool:
         if value == True:
             if not tree_node_cls:
-                raise SyntaxError("To set the interface_mode to True, you need to pass a tree_node_cls for validation purposes.")
+                raise SyntaxError("To set the hyperlink_mode to True, you need to pass a tree_node_cls for validation purposes.")
             
             if not hasattr(tree_node_cls, "id"):
-                print("To use interface mode, the nodes of your search algorithm must have an 'id' attribute.")
-                return False # not performed
+                print("To use hyperlink mode, the nodes of your search algorithm must have an 'id' attribute.")
+                return False # not activated
             if not hasattr(tree_node_cls, "game_state"):
-                print("To use interface mode, the nodes of your search algorithm must have a 'game_state' attribute.")
-                return False # not performed
+                print("To use hyperlink mode, the nodes of your search algorithm must have a 'game_state' attribute.")
+                return False # not activated
             if not hasattr(tree_node_cls, "game_tree_node_string"):
-                print("To use interface mode, the nodes of your search algorithm must have a 'game_tree_node_string' attribute.")
-                return False # not performed
+                print("To use hyperlink mode, the nodes of your search algorithm must have a 'game_tree_node_string' attribute.")
+                return False # not activated
             else:
-                cls.interface_mode = True
-                return True # performed
+                cls.hyperlink_mode = True
+                return True # activated
         else:
-            cls.interface_mode = False
-            return True # performed
+            cls.hyperlink_mode = False
+            return False # not activated
     
     def __str__(self) -> str:
         if self.nullified:
@@ -87,12 +87,12 @@ class Proposition(LogicalExpression):
 
     def _to_str(self) -> str:        
         def format_node(node):
-            return f"::node::({node.id})[{node.game_tree_node_string}]" if self.interface_mode else str(node)
+            return f"::node::({node.id})[{node.game_tree_node_string}]" if self.hyperlink_mode else str(node)
 
         predicate_type = 'singular' if self.subject is None or not isinstance(self.subject, list) else 'plural'
         
         if self.subject is None:
-            subject = "::node::(None)[]" if self.interface_mode else '?'
+            subject = "::node::(None)[]" if self.hyperlink_mode else '?'
         elif isinstance(self.subject, list):
             subject = ', '.join(map(format_node, self.subject))
         elif isinstance(self.subject, str):
