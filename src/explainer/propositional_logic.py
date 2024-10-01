@@ -15,13 +15,30 @@ class LogicalExpression(ABC):
         self.evaluation = None
 
         self.record = None
+
+    @classmethod
+    def set_interface_mode(cls, value: bool, tree_node_cls = None) -> bool:
+        if value == True:
+            if not tree_node_cls:
+                raise SyntaxError("To set the interface_mode to True, you need to pass a tree_node_cls for validation purposes.")
+            
+            if not hasattr(tree_node_cls, "id"):
+                print("To use interface mode, the nodes of your search algorithm must have an 'id' attribute.")
+                return False # not performed
+            if not hasattr(tree_node_cls, "game_state"):
+                print("To use interface mode, the nodes of your search algorithm must have a 'game_state' attribute.")
+                return False # not performed
+            if not hasattr(tree_node_cls, "game_tree_node_string"):
+                print("To use interface mode, the nodes of your search algorithm must have a 'game_tree_node_string' attribute.")
+                return False # not performed
+            else:
+                cls.interface_mode = True
+                return True # performed
+        else:
+            cls.interface_mode = False
+            return True # performed
     
     def __str__(self) -> str:
-        if self.interface_mode:
-            if self.subject is not None:
-                if not hasattr(self.subject, "id"):
-                    raise SyntaxError("To use interface mode, the nodes of your search algorithm must have a node attribute.")
-                
         if self.nullified:
             return None
         else:
@@ -68,50 +85,50 @@ class Proposition(LogicalExpression):
         # Function to add possible other info
         self.additional_info = additional_info
 
-    def _to_str(self) -> str:
-        if self.evaluation is None:
-            self.evaluation = '?'
-        elif type(self.evaluation) is list:
-            self.evaluation = ', '.join([str(val) for val in self.evaluation])
+    def _to_str(self) -> str:        
+        def format_node(node):
+            return f"::node::({node.id})[{node.game_tree_node_string}]" if self.interface_mode else str(node)
+
+        predicate_type = 'singular' if self.subject is None or not isinstance(self.subject, list) else 'plural'
         
         if self.subject is None:
-            predicate_type = 'singular'
-            if self.interface_mode:
-                subject = f"::node::(None)"
-            else:
-                subject = '?'
-        elif type(self.subject) is list:
-            predicate_type = 'plural'
-            if self.interface_mode:
-                subject = f"::node::({[s.id for s in self.subject]})"
-            else:
-                subject = ', '.join([str(val) for val in self.subject])
+            subject = "::node::(None)[]" if self.interface_mode else '?'
+        elif isinstance(self.subject, list):
+            subject = ', '.join(map(format_node, self.subject))
+        elif isinstance(self.subject, str):
+            subject = self.subject
         else:
-            predicate_type = 'singular'
-            if self.interface_mode:
-                subject = f"::node::({self.subject.id})"
-            else:
-                subject = self.subject
+            subject = format_node(self.subject)
 
-        if self.object is not None:
-            if type(self.object) is list:
-                if self.interface_mode:
-                    object = f"::node::({[s.id for s in self.object]})"
-                else:
-                    object = ', '.join([str(val) for val in self.object])
-            else:
-                if self.interface_mode:
-                    object = f"::node::({self.object.id})"
-                else:
-                    object = self.object
+        if self.object is None:
+            object = None
+        elif isinstance(self.object, list):
+            object = ', '.join(map(format_node, self.object))
+        elif isinstance(self.object, str):
+            object = self.object
+        else:
+            object = format_node(self.object)
+
+        if object is not None:
             expression = f"{self.predicate} {object}"
         else:
             expression = self.predicate
 
-        if isinstance(self.evaluation, bool):
-            predicate = self.to_be[predicate_type]
+        predicate = self.to_be[predicate_type] if isinstance(self.evaluation, bool) else self.to_have[predicate_type]
 
-            if self.evaluation:
+        evaluation_is_bool = False
+        if self.evaluation is None:
+            evaluation = '?'
+        elif isinstance(self.evaluation, list):
+            evaluation = ', '.join(map(format_node, self.evaluation))
+        elif isinstance(self.evaluation, bool):
+            evaluation = self.evaluation
+            evaluation_is_bool = True
+        else:
+            evaluation = format_node(self.evaluation)
+
+        if evaluation_is_bool:
+            if evaluation:
                 string_end = f"{predicate} {expression}"
             else:
                 if self.print_mode == 'logic':
@@ -121,11 +138,10 @@ class Proposition(LogicalExpression):
 
                 string_end = f"{predicate} {negation}"
         else:
-            predicate = self.to_have[predicate_type]
             if self.print_mode == 'logic':
-                string_end = f"{predicate} {expression} = {self.evaluation}"
+                string_end = f"{predicate} {expression} = {evaluation}"
             elif self.print_mode == 'verbal':
-                string_end = f"{predicate} {expression} {self.evaluation}"
+                string_end = f"{predicate} {expression} {evaluation}"
 
         to_string = f"{subject} {string_end}"
 
