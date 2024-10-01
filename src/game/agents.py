@@ -2,7 +2,20 @@ import asyncio
 
 class GameAgent:
     def __init__(self, *, core, agent_id):
+        """
+        GameAgent initialization.
+
+        :param core: The core of the agent.
+        :type core: object
+        :param agent_id: The ID of the agent.
+        :type agent_id: str
+        :raises SyntaxError: If the core does not have a 'last_choice' attribute or a 'nodes' attribute.
+        """
         self.core = core
+        if not hasattr(self.core, "last_choice"):
+            raise SyntaxError("The core of a GameAgent must have a 'last_choice' attribute reflecting the last choice of the agent.")
+        if not hasattr(self.core, "nodes"):
+            raise SyntaxError("The core of a GameAgent must have a 'nodes' attribute reflecting the nodes of the agent.")
         self.id = agent_id
 
     async def play(self, game):
