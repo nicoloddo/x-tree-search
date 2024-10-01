@@ -303,14 +303,17 @@ class TicTacToeGradioInterface(GameInterface):
 
         return board_gallery, status, output_text, ai_explanation
 
-    def get_updated_board_gallery(self):
+    def get_updated_board_gallery(self, board_state=None):
         """
         Get the updated board images based on the current game state.
 
+        :param: 
         :return: List of image paths for the board
         :rtype: List[str]
         """
-        board_state = self.game.model.action_spaces["board"]
+        if not board_state:
+            board_state = self.game.model.action_spaces["board"]
+            
         updated_images = []
         for i in range(3):
             for j in range(3):

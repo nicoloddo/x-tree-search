@@ -5,6 +5,7 @@ import textwrap
 class LogicalExpression(ABC):
     """Abstract base class for all logical expressions."""
     print_mode = 'logic'
+    interface_mode = False
 
     def __init__(self):
         self.nullified = False # Disable the expression like this
@@ -16,6 +17,11 @@ class LogicalExpression(ABC):
         self.record = None
     
     def __str__(self) -> str:
+        if self.interface_mode:
+            if self.subject is not None:
+                if not hasattr(self.subject, "id"):
+                    raise SyntaxError("To use interface mode, the nodes of your search algorithm must have a node attribute.")
+                
         if self.nullified:
             return None
         else:
@@ -69,20 +75,36 @@ class Proposition(LogicalExpression):
             self.evaluation = ', '.join([str(val) for val in self.evaluation])
         
         if self.subject is None:
-            self.subject = '?'
             predicate_type = 'singular'
+            if self.interface_mode:
+                subject = f"::node::(None)"
+            else:
+                subject = '?'
         elif type(self.subject) is list:
-            self.subject = ', '.join([str(val) for val in self.subject])
             predicate_type = 'plural'
+            if self.interface_mode:
+                subject = f"::node::({[s.id for s in self.subject]})"
+            else:
+                subject = ', '.join([str(val) for val in self.subject])
         else:
             predicate_type = 'singular'
+            if self.interface_mode:
+                subject = f"::node::({self.subject.id})"
+            else:
+                subject = self.subject
 
         if self.object is not None:
             if type(self.object) is list:
-                object_str = ', '.join([str(val) for val in self.object])
+                if self.interface_mode:
+                    object = f"::node::({[s.id for s in self.object]})"
+                else:
+                    object = ', '.join([str(val) for val in self.object])
             else:
-                object_str = self.object
-            expression = f"{self.predicate} {object_str}"
+                if self.interface_mode:
+                    object = f"::node::({self.object.id})"
+                else:
+                    object = self.object
+            expression = f"{self.predicate} {object}"
         else:
             expression = self.predicate
 
@@ -105,7 +127,7 @@ class Proposition(LogicalExpression):
             elif self.print_mode == 'verbal':
                 string_end = f"{predicate} {expression} {self.evaluation}"
 
-        to_string = f"{self.subject} {string_end}"
+        to_string = f"{subject} {string_end}"
 
         if hasattr(self, "additional_info"):
             to_string += f" ({self.additional_info})"
