@@ -218,7 +218,9 @@ class TicTacToeGradioInterface(GameInterface):
         self.ai_explanation = None
         self.skip_score_statement = True
         self.explainer = game.explainer
-        self.explainer_interface = ExplainerGradioInterface(game=self.game, explanation_depth=3)
+
+        explaining_agent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
+        self.explainer_interface = ExplainerGradioInterface(game=self.game, explanation_depth=3, explaining_agent=explaining_agent)
 
     def start(self, share_gradio=False):
         """
@@ -280,9 +282,6 @@ class TicTacToeGradioInterface(GameInterface):
         
         iface.launch(share=share_gradio)
 
-        # Put the update outside of the Blocks to make sure the board is not displayed two times
-        self.update()
-
     def update(self):
         """
         Update the game state in the interface.
@@ -298,8 +297,7 @@ class TicTacToeGradioInterface(GameInterface):
         status = self.get_updated_status()
         output_text = self.output_text  # Assuming this doesn't need to be updated here
 
-        opponent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
-        ai_explanation = self.explainer_interface.update_ai_explanation(opponent)
+        ai_explanation = self.explainer_interface.update_ai_explanation()
 
         return board_gallery, status, output_text, ai_explanation
 
@@ -313,7 +311,7 @@ class TicTacToeGradioInterface(GameInterface):
         """
         if not board_state:
             board_state = self.game.model.action_spaces["board"]
-            
+
         updated_images = []
         for i in range(3):
             for j in range(3):
@@ -386,9 +384,7 @@ class TicTacToeGradioInterface(GameInterface):
         self.skip_score_statement = skip_score
         self.game.explainer.frameworks['highlevel'].get_adjective('score').skip_statement = skip_score
         
-        # Update the explanation if there's a current AI move
-        opponent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
-        self.ai_explanation = self.explainer_interface.update_ai_explanation(opponent)
+        self.ai_explanation = self.explainer_interface.update_ai_explanation()
         
         return self.ai_explanation
 

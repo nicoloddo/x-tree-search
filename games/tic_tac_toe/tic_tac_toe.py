@@ -6,7 +6,7 @@ from .interface import TicTacToeJupyterInterface, TicTacToeGradioInterface
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
-    def __init__(self, explainer=None, interface_mode='gradio'):
+    def __init__(self, *, players=None, explainer=None, interface_mode='gradio'):
         """
         Initialize the TicTacToe game.
 
@@ -14,8 +14,10 @@ class TicTacToe(Game):
         :type explainer: Explainer
         :param interface_mode: The interface mode to use for the game.
         :type interface_mode: str
+        :param players: The players to use for the game.
+        :type players: list
         """
-        super().__init__()
+        super().__init__(players=players)
         self.explainer = explainer
         self.interface_mode = interface_mode
         self.select_interface(interface_mode)

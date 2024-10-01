@@ -16,9 +16,11 @@ nest_asyncio.apply()
 class Game:
     GameModel.verbose = False
 
-    def __init__(self, explainer=None):
+    def __init__(self, *, players=None):
         self.gm = self._game_model_definition()
         self.players = {} # Dictionary that holds the players as 'id': player
+        self._set_players(players)
+
         self.stop = False
         self.clear_console = self.clear_cmd  # To keep track of the previous state
         self._previous_state = None
@@ -75,7 +77,7 @@ class Game:
     def act(self, action) -> None:
         pass
     
-    def set_players(self, players):
+    def _set_players(self, players):
         for player in players:
             self.players[player.id] = player
     

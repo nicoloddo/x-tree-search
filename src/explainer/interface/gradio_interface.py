@@ -4,10 +4,13 @@ import tempfile
 import inspect
 import sys
 import graphviz
+import re
+from urllib.parse import urlencode
 
 from src.explainer.adjective import Adjective
 from src.explainer.explanation import Explanation, Assumption, CompositeExplanation, ConditionalExplanation
 from src.explainer.framework import ArgumentationFramework
+from src.explainer.propositional_logic import LogicalExpression
 
 # Dynamically get all adjective and explanation classes
 adjective_classes = {name: cls for name, cls in inspect.getmembers(sys.modules['src.explainer.adjective'], inspect.isclass) 
@@ -25,12 +28,13 @@ class Node:
 
 class ExplainerGradioInterface:
     """Main class for building and managing the explainer interface."""
-    def __init__(self, *, game=None, explanation_depth=2, framework=None):
+    def __init__(self, *, game=None, explanation_depth=2, framework=None, explaining_agent, explain_in_interface_mode=False):
         """Initialize the ExplainerInterface with an optional game to explain.
         
         :param game: The game to explain.
         :param explanation_depth: The depth of the explanation.
         :param framework: The framework to use. Only provide if game is not provided.
+        :param explaining_agent: The agent that explains its choices.
         """
         self.game = game
         if self.game:
@@ -39,6 +43,8 @@ class ExplainerGradioInterface:
             self.framework = self.game.explainer.framework or ArgumentationFramework(refer_to_nodes_as="node")
         else:
             self.framework = framework or ArgumentationFramework(refer_to_nodes_as="node")
+        self.explaining_agent = explaining_agent
+        self.explain_in_interface_mode = explain_in_interface_mode
 
         self.nodes = {}
         self.demo = gr.Blocks()
@@ -227,21 +233,64 @@ class ExplainerGradioInterface:
         choices = self.get_adjective_names()
         return [gr.update(choices=choices, value=None) for _ in range(4)]
     
-    def update_ai_explanation(self, opponent):
+    def update_ai_explanation(self, node_id=None, adjective="the best"):
         """
         Update the AI explanation.
 
-        :param opponent: The opponent which choice we want to explain.
+        :param node_id: The ID of the node to explain.
+        :param adjective: The adjective to use in the explanation.
         """
-        template = "```markdown\n{explanation}\n```"
+        code_markdown_block = not self.explain_in_interface_mode
+        template = "```markdown\n{explanation}\n```" if code_markdown_block else "{explanation}"
+
         if not self.game:
             return template.format(explanation="No game was provided.")
         else:
-            if opponent:
-                explanation = self.game.explainer.explain(opponent.choice, 'the best')
-                return template.format(explanation=explanation)
+            if self.explaining_agent is None:
+                return template.format(explanation="No explaining agent was found.")
+            
+            if node_id is None:
+                node = self.explaining_agent.choice
             else:
-                return template.format(explanation="No opponent was found.")
+                node = self.explaining_agent.core.nodes[node_id]
+            if node is None:
+                return template.format(explanation="No node was found.")
+            
+            # All is good, we can explain
+            if self.explain_in_interface_mode:
+                activated = LogicalExpression.set_interface_mode(self.explain_in_interface_mode, node.__class__)
+            else:
+                activated = False
+
+            explanation = self.game.explainer.explain(node, adjective)
+
+            # If we are in interface mode, we need to replace the node references with hyperlinks
+            if activated:
+                LogicalExpression.set_interface_mode(False)
+
+                # Replace node references with Markdown hyperlinks
+                explanation = re.sub(
+                    r'::node::\((.*?)\)\[(.*?)\]',
+                    lambda m: f'[{m.group(2)}](#{m.group(1)})',
+                    explanation
+                )
+
+            return template.format(explanation=explanation)
+
+    def update_game_state_display(self, node_id, request: gr.Request):
+        """
+        Update the game state display.
+
+        :param node_id: The ID of the node to display.
+        :param request: The Gradio Request object.
+        """
+        if request:
+            query_params = dict(request.query_params)
+            if 'node_id' in query_params:
+                node_id = query_params['node_id']
+
+        node = self.explaining_agent.core.nodes[node_id]
+        return f"Showing: {node.id}\n{node.state}"
 
     #-----------------------------------------------------------------------------------------------------------
     """INTERFACE BUILDER METHODS"""
@@ -254,18 +303,38 @@ class ExplainerGradioInterface:
         The key is the name of the toggle, the value is a tuple of the label and the value.
         """
         with gr.Tab(tab_label):
+            if self.explain_in_interface_mode:
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        id_input = gr.Textbox(label="Node ID")
+                        ai_exp_adj_name = gr.Dropdown(choices=self.get_adjective_names(), label="Adjective")
+                        explain_button = gr.Button("Explain")
+                    
+                    with gr.Column(scale=2):
+                        game_state_display = gr.Markdown(value="Showing: None", label="Game State")
+
             gr.Markdown("# AI Move Explanation")
-            explanation_output = gr.Markdown(value=self.update_ai_explanation(None), label="AI move explanation")
+            explanation_output = gr.Markdown(value=self.update_ai_explanation(), label="AI move explanation")
             new_toggles = {}
             if toggles:
                 for name, toggle_params in toggles.items():
                     label, value = toggle_params
                     new_toggles[name] = gr.Checkbox(label=label, value=value)
 
-        return {
+        components = {
             "explanation_output": explanation_output,
             **new_toggles
         }
+        
+        if self.explain_in_interface_mode:
+            components.update({
+                "id_input": id_input,
+                "ai_exp_adj_name": ai_exp_adj_name,
+                "explain_button": explain_button,
+                "game_state_display": game_state_display,
+            })
+        
+        return components
 
     def build_add_adjective_tab(self, tab_label: str = "Add Adjective"):
         """
@@ -301,14 +370,14 @@ class ExplainerGradioInterface:
         """
         # TODO: The CompositeExplanation and ConditionalExplanations need to be handled differently
         with gr.Tab(tab_label):
-            exp_name = gr.Dropdown(choices=self.get_adjective_names(), label="Adjective Name", allow_custom_value=True)
+            exp_adj_name = gr.Dropdown(choices=self.get_adjective_names(), label="Adjective Name", allow_custom_value=True)
             exp_type = gr.Dropdown(list(explanation_classes.keys()), label="Explanation Type")
             exp_params = gr.Textbox(label="Parameters")
             exp_button = gr.Button("Add/Update Explanation")
             exp_output = gr.Textbox(label="Output")
 
         return {
-            "exp_name": exp_name,
+            "exp_adj_name": exp_adj_name,
             "exp_type": exp_type,
             "exp_params": exp_params,
             "exp_button": exp_button,
@@ -355,6 +424,14 @@ class ExplainerGradioInterface:
 
         :param components: The components to connect.
         """
+        # Explain
+        if "explain_button" in components:
+            components["explain_button"].click(
+                self.update_ai_explanation,
+                inputs=[components["id_input"], components["ai_exp_adj_name"]],
+                outputs=[components["explanation_output"]]
+            )            
+
         # Add Adjective
         if "adj_button" in components:
             components["adj_button"].click(
@@ -369,8 +446,8 @@ class ExplainerGradioInterface:
         if "exp_button" in components:
             components["exp_button"].click(
                 self.add_explanation, 
-                inputs=[components["exp_name"], components["exp_type"], components["exp_params"]], 
-                outputs=[components["exp_output"], components["exp_name"], components["exp_type"], components["exp_params"]]
+                inputs=[components["exp_adj_name"], components["exp_type"], components["exp_params"]], 
+                outputs=[components["exp_output"], components["exp_adj_name"], components["exp_type"], components["exp_params"]]
             )
 
         # Delete Adjective
@@ -390,8 +467,8 @@ class ExplainerGradioInterface:
             )
 
         # Update dropdowns
-        dropdown_components = [comp for comp in [components.get("exp_name"), components.get("del_adj_name"), 
-                                                 components.get("root_adjective")] if comp is not None]
+        dropdown_components = [comp for comp in [components.get("exp_adj_name"), components.get("del_adj_name"), 
+                                                 components.get("root_adjective"), components.get("ai_exp_adj_name")] if comp is not None]
         if dropdown_components:
             for button in [components.get("adj_button"), components.get("del_adj_button")]:
                 if button:
@@ -411,40 +488,7 @@ class ExplainerGradioInterface:
             components = {**ai_explanation_components, **add_adj_components, **add_exp_components, **delete_components, **visualize_components}
 
             # Connect components
-            # For ai explanation there is no components to connect, 
-            # that's supposed to be handled in the game interface
-
-            components["adj_button"].click(
-                self.add_adjective, 
-                inputs=[components["adj_name"], components["adj_type"], components["adj_definition"], 
-                        components["explanation_type"], components["explanation_params"]], 
-                outputs=[components["adj_output"], components["adj_name"], components["adj_type"], 
-                         components["adj_definition"], components["explanation_type"], components["explanation_params"]]
-            )
-
-            components["exp_button"].click(
-                self.add_explanation, 
-                inputs=[components["exp_name"], components["exp_type"], components["exp_params"]], 
-                outputs=[components["exp_output"], components["exp_name"], components["exp_type"], components["exp_params"]]
-            )
-
-            components["del_adj_button"].click(
-                self.delete_adjective, 
-                inputs=[components["del_adj_name"]], 
-                outputs=[components["del_output"]]
-            )
-
-            components["visualize_button"].click(
-                self.visualize_graph, 
-                inputs=[components["root_adjective"]], 
-                outputs=[components["graph_output"]]
-            )
-
-            # Update dropdowns
-            dropdown_components = [components["exp_name"], components["del_adj_name"], 
-                                   components["root_adjective"]]
-            components["adj_button"].click(self.update_dropdowns, outputs=dropdown_components)
-            components["del_adj_button"].click(self.update_dropdowns, outputs=dropdown_components)
+            self.connect_components(components)
 
         return demo
 
@@ -457,7 +501,7 @@ if __name__ == "__main__":
     from explainers.alphabeta_explainer import AlphaBetaExplainer
     explainer = AlphaBetaExplainer()
     framework = explainer.frameworks['highlevel']
-    builder = ExplainerGradioInterface(framework=framework, explanation_depth=3)
+    builder = ExplainerGradioInterface(framework=framework, explanation_depth=3, explaining_agent=None)
     builder.launch()
     #builder.visualize_graph("as next move", debug=True)
     #builder.visualize_graph("as next move")
