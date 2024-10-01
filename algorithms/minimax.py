@@ -17,6 +17,7 @@ class MiniMaxNode:
             self.parent_state = parent.node.state
         else:
             self.parent_state = None
+        self.children = []
 
         self.nodes_holder = nodes_holder
         self.nodes_holder[self.id] = self
@@ -30,9 +31,19 @@ class MiniMaxNode:
         self.maximizing_player_turn = None
         self.score_child = None
 
-        self.children = []
-
         self.max_search_depth_reached = False
+    
+    @property
+    def id(self):
+        return self.node.id
+    
+    @property
+    def game_state(self):
+        return self.node.state
+    
+    @property
+    def game_tree_node_string(self):
+        return str(self.node)
 
     def expand(self, with_constraints=None):
         # Expands the node by one depth.
@@ -51,10 +62,6 @@ class MiniMaxNode:
         return self.is_leaf and not self.max_search_depth_reached
     
     @property
-    def id(self):
-        return self.node.id
-    
-    @property
     def id_length(self):
         return len(self.node.id)
     
@@ -71,7 +78,7 @@ class MiniMaxNode:
         return self.score is not None
     
     def __str__(self) -> str:
-        return '\n' + f"{str(self.node.state)} {str(self.node)}, id={self.node.id}" + ''
+        return '\n' + f"{str(self.game_state)} {str(self.game_tree_node_string)}, id={self.id}" + ''
 
 
 class MiniMax:
@@ -83,12 +90,15 @@ class MiniMax:
         use_alpha_beta (bool): Whether to use alpha-beta pruning.
     """
     def __init__(self, scoring_function, *, max_depth=3, start_with_maximizing=True, use_alpha_beta=True):
+        # Mandatory attributes:
+        self.nodes = {} # Holds the nodes with as key their node.node.id
+        self.last_choice = None
+
+        # Other attributes:
         self.score = scoring_function
         self.max_depth=max_depth
-        self.last_choice = None
         self.search_root = None
-        self.search_root_final = None
-        self.nodes = {} # Holds the nodes with as key their node.node.id
+        self.search_root_final = None        
         self.start_with_maximizing = start_with_maximizing
 
         if use_alpha_beta:
