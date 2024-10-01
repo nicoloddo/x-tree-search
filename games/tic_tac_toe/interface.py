@@ -2,6 +2,8 @@ from typing import Dict
 import ipywidgets as widgets
 from IPython.display import display
 import asyncio
+import traceback
+import os
 
 from src.game.interface import GameInterface
 from src.game.agents import User
@@ -192,6 +194,8 @@ class TicTacToeGradioInterface(GameInterface):
     player interactions, game flow, and AI move explanations. It provides methods to create and update
     the game board, handle user inputs, display game status, and explain AI moves.
     """
+    assets_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+    empty_cell_name = "cell"
 
     def __init__(self, game):
         """
@@ -207,7 +211,8 @@ class TicTacToeGradioInterface(GameInterface):
         if not hasattr(self.game, 'get_current_player'):
             raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the Gradio interface.")
         
-        self.board_html = None
+        self.board_images = None
+        self.gallery_settings = None
         self.status = None
         self.output_text = None
         self.ai_explanation = None
@@ -222,34 +227,52 @@ class TicTacToeGradioInterface(GameInterface):
         Initializes the game state and launches the Gradio interface.
         """
         self.started = True
-        self.update()
-        with gr.Blocks() as iface:
+        
+        with gr.Blocks(css="""
+            .grid-container {
+                grid-column-gap: 0px; 
+                grid-row-gap: 0px; 
+                overflow: hidden;
+            }
+        """) as iface:
             with gr.Tab("Game"):
                 gr.Markdown("# Tic Tac Toe")
-                move_input = gr.Textbox(label="Enter move (row,col)")
-                board_output = gr.HTML(label="Board", value=self.board_html)
-                status_output = gr.Textbox(label="Status", value=self.status)
-                game_output = gr.Textbox(label="Output", value=self.output_text)
-                move_button = gr.Button("Make Move")
-            
-            # Build all tabs or select specific ones
+                with gr.Row(equal_height=True):
+                    with gr.Column():
+                        self.status = gr.Textbox(label="Status", value=self.status)
+                        self.output_text = gr.Textbox(label="Output", value=self.output_text)
+                
+                    with gr.Column():
+                        self.gallery_settings = {
+                            "columns": 3,
+                            "rows": 3,
+                            "height": "max-content",
+                            "allow_preview": False,
+                            "show_label": False,
+                            "elem_id": "board"
+                        }
+                        self.update_board()
+
+            # Build explainer tabs
             ai_explanation_components = self.explainer_interface.build_ai_explanation_tab(tab_label="Explain", toggles={"skip_score_toggle": ("Skip Score Statement", True)})
             visualize_components = self.explainer_interface.build_visualize_tab(tab_label="Visualize Explanation Framework")
             self.explainer_interface.connect_components({**visualize_components, **ai_explanation_components})
-            
-            move_button.click(
+
+            self.board_images.select(
                 self.process_move,
-                inputs=[move_input],
-                outputs=[board_output, status_output, game_output, ai_explanation_components["explanation_output"]]
+                inputs=[],
+                outputs=[self.board_images, self.status, self.output_text, ai_explanation_components["explanation_output"]]
             )
-            
+
             skip_score_toggle = ai_explanation_components["skip_score_toggle"]
             skip_score_toggle.change(
                 self.toggle_skip_score,
                 inputs=[skip_score_toggle],
                 outputs=[ai_explanation_components["explanation_output"]]
             )
-
+        
+        # Put the update outside of the Blocks to make sure the board is not displayed two times
+        self.update()
         iface.launch(share=share_gradio)
 
     def update(self):
@@ -271,18 +294,24 @@ class TicTacToeGradioInterface(GameInterface):
 
     def update_board(self):
         """
-        Update the HTML representation of the game board.
+        Update the board images based on the current game state.
         """
         board_state = self.game.model.action_spaces["board"]
-        html = "<table style='border-collapse: collapse; font-size: 24px;'>"
+        updated_images = []
         for i in range(3):
-            html += "<tr>"
             for j in range(3):
                 cell_value = board_state[i, j]
-                html += f"<td style='width: 50px; height: 50px; text-align: center; vertical-align: middle; border: 1px solid white;'>{cell_value}</td>"
-            html += "</tr>"
-        html += "</table>"
-        self.board_html = html
+                image_name = self.empty_cell_name
+                if cell_value == 'X':
+                    image_name += '_x'
+                elif cell_value == 'O':
+                    image_name += '_o'
+                updated_images.append(f"{self.assets_folder}/{image_name}.jpg")
+
+        self.board_images = gr.Gallery(
+            value=updated_images,
+            **self.gallery_settings
+        )
 
     def update_end_game_status(self):
         """
@@ -328,25 +357,43 @@ class TicTacToeGradioInterface(GameInterface):
         
         return self.ai_explanation
 
-    async def process_move(self, move_input: str):
+    async def process_move(self, evt: gr.SelectData):
         """
-        Process a move input from the user and handle AI moves.
+        Process a move made by the current player.
 
-        :param move_input: The move input in the format "row,col"
-        :type move_input: str
-        :return: Updated board HTML, status, output, and AI explanation
-        :rtype: tuple
+        :param evt: The event data containing the selected index
+        :type evt: gr.SelectData
+        :return: Updated board images, status, output text, and AI explanation
+        :rtype: Tuple[gr.Gallery, str, str, str]
         """
         try:
-            row, col = map(int, move_input.split(','))
+            index = evt.index
+            row, col = index // 3, index % 3
             current_player = self.game.get_current_player()
             sign = self.game.model.agents[current_player.id, 1]
             inputs = {'what': sign, 'where': (row, col), 'action_space': "board"}
             await current_player.play(self.game, inputs)
-
-        except ValueError:
-            self.output("Invalid input. Please enter row,col (e.g., 0,0)")
         except Exception as e:
             self.output(str(e))
+            print(f"Detailed error: {type(e).__name__}: {str(e)}")  # For debugging
+            print("Full traceback:")
+            traceback.print_exc()
 
-        return self.board_html, self.status, self.output_text, self.ai_explanation
+        self.update()
+        return self.board_images, self.status, self.output_text, self.ai_explanation
+
+
+if __name__ == "__main__":
+    from games.tic_tac_toe.tic_tac_toe import TicTacToe
+    from explainers.alphabeta_explainer import AlphaBetaExplainer
+    explainer = AlphaBetaExplainer()
+    game = TicTacToe(explainer=explainer)
+    user1 = User(agent_id=0)
+    user2 = User(agent_id=1)
+    game.set_players([user1, user2])
+
+    # Run the game start in a new event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(game.start_game(share_gradio=False))
+    loop.close()
