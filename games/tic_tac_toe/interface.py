@@ -211,7 +211,7 @@ class TicTacToeGradioInterface(GameInterface):
         if not hasattr(self.game, 'get_current_player'):
             raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the Gradio interface.")
         
-        self.board_images = None
+        self.board_gallery = None
         self.gallery_settings = None
         self.status = None
         self.output_text = None
@@ -251,17 +251,17 @@ class TicTacToeGradioInterface(GameInterface):
                             "show_label": False,
                             "elem_id": "board"
                         }
-                        self.update_board()
+                        self.board_gallery = self.get_updated_board_gallery()
 
             # Build explainer tabs
             ai_explanation_components = self.explainer_interface.build_ai_explanation_tab(tab_label="Explain", toggles={"skip_score_toggle": ("Skip Score Statement", True)})
             visualize_components = self.explainer_interface.build_visualize_tab(tab_label="Visualize Explanation Framework")
             self.explainer_interface.connect_components({**visualize_components, **ai_explanation_components})
 
-            self.board_images.select(
+            self.board_gallery.select(
                 self.process_move,
                 inputs=[],
-                outputs=[self.board_images, self.status, self.output_text, ai_explanation_components["explanation_output"]]
+                outputs=[self.board_gallery, self.status, self.output_text, ai_explanation_components["explanation_output"]]
             )
 
             skip_score_toggle = ai_explanation_components["skip_score_toggle"]
@@ -270,31 +270,45 @@ class TicTacToeGradioInterface(GameInterface):
                 inputs=[skip_score_toggle],
                 outputs=[ai_explanation_components["explanation_output"]]
             )
+
+            # Initial update
+            iface.load(
+                self.update,
+                inputs=[],
+                outputs=[self.board_gallery, self.status, self.output_text, ai_explanation_components["explanation_output"]]
+            )
         
+        iface.launch(share=share_gradio)
+
         # Put the update outside of the Blocks to make sure the board is not displayed two times
         self.update()
-        iface.launch(share=share_gradio)
 
     def update(self):
         """
         Update the game state in the interface.
 
         Refreshes the board display, status, and output based on the current game state.
-        This method can be called from outside classes to update the interface.
+        Consider that due to Gradio's event handling approach, this method will not do anything when
+        called directly, but it rather need to be attached to an event to be applied correctly.
+
+        :return: Updated board images, status, output text, and AI explanation
+        :rtype: Tuple[List[str], str, str, str]
         """
-        self.update_board()
+        board_gallery = self.get_updated_board_gallery()
+        status = self.get_updated_status()
+        output_text = self.output_text  # Assuming this doesn't need to be updated here
 
         opponent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
-        self.ai_explanation = self.explainer_interface.update_ai_explanation(opponent)
+        ai_explanation = self.explainer_interface.update_ai_explanation(opponent)
 
-        if self.game.ended:
-            self.update_end_game_status()
-        else:
-            self.update_next_player_status()
+        return board_gallery, status, output_text, ai_explanation
 
-    def update_board(self):
+    def get_updated_board_gallery(self):
         """
-        Update the board images based on the current game state.
+        Get the updated board images based on the current game state.
+
+        :return: List of image paths for the board
+        :rtype: List[str]
         """
         board_state = self.game.model.action_spaces["board"]
         updated_images = []
@@ -307,11 +321,29 @@ class TicTacToeGradioInterface(GameInterface):
                 elif cell_value == 'O':
                     image_name += '_o'
                 updated_images.append(f"{self.assets_folder}/{image_name}.jpg")
-
-        self.board_images = gr.Gallery(
+        
+        board_gallery = gr.Gallery(
             value=updated_images,
             **self.gallery_settings
         )
+        return board_gallery
+
+    def get_updated_status(self):
+        """
+        Get the updated status based on the current game state.
+
+        :return: Updated status text
+        :rtype: str
+        """
+        if self.game.ended:
+            winner = self.game.winner()
+            if winner is None:
+                return "Game Over! It's a draw!"
+            else:
+                return f"Game Over! Player {'X' if winner == 0 else 'O'} wins!"
+        else:
+            next_player = 'X' if self.game.get_current_player().id == 0 else 'O'
+            return f"Player {next_player}'s turn"
 
     def update_end_game_status(self):
         """
@@ -379,8 +411,7 @@ class TicTacToeGradioInterface(GameInterface):
             print("Full traceback:")
             traceback.print_exc()
 
-        self.update()
-        return self.board_images, self.status, self.output_text, self.ai_explanation
+        return self.board_gallery, self.status, self.output_text, self.ai_explanation
 
 
 if __name__ == "__main__":
