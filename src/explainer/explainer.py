@@ -101,7 +101,7 @@ class ArgumentativeExplainer:
         else:
             return adjective.evaluate(node)
 
-    def explain(self, node: Any, adjective_name: str, comparison_node: Any = None, *, 
+    def explain(self, node: Any, adjective_name: str, comparison_node: Any = None, print_context = True, *, 
                 with_framework: str = None, explanation_depth: int = None, print_depth: int = None) -> Any:
         """
         Generate a propositional logic explanation for why a node has a specific adjective.
@@ -112,6 +112,8 @@ class ArgumentativeExplainer:
         :type adjective_name: str
         :param comparison_node: The other node involved in a comparison (if applicable).
         :type comparison_node: Any, optional
+        :param print_context: Whether to print the context of the explanation.
+        :type print_context: bool, optional
         :param with_framework: Temporary framework to use for this explanation.
         :type with_framework: str, optional
         :param explanation_depth: Temporary explanation depth for this explanation.
@@ -125,7 +127,7 @@ class ArgumentativeExplainer:
         :raises CannotBeEvaluated: If the adjective cannot be evaluated on the given node.
         """
         if node is None:
-            raise ValueError("The node you are asking about is non-existent. This might happen because of async processing. Try to run again.")
+            raise ValueError("The node you are asking about is non-existent. If you are using a cmd interface, this might happen because of async processing. Try to run again.")
 
         # Handle temporary settings for this explanation
         prev_framework = self.settings.with_framework
@@ -144,6 +146,9 @@ class ArgumentativeExplainer:
                 self.framework.settings.print_depth = print_depth
 
             adjective = self.framework.get_adjective(adjective_name)
+            if adjective.skip_statement:
+                return "This adjective's explanation is not allowed with this framework because skip_statement is True."
+            
             adjective.init_explanations_book()
 
             if not comparison_node:
@@ -154,12 +159,12 @@ class ArgumentativeExplainer:
             if isinstance(explanation, Implies):
                 explanation._str_settings(print_first=True)
 
-            if hasattr(node, "parent_state"): # Add context to the explanation if there is
+            if print_context and hasattr(node, "parent_state"): # Add context to the explanation if there is
                 context = Proposition(subject=str(node.parent_state), predicate="the context", evaluation=True)
                 explanation.add_info("in this context")
                 explanation = And(context, explanation)
 
-            return str(explanation)
+            return explanation
 
         except CannotBeEvaluated as e:
             to_return = f"The adjective \"{adjective_name}\" cannot be evaluated on the {self.framework.refer_to_nodes_as} {node}."
