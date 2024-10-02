@@ -6,6 +6,7 @@ class LogicalExpression(ABC):
     """Abstract base class for all logical expressions."""
     print_mode = 'logic'
     hyperlink_mode = False
+    tree_node_cls = None
 
     def __init__(self):
         self.nullified = False # Disable the expression like this
@@ -33,6 +34,7 @@ class LogicalExpression(ABC):
                 return False # not activated
             else:
                 cls.hyperlink_mode = True
+                cls.tree_node_cls = tree_node_cls
                 return True # activated
         else:
             cls.hyperlink_mode = False
@@ -85,69 +87,74 @@ class Proposition(LogicalExpression):
         # Function to add possible other info
         self.additional_info = additional_info
 
-    def _to_str(self) -> str:        
-        def format_node(node):
-            return f"::node::({node.id})[{node.game_tree_node_string}]" if self.hyperlink_mode else str(node)
-
-        predicate_type = 'singular' if self.subject is None or not isinstance(self.subject, list) else 'plural'
-        
-        if self.subject is None:
-            subject = "::node::(None)[]" if self.hyperlink_mode else '?'
-        elif isinstance(self.subject, list):
-            subject = ', '.join(map(format_node, self.subject))
-        elif isinstance(self.subject, str):
-            subject = self.subject
-        else:
-            subject = format_node(self.subject)
-
-        if self.object is None:
-            object = None
-        elif isinstance(self.object, list):
-            object = ', '.join(map(format_node, self.object))
-        elif isinstance(self.object, str):
-            object = self.object
-        else:
-            object = format_node(self.object)
-
-        if object is not None:
-            expression = f"{self.predicate} {object}"
-        else:
-            expression = self.predicate
-
-        predicate = self.to_be[predicate_type] if isinstance(self.evaluation, bool) else self.to_have[predicate_type]
-
-        evaluation_is_bool = False
-        if self.evaluation is None:
-            evaluation = '?'
-        elif isinstance(self.evaluation, list):
-            evaluation = ', '.join(map(format_node, self.evaluation))
-        elif isinstance(self.evaluation, bool):
-            evaluation = self.evaluation
-            evaluation_is_bool = True
-        else:
-            evaluation = format_node(self.evaluation)
-
-        if evaluation_is_bool:
-            if evaluation:
-                string_end = f"{predicate} {expression}"
-            else:
-                if self.print_mode == 'logic':
-                    negation = f"¬({expression})"
-                elif self.print_mode == 'verbal':
-                    negation = f"not {expression}"
-
-                string_end = f"{predicate} {negation}"
-        else:
-            if self.print_mode == 'logic':
-                string_end = f"{predicate} {expression} = {evaluation}"
-            elif self.print_mode == 'verbal':
-                string_end = f"{predicate} {expression} {evaluation}"
-
-        to_string = f"{subject} {string_end}"
-
+    def _to_str(self) -> str:
+        self.build_str_components()
+        to_string = f"{self.subject_str} {self.verb_str} {self.predicate_str}{self.evaluation_str}"
         if hasattr(self, "additional_info"):
             to_string += f" ({self.additional_info})"
         return to_string
+
+    def build_str_components(self) -> None:        
+        def format_node(node):
+            return f"::node::({node.id})[{node.game_tree_node_string}]" if self.hyperlink_mode else str(node)
+
+        verb_number = 'singular' if self.subject is None or not isinstance(self.subject, list) else 'plural'
+        
+        if self.subject is None:
+            subject = "::node::(None)[]" if self.hyperlink_mode else '?'
+        elif self.tree_node_cls is not None and isinstance(self.subject, self.tree_node_cls):
+            subject = format_node(self.subject)
+        elif isinstance(self.subject, list):
+            subject = ', '.join(map(format_node, self.subject))
+        else:
+            subject = self.subject
+
+        if self.object is None:
+            object = None
+        elif self.tree_node_cls is not None and isinstance(self.object, self.tree_node_cls):
+            object = format_node(self.object)
+        elif isinstance(self.object, list):
+            object = ', '.join(map(format_node, self.object))
+        else:
+            object = self.object
+
+        if object is not None:
+            predicate = f"{self.predicate} {object}"
+        else:
+            predicate = self.predicate
+
+        verb_type = self.to_be if isinstance(self.evaluation, bool) else self.to_have
+        verb = verb_type[verb_number]
+
+        if self.evaluation is None:
+            evaluation = '?'
+        elif self.tree_node_cls is not None and isinstance(self.evaluation, self.tree_node_cls):
+            evaluation = format_node(self.evaluation)
+        elif isinstance(self.evaluation, list):
+            evaluation = ', '.join(map(format_node, self.evaluation))
+        else:
+            evaluation = self.evaluation
+
+        if isinstance(self.evaluation, bool):
+            evaluation = ""
+            if self.evaluation:
+                pass
+            else:
+                if self.print_mode == 'logic':
+                    negation = f"¬({predicate})"
+                elif self.print_mode == 'verbal':
+                    negation = f"not {predicate}"
+                predicate = negation
+        else:
+            if self.print_mode == 'logic':
+                evaluation = f"= {evaluation}"
+            elif self.print_mode == 'verbal':
+                evaluation = f" {evaluation}"
+
+        self.subject_str = subject
+        self.verb_str = verb
+        self.predicate_str = predicate
+        self.evaluation_str = evaluation
 
 class Implies(LogicalExpression):
     """Represents the implication between two logical expressions."""
