@@ -273,7 +273,8 @@ class ExplainerGradioInterface:
         else:
             if node_id is None:
                 node = self.explaining_agent.choice
-                node_id = node.id
+                if node is not None:
+                    node_id = node.id
             else:
                 node = self.explaining_agent.core.nodes[node_id]
             
