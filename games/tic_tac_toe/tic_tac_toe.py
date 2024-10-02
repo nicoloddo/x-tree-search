@@ -6,7 +6,7 @@ from .interface import TicTacToeJupyterInterface, TicTacToeGradioInterface
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
-    def __init__(self, *, players=None, explainer=None, interface_mode='gradio'):
+    def __init__(self, *, players=None, explainer=None, interface_mode='gradio', interface_hyperlink_mode=True):
         """
         Initialize the TicTacToe game.
 
@@ -20,9 +20,9 @@ class TicTacToe(Game):
         super().__init__(players=players)
         self.explainer = explainer
         self.interface_mode = interface_mode
-        self.select_interface(interface_mode)
+        self.select_interface(interface_mode, interface_hyperlink_mode)
 
-    def select_interface(self, interface_mode):
+    def select_interface(self, interface_mode, interface_hyperlink_mode):
         """
         Select the interface for the game.
 
@@ -30,9 +30,11 @@ class TicTacToe(Game):
         :type interface_mode: str
         """
         if interface_mode == 'jupyter':
+            if interface_hyperlink_mode:
+                print("Warning: Interface hyperlink mode is not supported for Jupyter interface.")
             self.interface = TicTacToeJupyterInterface(self)
         elif interface_mode == 'gradio':
-            self.interface = TicTacToeGradioInterface(self)
+            self.interface = TicTacToeGradioInterface(self, interface_hyperlink_mode)
         else:
             raise ValueError(f"Unsupported interface mode: {interface_mode}")
 
