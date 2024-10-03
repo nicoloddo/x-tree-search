@@ -105,8 +105,7 @@ class AlphaBetaExplainer:
                             RecursivePossession("as next move", any_stop_conditions = [If("as next move", "a win"), # final move
                                                                                         If("as next move", "a loss"), # final move
                                                                                         If("as next move", "a draw"), # final move
-                                                                                        If("as next move", "the most forward in the future I looked"), # max search depth
-                                                                                        If("as next move", "not worth exploring")])), #TODO: What about this condition?
+                                                                                        If("as next move", "the most forward in the future I looked")])), # max search depth
 
                         # The node has been pruned, we only have one children future consequence
                         explanation_if_true = ConditionalExplanation(
