@@ -11,6 +11,8 @@ from src.game.agents import User
 import gradio as gr
 from src.explainer.interface.gradio_interface import ExplainerGradioInterface
 
+from PIL import Image, ImageDraw, ImageFont
+
 class TicTacToeJupyterInterface(GameInterface):
     """
     Interface for the Tic Tac Toe game in Jupyter notebooks.
@@ -212,6 +214,7 @@ class TicTacToeGradioInterface(GameInterface):
             raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the Gradio interface.")
         
         self.board_gallery = None
+        self.cell_images = self.create_cell_images()
         self.showing_state = None
         self.gallery_settings = None
         self.status = None
@@ -400,25 +403,59 @@ class TicTacToeGradioInterface(GameInterface):
         for i in range(3):
             for j in range(3):
                 cell_value = board_state[i, j]
-
-                image_name = self.empty_cell_name
-                if cell_value == 'X':
-                    image_name += '_x'
-                elif cell_value == 'O':
-                    image_name += '_o'
-
-                if parent_state is not None:
-                    parent_cell_value = parent_state[i, j]
-                    if parent_cell_value != cell_value:
-                        image_name += '_changed'
-
-                updated_images.append(f"{self.assets_folder}/{image_name}.jpg")
+                is_changed = parent_state is not None and parent_state[i, j] != cell_value
+                cell_image = self.get_cell_image(cell_value, is_changed, i, j)
+                updated_images.append(cell_image)
         
         board_gallery = gr.Gallery(
             value=updated_images,
             **self.gallery_settings
         )
         return board_gallery, showing_state, node_id
+    
+    def get_cell_image(self, cell_value, is_changed, i, j):
+        """
+        Get the appropriate cell image and add the index.
+        """
+        if cell_value == '' or cell_value == ' ':
+            img = self.cell_images['empty'].copy()
+        else:
+            img_key = f"{cell_value}_red" if is_changed else cell_value
+            img = self.cell_images[img_key].copy()
+        
+        # Add index to the image
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.load_default().font_variant(size=15)
+        draw.text((5, 3), f"{i},{j}", font=font, fill='blue')
+        
+        return img
+    
+    def create_cell_images(self):
+        """
+        Create and store all possible cell images.
+        """
+        cell_size = 100
+        images = {}
+        for cell_type in ['empty', 'X', 'O', 'X_red', 'O_red']:
+            img = Image.new('RGB', (cell_size, cell_size), color='white')
+            draw = ImageDraw.Draw(img)
+            
+            # Draw border
+            draw.rectangle([0, 0, cell_size-1, cell_size-1], outline='black', width=2)
+            
+            if cell_type != 'empty':
+                font = ImageFont.load_default().font_variant(size=80)
+                text = cell_type[0]  # 'X' or 'O'
+                text_color = 'red' if cell_type.endswith('_red') else 'black'
+                
+                left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+                text_width = right - left
+                text_height = bottom - top
+                position = ((cell_size - text_width) / 2, (cell_size - text_height*1.7) / 2)
+                draw.text(position, text, font=font, fill=text_color)
+            
+            images[cell_type] = img
+        return images
 
     def get_updated_status(self):
         """
