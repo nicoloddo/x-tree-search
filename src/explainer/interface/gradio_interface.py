@@ -216,7 +216,7 @@ class ExplainerGradioInterface:
             :param adjective: The adjective to use in the explanation.
             """
             explanation = ""
-            explaining_question = ""
+            explaining_question = "Why ...?"
             
             if adjective is None:
                 explanation = "No adjective was provided."
