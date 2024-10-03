@@ -16,7 +16,9 @@ nest_asyncio.apply()
 class Game:
     GameModel.verbose = False
 
-    def __init__(self, *, players=None):
+    def __init__(self, child_init_params=None, *, players=None):
+        self.child_init_params = child_init_params
+
         self.gm = self._game_model_definition()
         self.players = {} # Dictionary that holds the players as 'id': player
         self._set_players(players)
@@ -25,6 +27,24 @@ class Game:
         self.clear_console = self.clear_cmd  # To keep track of the previous state
         self._previous_state = None
 
+    def restart(self):
+        """
+        Restart the game by creating a new instance with the same initialization parameters.
+        """
+        # Create a new instance of the child class: __class__ is the class of the current instance
+        if self.child_init_params:
+            new_game = self.__class__(**self.child_init_params)
+        else:
+            new_game = self.__class__(players=self.players)
+        
+        # Transfer any necessary attributes from the old game to the new game
+        new_game.interface = self.interface
+        
+        # Replace the current instance with the new one
+        self.__dict__.update(new_game.__dict__)
+        
+        return self
+    
     @property
     def started(self):
         return self.gm.started

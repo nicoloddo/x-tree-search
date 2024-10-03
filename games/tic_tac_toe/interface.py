@@ -245,13 +245,16 @@ class TicTacToeGradioInterface(GameInterface):
                         with gr.Column(scale=1):
                             gr.Markdown("# Tic Tac Toe")
                             with gr.Row():
-                                with gr.Column(scale=1):
-                                    self.status = gr.Textbox(label="Status", value=self.status)
-                                with gr.Column(scale=1):
-                                    self.showing_state = gr.Textbox(label="Showing", value=self.showing_state)
-                                show_current_button = gr.Button("Show Current State")
+                                self.status = gr.Textbox(label="Status", value=self.status, scale=1)
+                                self.showing_state = gr.Textbox(label="Showing", value=self.showing_state, scale=1)
+                            with gr.Row():
+                                restart_button = gr.Button("Restart Game", scale=1)
+                                show_current_button = gr.Button("Show Current State", scale=1)
 
-                                self.gallery_settings = {
+                            info = """Click on a move in the explanation to see it on the board.\nClick on the Show Current State button to go back to the game."""
+                            gr.HTML(ExplainerGradioInterface.cool_html_text_container.format(info))
+
+                            self.gallery_settings = {
                                 "columns": 3,
                                 "rows": 3,
                                 "height": "max-content",
@@ -267,13 +270,14 @@ class TicTacToeGradioInterface(GameInterface):
                     
                         with gr.Column(scale=2):
                             gr.Markdown("# AI Move Explanation")
-                            self.ai_explanation_components = self.explainer_interface.build_ai_explanation_components(toggles={"skip_score_toggle": ("Skip Score Statement", True)})
+                            self.ai_explanation_components = self.explainer_interface.interface_builder.build_ai_explanation_components(
+                                toggles={"skip_score_toggle": ("Skip Score Statement (the explainer is designed around skipping the score statement, problems may arise when this is disabled)", True)})
 
                 with gr.TabItem("Visualize", self.explainer_interface.tab_ids["visualize"]):
-                    visualize_components = self.explainer_interface.build_visualize_components()
+                    visualize_components = self.explainer_interface.interface_builder.build_visualize_components()
 
             # Handle components connections   
-            self.explainer_interface.connect_components({**self.ai_explanation_components, **visualize_components})
+            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **visualize_components})
 
             all_available_outputs = [self.board_gallery, self.showing_state, 
                                      self.status, self.output_text, 
@@ -293,6 +297,12 @@ class TicTacToeGradioInterface(GameInterface):
                 outputs=[self.board_gallery, self.showing_state, self.ai_explanation_components["id_input"]]
             )
 
+            restart_button.click(
+                self.restart_game,
+                inputs=[],
+                outputs=all_available_outputs
+            )
+
             skip_score_toggle = self.ai_explanation_components["skip_score_toggle"]
             skip_score_toggle.change(
                 self.toggle_skip_score,
@@ -308,6 +318,13 @@ class TicTacToeGradioInterface(GameInterface):
             )
         
         demo.launch(share=share_gradio)
+
+    def restart_game(self):
+        """
+        Restart the game.
+        """
+        self.game.restart()
+        return self.update()
 
     def on_load(self, request: gr.Request):
         """
@@ -345,7 +362,7 @@ class TicTacToeGradioInterface(GameInterface):
         explaining_question = self.ai_explanation_components["explaining_question"].value
 
         adjective = explain_adjective or "the best"
-        ai_explanation, explaining_question = self.explainer_interface.update_ai_explanation(explain_node_id, adjective)
+        ai_explanation, explaining_question = self.explainer_interface.ai_explainer.update_ai_explanation(explain_node_id, adjective)
 
         return board_gallery, showing_state, status, output_text, ai_explanation, show_node_id, explaining_question
 

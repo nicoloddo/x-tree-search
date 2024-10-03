@@ -1,4 +1,5 @@
 import numpy as np
+import inspect
 
 from src.game.game import Game, GameModel
 from src.game.agents import User
@@ -17,7 +18,13 @@ class TicTacToe(Game):
         :param players: The players to use for the game.
         :type players: list
         """
-        super().__init__(players=players)
+        _child_init_params = {
+            'players': players,
+            'explainer': explainer,
+            'interface_mode': interface_mode,
+            'interface_hyperlink_mode': interface_hyperlink_mode
+        }
+        super().__init__(_child_init_params, players=players)
         self.explainer = explainer
         self.interface_mode = interface_mode
         self.select_interface(interface_mode, interface_hyperlink_mode)
