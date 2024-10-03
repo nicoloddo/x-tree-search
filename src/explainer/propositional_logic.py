@@ -105,7 +105,7 @@ class Proposition(LogicalExpression):
         elif self.tree_node_cls is not None and isinstance(self.subject, self.tree_node_cls):
             subject = format_node(self.subject)
         elif isinstance(self.subject, list):
-            subject = ', '.join(map(format_node, self.subject))
+            subject = ', '.join(format_node(item) if isinstance(item, self.tree_node_cls) else str(item) for item in self.subject)
         else:
             subject = self.subject
 
@@ -114,7 +114,7 @@ class Proposition(LogicalExpression):
         elif self.tree_node_cls is not None and isinstance(self.object, self.tree_node_cls):
             object = format_node(self.object)
         elif isinstance(self.object, list):
-            object = ', '.join(map(format_node, self.object))
+            object = ', '.join(format_node(item) if isinstance(item, self.tree_node_cls) else str(item) for item in self.object)
         else:
             object = self.object
 
@@ -131,7 +131,7 @@ class Proposition(LogicalExpression):
         elif self.tree_node_cls is not None and isinstance(self.evaluation, self.tree_node_cls):
             evaluation = format_node(self.evaluation)
         elif isinstance(self.evaluation, list):
-            evaluation = ', '.join(map(format_node, self.evaluation))
+            evaluation = ', '.join(format_node(item) if isinstance(item, self.tree_node_cls) else str(item) for item in self.evaluation)
         else:
             evaluation = self.evaluation
 
