@@ -252,10 +252,7 @@ class TicTacToeGradioInterface(GameInterface):
                                 self.showing_state = gr.Textbox(label="Showing", value=self.showing_state, scale=1)
                             with gr.Row():
                                 restart_button = gr.Button("Restart Game", scale=1)
-                                show_current_button = gr.Button("Show Current State", scale=1)
-
-                            info = """Click on a move in the explanation to see it on the board.\nClick on the Show Current State button to go back to the game."""
-                            gr.HTML(ExplainerGradioInterface.cool_html_text_container.format(info))
+                                show_current_button = gr.Button("Return to Current State", scale=1)
 
                             self.gallery_settings = {
                                 "columns": 3,
@@ -269,7 +266,7 @@ class TicTacToeGradioInterface(GameInterface):
                                 value=[],
                                 **self.gallery_settings
                             )
-                            self.output_text = gr.Textbox(label="Output", value=self.output_text)
+                            self.output_text = gr.HTML("")
                     
                         with gr.Column(scale=2):
                             gr.Markdown("# AI Move Explanation")
@@ -379,25 +376,32 @@ class TicTacToeGradioInterface(GameInterface):
         :rtype: Tuple[gr.Gallery, str, str]
         """
         # Determine the node to display and its corresponding board state
-        if node_id is None:
+        if node_id:
+            # If a specific node is requested, fetch it from the explaining agent's core
+            if node_id not in self.explaining_agent.core.nodes:
+                # If it is not in the core tree, it is not a valid node
+                node_id = None
+            else:
+                # Node is valid, we can retrieve it
+                node = self.explaining_agent.core.nodes[node_id]
+                parent_state = node.parent_state
+                current_id = self.explaining_agent.choice.id
+
+                # Determine if the requested node is the current state or a different node
+                if current_id == node_id:
+                    board_state = self.game.model.action_spaces["board"]
+                    showing_state = f"Current State ({node_id})"
+                else:
+                    board_state = node.game_state
+                    showing_state = f"Node {node_id}"
+
+        if node_id is None: # no node requested or valid
             # If no specific node is requested, use the current choice of the explaining agent
             node_id = self.explaining_agent.choice.id if self.explaining_agent.choice else ""
+            parent_state = self.explaining_agent.choice.parent_state if self.explaining_agent.choice else None
             board_state = self.game.model.action_spaces["board"]
             showing_state = f"Current State ({node_id})" if node_id else "Current State"
-            parent_state = None
-        else:
-            # If a specific node is requested, fetch it from the explaining agent's core
-            node = self.explaining_agent.core.nodes[node_id]
-            parent_state = node.parent_state
-            current_id = self.explaining_agent.choice.id
 
-            # Determine if the requested node is the current state or a different node
-            if current_id == node_id:
-                board_state = self.game.model.action_spaces["board"]
-                showing_state = f"Current State ({node_id})"
-            else:
-                board_state = node.game_state
-                showing_state = f"Node {node_id}"
 
         updated_images = []
         for i in range(3):
@@ -481,7 +485,7 @@ class TicTacToeGradioInterface(GameInterface):
         :param text: The text to display in the output area
         :type text: str
         """
-        self.output_text = text
+        self.output_text = ExplainerGradioInterface.cool_html_text_container.format(text)
 
     def toggle_skip_score(self, skip_score: bool):
         """

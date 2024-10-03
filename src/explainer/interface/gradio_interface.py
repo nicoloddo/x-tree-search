@@ -41,7 +41,6 @@ class ExplainerGradioInterface:
         font-size: var(--text-sm); 
         background: var(--code-background-fill); 
         overflow: auto;
-        margin-top: var(--spacing-sm);
         border-radius: var(--radius-sm);
         padding: var(--spacing-lg) var(--spacing-xl);">{}</pre>"""
 
@@ -248,7 +247,7 @@ class ExplainerGradioInterface:
                         explanation.consequent.build_str_components()
                         verb_str = explanation.consequent.verb_str
                         predicate_str = explanation.consequent.predicate_str
-                        explaining_question = f"Why {verb_str} {node_id}{' that' if verb_str != 'is' else ''} {predicate_str}?"
+                        explaining_question = f"Why {verb_str} {node.game_tree_node_string} [id: {node.id}]{' that' if verb_str != 'is' else ''} {predicate_str}?"
                     else:
                         explaining_question = f""
                         
@@ -261,7 +260,6 @@ class ExplainerGradioInterface:
                         # Replace node references with HTML hyperlinks
                         explanation = re.sub(
                             r'::node::\((.*?)\)\[(.*?)\]',
-                            # TODO: Support light mode
                             lambda m: f'<a href="?node_id={node_id}&adjective={adjective}&show_node_id={m.group(1)}" style=" text-decoration: none;"><b style="color: var(--color-accent);">{m.group(2)}</b></a>',
                             explanation
                         )
@@ -270,7 +268,10 @@ class ExplainerGradioInterface:
                 full_return = ExplainerGradioInterface.cool_html_text_container.format(explanation)
             else:
                 full_return = f"```markdown\n{explanation}\n```"
+
             explaining_question = ExplainerGradioInterface.cool_html_text_container.format(explaining_question)
+            if self.explain_in_hyperlink_mode:
+                explaining_question += ExplainerGradioInterface.cool_html_text_container.format("P.S. You can click on a move in the explanation to see it in the board.")
 
             return full_return, explaining_question
         
