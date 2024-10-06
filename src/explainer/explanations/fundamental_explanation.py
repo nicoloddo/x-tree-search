@@ -3,7 +3,7 @@ from src.explainer.common.utils import AdjectiveType
 
 from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And
 
-from typing import Any
+from typing import Any, List
 
 """ Straightforward Explanations """
 class Possession(Explanation):
@@ -210,12 +210,12 @@ class GroupComparison(Explanation):
     """Represents an explanation given by referring to 
     a comparison between a node and all nodes of a group."""
     
-    def __init__(self, comparison_adjective_name: str, group_pointer_adjective_name: str, positive_implication: bool = True):
+    def __init__(self, comparison_adjective_names: List[str], group_pointer_adjective_name: str, positive_implication: bool = True):
         """
         Initialize the Group Comparison explanation.
         
-        :param comparison_adjective_name: The name of the comparison adjective.
-        :type comparison_adjective_name: str
+        :param comparison_adjective_names: The names of the comparison adjectives.
+        :type comparison_adjective_names: List[str]
         :param group_pointer_adjective_name: a callable that given a node returns an array of objects to compare
         :type group_pointer_adjective_name: str
         :param positive_implication: If the implication in the framework is seeking for a positive implication of
@@ -224,7 +224,7 @@ class GroupComparison(Explanation):
         :type positive_implication: bool
         """
         super().__init__()
-        self.comparison_adjective_name = comparison_adjective_name
+        self.comparison_adjective_names = comparison_adjective_names
         self.group_pointer_adjective_name = group_pointer_adjective_name
         self.positive_implication = positive_implication
 
@@ -239,16 +239,35 @@ class GroupComparison(Explanation):
         :rtype: Proposition
         """
 
-        comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
+        comparison_adjectives = [self.framework.get_adjective(comparison_adjective_name) for comparison_adjective_name in self.comparison_adjective_names]
 
         group_pointer_adjective = self.framework.get_adjective(self.group_pointer_adjective_name)
         group = self.forward_evaluation(group_pointer_adjective, node)
 
         group_explanation = self.forward_explanation(group_pointer_adjective, node)
-        comparison_explanations = self.forward_explanation(comparison_adjective, node, group)
+
+        comparison_groups = {}
+        for comparison_adjective in comparison_adjectives:
+            comparison_groups[comparison_adjective] = comparison_adjective.get_true_group(node, group)
         
-        comparison_explanations.consequent.object = "them" # Remove redundant information
-        explanation = And(group_explanation, comparison_explanations)
+        comparison_explanations_per_group = []
+        first_group_added = False
+        for comparison_adjective, comparison_group in comparison_groups.items():
+            if len(comparison_group) == 0:
+                continue
+            group_comparison_explanation = self.forward_explanation(comparison_adjective, node, comparison_group)
+
+            # Remove redundant information
+            if first_group_added:
+                if isinstance(group_comparison_explanation.antecedent, And):
+                    group_comparison_explanation.antecedent.exprs[0].nullify()
+            if len(comparison_group) == len(group): # The same comparison is true for the whole group
+                group_comparison_explanation.consequent.object = "it" if len(comparison_group) == 1 else "them"
+                
+            comparison_explanations_per_group.append(group_comparison_explanation)
+            first_group_added = True
+            
+        explanation = And(group_explanation, *comparison_explanations_per_group)
         return explanation
 
 class RecursivePossession(Explanation):

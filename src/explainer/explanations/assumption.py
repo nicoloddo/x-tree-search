@@ -2,7 +2,7 @@ from .base import Explanation
 
 from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And
 
-from typing import Any
+from typing import Any, List
 
 class Assumption(Explanation):
     """Represents an explanation based on an assumption."""
@@ -150,17 +150,17 @@ class RankAssumption(Assumption):
         "By definition a node is 'highest' if it's 'altitude' is higher than all 'mountain' group."
     """
     
-    def __init__(self, rank_type: str, name: str, comparison_adjective_name: str, group_pointer_adjective_name: str):
+    def __init__(self, rank_type: str, name: str, comparison_adjective_names: List[str], group_pointer_adjective_name: str):
         """
         Args:
             rank_type (str): The type of ranking (supported: max, min).
             name (str): The name of the rank.
-            comparison_adjective_name (str): The name of the comparison adjective.
+            comparison_adjective_names (List[str]): The names of the comparison adjectives.
             group_pointer_adjective_name (str): The name of the group pointer adjective among which we are ranking the node.
         """
         self.rank_type = rank_type
         self.name = name
-        self.comparison_adjective_name = comparison_adjective_name
+        self.comparison_adjective_names = comparison_adjective_names
         self.group_pointer_adjective_name = group_pointer_adjective_name
         super().__init__(implicit=True)
     
@@ -172,8 +172,8 @@ class RankAssumption(Assumption):
             str: The constructed description.
         """
         if self.rank_type == 'max':
-            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's \"{self.comparison_adjective_name}\" than all \"{self.group_pointer_adjective_name}\""
+            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's \"{' or '.join(self.comparison_adjective_names)}\" than all \"{self.group_pointer_adjective_name}\""
         elif self.rank_type == 'min':
-            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's not \"{self.comparison_adjective_name}\" than all \"{self.group_pointer_adjective_name}\""
+            return f"By definition a {self.refer_to_nodes_as} is \"{self.name}\" if it's not \"{' or '.join(self.comparison_adjective_names)}\" than all \"{self.group_pointer_adjective_name}\""
         else:
             raise ValueError("RankAssumption of unknown type.")

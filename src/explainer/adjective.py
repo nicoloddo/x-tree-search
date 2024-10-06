@@ -492,6 +492,26 @@ class ComparisonAdjective(Adjective):
         other_values = [property_pointer_adjective.evaluate(node2) for node2 in other_nodes]
                         
         return all([self.comparison_operator(value1, value2) for value2 in other_values])
+    
+    def get_true_group(self, node1: Any, other_nodes: Any) -> Any:
+        """
+        Get the group of nodes that satisfy the comparison adjective.
+
+        :param node1: The first node to compare.
+        :type node1: Any
+        :param other_nodes: The other nodes to compare to the first one.
+        :type other_nodes: Any
+        :return: A list of nodes that satisfy the comparison adjective.
+        :rtype: Any
+        """
+        property_pointer_adjective = self.framework.get_adjective(self.property_pointer_adjective_name)
+        value1 = property_pointer_adjective.evaluate(node1)
+
+        if type(other_nodes) is not list:
+            other_nodes = [other_nodes]
+        other_values = [property_pointer_adjective.evaluate(node2) for node2 in other_nodes]
+
+        return [other_node for other_node in other_nodes if self.comparison_operator(value1, other_values[other_nodes.index(other_node)])]
 
 class _RankAdjective(BooleanAdjective):
     """
@@ -500,14 +520,15 @@ class _RankAdjective(BooleanAdjective):
     and the evaluator function. This is parent class of MaxRankAdjective and MinRankAdjective.
     """
     
-    def __init__(self, name: str, comparison_adjective_name: str, group_pointer_adjective_name: str, explanation: Explanation, tactics: List['Tactic'], evaluator: Callable[[Any, ComparisonAdjective, PointerAdjective], bool]):
+    def __init__(self, name: str, comparison_adjective_names: List[str], group_pointer_adjective_name: str, explanation: Explanation, tactics: List['Tactic'], evaluator: Callable[[Any, ComparisonAdjective, PointerAdjective], bool]):
         """
         Initialize the _RankAdjective.
+        Evaluates to true if any of the comparison adjectives is true for the node when compared to all the other nodes in the group.
         
         :param name: The name of the adjective.
         :type name: str
-        :param comparison_adjective_name: The name of the comparison adjective.
-        :type comparison_adjective_name: str
+        :param comparison_adjective_names: The names of the comparison adjectives.
+        :type comparison_adjective_names: List[str]
         :param group_pointer_adjective_name: The name of the group pointer adjective.
         :type group_pointer_adjective_name: str
         :param explanation: An explanation for the adjective.
@@ -519,7 +540,7 @@ class _RankAdjective(BooleanAdjective):
         """
         explanation = explanation or PossessionAssumption(name)
         super().__init__(name, explanation=explanation, tactics=tactics)
-        self.comparison_adjective_name = comparison_adjective_name
+        self.comparison_adjective_names = comparison_adjective_names
         self.group_pointer_adjective_name = group_pointer_adjective_name
         self.evaluator = evaluator
 
@@ -532,43 +553,45 @@ class _RankAdjective(BooleanAdjective):
         :return: The boolean result of the rank evaluation.
         :rtype: bool
         """
-        comparison_adjective = self.framework.get_adjective(self.comparison_adjective_name)
+        comparison_adjectives = [self.framework.get_adjective(comparison_adjective_name) for comparison_adjective_name in self.comparison_adjective_names]
 
         group = self.framework.get_adjective(self.group_pointer_adjective_name).evaluate(node)
 
-        return self.evaluator(node, comparison_adjective, group)
+        return self.evaluator(node, comparison_adjectives, group)
 
 class MaxRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective, tactics: List['Tactic'] | None = None):
+    def __init__(self, name: str, comparison_adjective_names: List[str], nodes_group_pointer_adjective_name: str, tactics: List['Tactic'] | None = None):
         """
         Initialize the MaxRankAdjective.
+        Evaluates to true if any of the comparison adjectives is true for the node when compared to all the other nodes in the group.
 
         :param name: The name of the adjective.
         :type name: str
-        :param comparison_adjective_name: The name of the comparison adjective.
-        :type comparison_adjective_name: ComparisonAdjective
+        :param comparison_adjective_names: The names of the comparison adjectives.
+        :type comparison_adjective_names: List[str]
         :param nodes_group_pointer_adjective_name: The name of the nodes group pointer adjective.
-        :type nodes_group_pointer_adjective_name: PointerAdjective
+        :type nodes_group_pointer_adjective_name: str
         :param tactics: Tactics for the adjective.
         :type tactics: List['Tactic'] | None, optional
         """
         explanation = CompositeExplanation(
-            RankAssumption('max', name, comparison_adjective_name, nodes_group_pointer_adjective_name),
-            GroupComparison(comparison_adjective_name, nodes_group_pointer_adjective_name))
-        evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(node, other_node) for other_node in group)
-        super().__init__(name, comparison_adjective_name, nodes_group_pointer_adjective_name, explanation, tactics, evaluator)
+            RankAssumption('max', name, comparison_adjective_names, nodes_group_pointer_adjective_name),
+            GroupComparison(comparison_adjective_names, nodes_group_pointer_adjective_name))
+        evaluator = lambda node, comparison_adjectives, group: all(any(comparison.evaluate(node, other_node) for comparison in comparison_adjectives) for other_node in group)
+        super().__init__(name, comparison_adjective_names, nodes_group_pointer_adjective_name, explanation, tactics, evaluator)
 
 class MinRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_name: ComparisonAdjective, nodes_group_pointer_adjective_name: PointerAdjective, tactics: List['Tactic'] | None = None):
+    def __init__(self, name: str, comparison_adjective_names: List[str], nodes_group_pointer_adjective_name: str, tactics: List['Tactic'] | None = None):
         """
         Initialize the MinRankAdjective.
+        Evaluates to true if any of the comparison adjectives is true for the node when compared to all the other nodes in the group.
 
         :param name: The name of the adjective.
         :type name: str
-        :param comparison_adjective_name: The name of the comparison adjective used for ranking.
-        :type comparison_adjective_name: ComparisonAdjective
+        :param comparison_adjective_names: The names of the comparison adjectives used for ranking.
+        :type comparison_adjective_names: List[str]
         :param nodes_group_pointer_adjective_name: The name of the pointer adjective that references the group of nodes to compare.
-        :type nodes_group_pointer_adjective_name: PointerAdjective
+        :type nodes_group_pointer_adjective_name: str
         :param tactics: List of tactics to be applied to the adjective, optional.
         :type tactics: List['Tactic'] | None
 
@@ -576,7 +599,7 @@ class MinRankAdjective(_RankAdjective):
         within a group based on a given comparison adjective.
         """
         explanation = CompositeExplanation(
-            RankAssumption('min', name, comparison_adjective_name, nodes_group_pointer_adjective_name),
-            GroupComparison(comparison_adjective_name, nodes_group_pointer_adjective_name, positive_implication=False))
-        evaluator = lambda node, comparison_adjective, group: all(comparison_adjective.evaluate(other_node, node) for other_node in group)
-        super().__init__(name, comparison_adjective_name, nodes_group_pointer_adjective_name, explanation, tactics, evaluator)
+            RankAssumption('min', name, comparison_adjective_names, nodes_group_pointer_adjective_name),
+            GroupComparison(comparison_adjective_names, nodes_group_pointer_adjective_name, positive_implication=False))
+        evaluator = lambda node, comparison_adjectives, group: all(any(comparison.evaluate(other_node, node) for comparison in comparison_adjectives) for other_node in group)
+        super().__init__(name, comparison_adjective_names, nodes_group_pointer_adjective_name, explanation, tactics, evaluator)
