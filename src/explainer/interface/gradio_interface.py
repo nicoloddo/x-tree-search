@@ -121,16 +121,17 @@ class ExplainerGradioInterface:
             The key is the name of the toggle, the value is a tuple of the label and the value.
             """
             components = {}
+            
+            with gr.Row():
+                with gr.Column(scale=1):
+                    components["id_input"] = gr.Textbox(label="Ask further about", visible=self.explain_in_hyperlink_mode)
+                with gr.Column(scale=1):
+                    components["explain_adj_name"] = gr.Dropdown(choices=self.get_adjective_names(), label="Why is it ...? Why it has that ...?", visible=self.explain_in_hyperlink_mode)
+            components["explain_button"] = gr.Button("Explain", visible=self.explain_in_hyperlink_mode)
+            components["explaining_question"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format("Why ...?"), label="Question", visible=self.explain_in_hyperlink_mode)
+            
             if self.explain_in_hyperlink_mode:
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        components["id_input"] = gr.Textbox(label="Ask further about")
-                    with gr.Column(scale=1):
-                        components["explain_adj_name"] = gr.Dropdown(choices=self.get_adjective_names(), label="Why is it ...? Why it has that ...?")
-                components["explain_button"] = gr.Button("Explain")
-                components["explaining_question"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format("Why ...?"), label="Question")
                 components["explanation_output"] = gr.HTML(value=self.update_ai_explanation()[0], label="AI move explanation")
-
             else:
                 components["explanation_output"] = gr.Markdown(value="", label="AI move explanation")
 
