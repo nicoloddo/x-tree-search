@@ -190,8 +190,8 @@ class AlphaBetaExplainer:
             ComparisonAdjective("better or equal than", "score", ">="),
             ComparisonAdjective("worse or equal than", "score", "<="),
 
-            ComparisonAdjective("already better than the alternative coming from", "score", ">="),
-            ComparisonAdjective("already worse than the alternative coming from", "score", "<="),
+            ComparisonAdjective("already better or equal than the alternative coming from", "score", ">="),
+            ComparisonAdjective("already worse or equal than the alternative coming from", "score", "<="),
         
             NodesGroupPointerAdjective("possible alternative moves",
                 definition = "node.parent.children",
