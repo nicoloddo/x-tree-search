@@ -1,3 +1,16 @@
+---
+title: X Tree Search
+emoji: 👀
+colorFrom: green
+colorTo: green
+sdk: gradio
+sdk_version: 4.44.1
+app_file: app.py
+pinned: false
+license: cc-by-4.0
+short_description: Tree-Search algorithms interactive explainer
+---
+
 # x-tree-search Library
 
 > **Note:** This library is currently under development. Documentation and features may be incomplete or subject to change.
