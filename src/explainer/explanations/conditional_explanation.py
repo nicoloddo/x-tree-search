@@ -1,72 +1,87 @@
 from .base import Explanation
-from .fundamental_explanation import Possession
+from .fundamental_explanation import Possession, Comparison
 
 from src.explainer.propositional_logic import Postulate, LogicalExpression, And
 
 from typing import Any
 
-class If(Possession):
+class If(Explanation):
     """
     Represents a condition based on an adjective's value.
-    If provided with a pointer_adjective_name, the condition is based on the
-    value stored at the pointer. If not, the condition is based on the self node.
-
-    When not provided with a value, 
-    the condition is simply checked as a static adjective (boolean)
+    Can be used for both possession and comparison conditions.
     """
 
-    def __init__(self, *args, value: Any = True, explain_further=True, forward_possessions_explanations=True):
+    def __init__(self, condition_type, *args, value: Any = True, explain_further=True, forward_possessions_explanations=True):
         """
-        Initialize the Condition.
+        Initialize the If condition.
         
         Usage:
-            Condition("leaf")
-            Conditon("backtracing child", "minoptimal")
-            Condition("backtracing child", "score", value = 5)
+            If("possession", "leaf")
+            If("possession", "backtracing child", "minoptimal")
+            If("possession", "backtracing child", "score", value=5)
+            If("comparison", "score", "better than", "other_node_score")
 
-        :param args: Either one or two string arguments.
-                     If one argument: adjective_name
-                     If two arguments: pointer_adjective_name, adjective_name
+        :param condition_type: Type of condition, either "possession" or "comparison"
+        :type condition_type: str
+        :param args: Arguments for the condition (see usage examples)
         :type args: str
-        :param value: An optional value associated with the adjective explanation, defaults to True.
-                      Must be specified as a keyword argument if provided.
+        :param value: An optional value for possession conditions, defaults to True
         :type value: Any, optional
-        :param explain_further: Whether to explain the condition further, defaults to True.
+        :param explain_further: Whether to explain the condition further, defaults to True
         :type explain_further: bool, optional
-        :param forward_possessions_explanations: Whether to forward possession explanations, defaults to True.
+        :param forward_possessions_explanations: Whether to forward possession explanations, defaults to True
         :type forward_possessions_explanations: bool, optional
-
-        pointer_adjective_name: The name of the pointer adjective to the object to check.
-        adjective_name: The name of the static adjective to check.
-        value: The expected value of the adjective.
         """
-        super().__init__(*args)
+        super().__init__()
+        self.condition_type = condition_type
         self.value = value
-        self.explain_further=explain_further
-        self.forward_possessions_explanations=forward_possessions_explanations
+        self.explain_further = explain_further
+        self.forward_possessions_explanations = forward_possessions_explanations
+
+        if condition_type == "possession":
+            self.condition = Possession(*args, explain_further=explain_further, forward_possessions_explanations=forward_possessions_explanations)
+        elif condition_type == "comparison":
+            self.condition = Comparison(*args, explain_further=explain_further, forward_possessions_explanations=forward_possessions_explanations)
+        else:
+            raise ValueError("Invalid condition_type. Must be either 'possession' or 'comparison'.")
+
+    def _contextualize(self):
+        self.condition.contextualize(self.explanation_of_adjective)
+    
+    def _decontextualize(self):
+        self.condition.decontextualize()
 
     def evaluate(self, node: Any, explanation_tactics = None) -> bool:
         """
-        Evaluate if the given node possess the given static adjective.
+        Evaluate the condition for the given node.
         
-        :param node: The node to evaluate.
+        :param node: The node to evaluate
         :type node: Any
-        :param explanation_tactics: Explanation tactics, defaults to None.
-        :type explanation_tactics: Any, optional
-        :return: True if the adjective's value matches the expected value, False otherwise.
+        :param other_nodes: Additional nodes for comparison conditions, defaults to None
+        :type other_nodes: Any, optional
+        :return: True if the condition is met, False otherwise
         :rtype: bool
         """
+        if self.condition_type == "possession":
+            obj_under_evaluation = node if not self.condition.pointer_adjective_name else self.forward_evaluation(self.framework.get_adjective(self.condition.pointer_adjective_name), node)
+            adjective = self.framework.get_adjective(self.condition.adjective_name)
+            return adjective.evaluate(obj_under_evaluation) == self.value
+        elif self.condition_type == "comparison":
+            obj1 = node if self.condition.obj1_pointer_adjective_name is None else self.forward_evaluation(self.framework.get_adjective(self.condition.obj1_pointer_adjective_name), node)
+            obj2 = self.forward_evaluation(self.framework.get_adjective(self.condition.obj2_pointer_adjective_name), node)
+            comparison_adjective = self.framework.get_adjective(self.condition.comparison_adjective_name)
+            return comparison_adjective.evaluate(obj1, obj2)
 
-        if not self.pointer_adjective_name:        
-            obj_under_evaluation = node
-            
-        else:
-            pointer_adjective = self.framework.get_adjective(self.pointer_adjective_name)
-            obj_under_evaluation = self.forward_evaluation(pointer_adjective, node)
-
-        adjective = self.framework.get_adjective(self.adjective_name)
-        evaluation = adjective.evaluate(obj_under_evaluation) == self.value
-        return evaluation
+    def _explain(self, node: Any) -> LogicalExpression:
+        """
+        Generate an explanation for the condition.
+        
+        :param node: The node to explain
+        :type node: Any
+        :return: A LogicalExpression representing the explanation
+        :rtype: LogicalExpression
+        """
+        return self.forward_explanation(self.condition, node)
 
 class ConditionalExplanation(Explanation):
     """Represents an explanation that depends on a condition."""

@@ -82,14 +82,14 @@ class AlphaBetaExplainer:
                 
                 # Explaining: why the move has this score?
                 explanation = ConditionalExplanation(
-                    condition = If("final move"),
+                    condition = If("possession", "final move"),
 
                     # It's a final move: we say if it is a win, loss or draw
                     explanation_if_true = ConditionalExplanation(
-                        condition=If("a win"), # Is it a win?
+                        condition=If("possession", "a win"), # Is it a win?
                         explanation_if_true=Possession("a win"),
                         explanation_if_false= ConditionalExplanation(
-                            condition=If("a loss"), # It's not a win, is it a loss or a draw?
+                            condition=If("possession", "a loss"), # It's not a win, is it a loss or a draw?
                             explanation_if_true = Possession("a loss"),
                             explanation_if_false = Possession ("a draw")
                             )
@@ -97,29 +97,29 @@ class AlphaBetaExplainer:
                     
                     # That's not a final move
                     explanation_if_false = ConditionalExplanation(
-                        condition=If("not worth exploring"),
+                        condition=If("possession", "not worth exploring"),
                         
                         # The node has not been pruned, we have the full next future consequences list (until final moves or max search depth are reached)
                         explanation_if_false = CompositeExplanation(
                             Assumption("We assume the opponent will do their best move and us our best move.", necessary=True),
-                            RecursivePossession("as next move", any_stop_conditions = [If("as next move", "a win"), # final move
-                                                                                        If("as next move", "a loss"), # final move
-                                                                                        If("as next move", "a draw"), # final move
-                                                                                        If("as next move", "the most forward in the future I looked")])), # max search depth
+                            RecursivePossession("as next move", any_stop_conditions = [If("possession", "as next move", "a win"), # final move
+                                                                                        If("possession", "as next move", "a loss"), # final move
+                                                                                        If("possession", "as next move", "a draw"), # final move
+                                                                                        If("possession", "as next move", "the most forward in the future I looked")])), # max search depth
 
                         # The node has been pruned, we only have one children future consequence
                         explanation_if_true = ConditionalExplanation(
-                            condition = If("as next move", "final move"), # Is the next move (the only one available) a final move?
+                            condition = If("possession", "as next move", "final move"), # Is the next move (the only one available) a final move?
 
                             # The only children of the move that we considered is actually a final move.
                             # In this case, we don't need to explain why the node was not worth exploring,
                             # users usually understand easily why this next possible move is not worth exploring when it is a final move.
                             # We simply can say if it is a win, loss or draw.
                             explanation_if_true = ConditionalExplanation(
-                                condition=If("as next move", "a win"),
+                                condition=If("possession", "as next move", "a win"),
                                 explanation_if_true=Possession("as next move", "a win"),
                                 explanation_if_false= ConditionalExplanation(
-                                    condition=If("as next move", "a loss"),
+                                    condition=If("possession", "as next move", "a loss"),
                                     explanation_if_true = Possession("as next move", "a loss"),
                                     explanation_if_false = Possession ("as next move", "a draw")
                                     )
@@ -138,32 +138,42 @@ class AlphaBetaExplainer:
             BooleanAdjective("not worth exploring",
                 definition = "not node.fully_searched",
                 explanation=ConditionalExplanation(    
-                    condition = If("opponent player turn"),
+                    condition = If("possession", "opponent player turn"),
 
                     explanation_if_true = CompositeExplanation(
                         Possession("as next possible move", explain_further=False),
                         Assumption("The opponent can choose to do this move, or something even worse for us."),
-                        Comparison("as next possible move", "already worse than the alternative coming from", "upperbound",
+                        ConditionalExplanation(
+                            condition = If("comparison", "as next possible move", "worse than", "upperbound"),
+                            explanation_if_true = Comparison("as next possible move", "already worse than the alternative coming after", "upperbound",
                                     forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "upperbound"
+                            explanation_if_false = Comparison("as next possible move", "already equal to the alternative coming after", "upperbound",
+                                    forward_possessions_explanations=False)
                         ),
+                    ),
 
                     explanation_if_false = CompositeExplanation(
                         Possession("as next possible move", explain_further=False),
                         Assumption("We could choose to do this move, or something even worse for the opponent."),  
-                        Comparison("as next possible move", "already better than the alternative coming from", "lowerbound",
-                                    forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "lowerbound"                                                     
+                        ConditionalExplanation(
+                            condition = If("comparison", "as next possible move", "better than", "lowerbound"),
+                            explanation_if_true = Comparison("as next possible move", "already better than the alternative coming after", "lowerbound",
+                                    forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "lowerbound"  
+                            explanation_if_false = Comparison("as next possible move", "already equal to the alternative coming after", "lowerbound",
+                                    forward_possessions_explanations=False)
                         ),
                     ),
+                ),
             ),
 
             PointerAdjective("as next move",
                 definition = "node.score_child",
                 explanation = ConditionalExplanation(
-                    condition = If("not worth exploring"),
+                    condition = If("possession", "not worth exploring"),
 
                     # It was worth exploring (not pruned node)
                     explanation_if_false = ConditionalExplanation(
-                        condition = If("opponent player turn"),
+                        condition = If("possession", "opponent player turn"),
                         explanation_if_true = CompositeExplanation(
                             Assumption("We assume the opponent will do their best move."),
                             Possession("as next move", "the best the opponent can do")), # The next move is the best the opponent can do
@@ -187,17 +197,19 @@ class AlphaBetaExplainer:
             PointerAdjective("upperbound",
                 definition = "node.parent.alpha"),
 
-            ComparisonAdjective("better or equal than", "score", ">="),
-            ComparisonAdjective("worse or equal than", "score", "<="),
+            ComparisonAdjective("better than", "score", ">"),
+            ComparisonAdjective("worse than", "score", "<"),
+            ComparisonAdjective("at least equal to", "score", "=="),
 
-            ComparisonAdjective("already better or equal than the alternative coming from", "score", ">="),
-            ComparisonAdjective("already worse or equal than the alternative coming from", "score", "<="),
+            ComparisonAdjective("already better than the alternative coming after", "score", ">"),
+            ComparisonAdjective("already worse than the alternative coming after", "score", "<"),
+            ComparisonAdjective("already equal to the alternative coming after", "score", "=="),
         
             NodesGroupPointerAdjective("possible alternative moves",
                 definition = "node.parent.children",
                 excluding = "node"),
 
-            MaxRankAdjective("the best", "better or equal than", "possible alternative moves",
+            MaxRankAdjective("the best", ["better than", "at least equal to"], "possible alternative moves",
                 tactics = [
                     CompactSameExplanations(
                         from_adjectives=["as next move", 
@@ -211,7 +223,7 @@ class AlphaBetaExplainer:
                 ]
             ),
 
-            MaxRankAdjective("the best the opponent can do", "worse or equal than", "possible alternative moves",
+            MaxRankAdjective("the best the opponent can do", ["worse than", "at least equal to"], "possible alternative moves",
                 tactics = [
                     CompactSameExplanations(
                         from_adjectives=["as next move", 
