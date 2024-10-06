@@ -38,7 +38,7 @@ class TicTacToe(Game):
         """
         if interface_mode == 'jupyter':
             if interface_hyperlink_mode:
-                print("Warning: Interface hyperlink mode is not supported for Jupyter interface.")
+                raise ValueError("Interface hyperlink mode is not supported for Jupyter interface.")
             self.interface = TicTacToeJupyterInterface(self)
         elif interface_mode == 'gradio':
             self.interface = TicTacToeGradioInterface(self, interface_hyperlink_mode)
