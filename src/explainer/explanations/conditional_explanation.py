@@ -11,7 +11,7 @@ class If(Explanation):
     Can be used for both possession and comparison conditions.
     """
 
-    def __init__(self, condition_type, *args, value: Any = True, explain_further=True, forward_possessions_explanations=True):
+    def __init__(self, condition_type, *args, value: Any = True, explain_further=True, forward_possessions_explanations=False):
         """
         Initialize the If condition.
         
@@ -81,7 +81,7 @@ class If(Explanation):
         :return: A LogicalExpression representing the explanation
         :rtype: LogicalExpression
         """
-        return self.forward_explanation(self.condition, node)
+        return self.forward_explanation(self.condition, node, no_increment=True)
 
 class ConditionalExplanation(Explanation):
     """Represents an explanation that depends on a condition."""
