@@ -186,7 +186,7 @@ class ExplainerGradioInterface:
             components = {}
             
             gr.Markdown("""# Visualize the Decision Tree
-                        ### Here you can visualize the AI's decision making tree and understand better the level of complexity that the explainer is trying to simplify.
+                        ### Here you can visualize the AI's decision making tree and understand better the level of complexity that the explainer is elaborating on.
                         
                         You can zoom in through the browser, just wait for the graph to load.
                         Consider opening the image in a new tab for a better experience.""")
