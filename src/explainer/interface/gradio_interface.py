@@ -36,7 +36,7 @@ class ExplainerGradioInterface:
     tab_ids = {
         "ai_explanation": 1,
         "visualize": 2,
-        "visualize_move_tree": 3,
+        "visualize_decision_tree": 3,
         "settings": 4,
         "other": 5
     }
@@ -74,7 +74,7 @@ class ExplainerGradioInterface:
             explain_in_hyperlink_mode,
             self.get_adjective_names,
             self.ai_explainer.update_ai_explanation,
-            self.ai_explainer.visualize_move_tree,
+            self.ai_explainer.visualize_decision_tree,
             self.graph_visualizer.visualize_graph,
             self.apply_explainer_settings
         )
@@ -122,14 +122,14 @@ class ExplainerGradioInterface:
         self.demo.launch()
 
     class InterfaceBuilder:
-        def __init__(self, game, explaining_agent, tab_ids, explain_in_hyperlink_mode, get_adjective_names, update_ai_explanation, visualize_move_tree, visualize_graph, apply_explainer_settings):
+        def __init__(self, game, explaining_agent, tab_ids, explain_in_hyperlink_mode, get_adjective_names, update_ai_explanation, visualize_decision_tree, visualize_graph, apply_explainer_settings):
             self.game = game
             self.explaining_agent = explaining_agent
             self.tab_ids = tab_ids
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
             self.get_adjective_names = get_adjective_names
             self.update_ai_explanation = update_ai_explanation
-            self.visualize_move_tree = visualize_move_tree
+            self.visualize_decision_tree = visualize_decision_tree
             self.visualize_graph = visualize_graph
             self.apply_explainer_settings = apply_explainer_settings
 
@@ -181,17 +181,17 @@ class ExplainerGradioInterface:
 
             return components
         
-        def build_visualize_move_tree_components(self):
-            """Build components for visualizing the move tree."""
+        def build_visualize_decision_tree_components(self):
+            """Build components for visualizing the Decision Tree."""
             components = {}
             
-            gr.Markdown("""# Visualize the Move Tree
-                        ### Here you can visualize the AI's decision making tree and understand better the complexity that the explainer is trying to handle.
+            gr.Markdown("""# Visualize the Decision Tree
+                        ### Here you can visualize the AI's decision making tree and understand better the level of complexity that the explainer is trying to simplify.
                         
                         You can zoom in through the browser, just wait for the graph to load.
                         Consider opening the image in a new tab for a better experience.""")
             components["move_tree_legend"] = gr.Image(value=self.explaining_agent.core.visualize_legend_move_tree())
-            components["visualize_move_tree_button"] = gr.Button("Generate Move Tree")
+            components["visualize_decision_tree_button"] = gr.Button("Generate Decision Tree")
             components["move_tree_output"] = gr.Image(label="")
 
             return components
@@ -252,10 +252,10 @@ class ExplainerGradioInterface:
                     outputs=[components["graph_output"]]
                 )
 
-            # Visualize Move Tree
-            if "visualize_move_tree_button" in components:
-                components["visualize_move_tree_button"].click(
-                    self.visualize_move_tree,
+            # Visualize Decision Tree
+            if "visualize_decision_tree_button" in components:
+                components["visualize_decision_tree_button"].click(
+                    self.visualize_decision_tree,
                     outputs=[components["move_tree_output"]]
                 )
 
@@ -285,8 +285,8 @@ class ExplainerGradioInterface:
                         ai_explanation_components = self.build_ai_explanation_components()
                     with gr.TabItem("Visualize", id=self.tab_ids["visualize"]):
                         visualize_components = self.build_visualize_components()
-                    with gr.TabItem("Visualize Move Tree", id=self.tab_ids["move_tree"]):
-                        move_tree_components = self.build_visualize_move_tree_components()
+                    with gr.TabItem("Visualize Decision Tree", id=self.tab_ids["move_tree"]):
+                        move_tree_components = self.build_visualize_decision_tree_components()
                     with gr.TabItem("Settings", id=self.tab_ids["settings"]):
                         settings_components = self.build_explainer_settings_components()
 
@@ -371,9 +371,13 @@ class ExplainerGradioInterface:
 
             return full_return, explaining_question
 
-        def visualize_move_tree(self):
-            """Generate a visualization of the move tree."""
-            return self.explaining_agent.core.visualize_move_tree(self.explaining_agent.choice.parent)
+        def visualize_decision_tree(self):
+            """Generate a visualization of the Decision Tree."""
+            root_node = self.explaining_agent.choice.parent
+            try:
+                return self.explaining_agent.core.visualize_decision_tree(root_node)
+            except Exception as e:
+                raise gr.Error(f"Error: {e}")
 
     class GraphVisualizer:
         """Class for visualizing the explanation graph."""

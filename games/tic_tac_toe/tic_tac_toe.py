@@ -123,7 +123,7 @@ class TicTacToe(Game):
 
         action_dict, broken_rule_string = self.model.action("board", player, coordinates, sign, return_broken_rule_string=self.interface.started)
         if broken_rule_string:
-            self.interface.output(broken_rule_string)
+            self.interface.output(broken_rule_string, type="error")
     
     def winner(self):
         if np.all(self.model.action_spaces["board"] != FREE_LABEL):

@@ -273,8 +273,8 @@ class TicTacToeGradioInterface(GameInterface):
                             self.ai_explanation_components = self.explainer_interface.interface_builder.build_ai_explanation_components(
                                 toggles={"skip_score_toggle": ("Skip Score Statement (the explainer is designed around skipping the score statement, problems may arise when this is disabled)", True)})
 
-                with gr.TabItem("Visualize Move Tree", self.explainer_interface.tab_ids["visualize_move_tree"]):
-                    visualize_move_tree_components = self.explainer_interface.interface_builder.build_visualize_move_tree_components()
+                with gr.TabItem("Visualize Decision Tree", self.explainer_interface.tab_ids["visualize_decision_tree"]):
+                    visualize_decision_tree_components = self.explainer_interface.interface_builder.build_visualize_decision_tree_components()
 
                 with gr.TabItem("Visualize Framework", self.explainer_interface.tab_ids["visualize"]):
                     visualize_components = self.explainer_interface.interface_builder.build_visualize_components()
@@ -283,7 +283,7 @@ class TicTacToeGradioInterface(GameInterface):
                     explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components()
 
             # Handle components connections   
-            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **visualize_components, **visualize_move_tree_components, **explainer_settings_components})
+            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **visualize_components, **visualize_decision_tree_components, **explainer_settings_components})
 
             all_available_outputs = [self.board_gallery, self.showing_state, 
                                      self.status, self.output_text, 
@@ -484,14 +484,25 @@ class TicTacToeGradioInterface(GameInterface):
             next_player = 'X' if self.game.get_current_player().id == 0 else 'O'
             return f"Player {next_player}'s turn"
 
-    def output(self, text: str):
+    def output(self, text: str, type: str = "info"):
         """
         Update the output text.
 
         :param text: The text to display in the output area
         :type text: str
         """
-        self.output_text = ExplainerGradioInterface.cool_html_text_container.format(text)
+        if len(text) == 0:
+            return
+        
+        if type == "info":
+            self.output_text = ExplainerGradioInterface.cool_html_text_container.format(text)
+            gr.Info(text)
+        elif type == "error":
+            gr.Warning(text)
+        elif type == "warning":
+            gr.Warning(text)
+        else:
+            raise ValueError(f"Invalid type {type}")
 
     def toggle_skip_score(self, skip_score: bool):
         """
@@ -524,7 +535,7 @@ class TicTacToeGradioInterface(GameInterface):
             inputs = {'what': sign, 'where': (row, col), 'action_space': "board"}
             await current_player.play(self.game, inputs)
         except Exception as e:
-            self.output(str(e))
+            self.output(str(e), type="error")
             print(f"Detailed error: {type(e).__name__}: {str(e)}")  # For debugging
             print("Full traceback:")
             traceback.print_exc()
