@@ -12,6 +12,12 @@ from src.explainer.explanation import Explanation, Assumption, CompositeExplanat
 from src.explainer.framework import ArgumentationFramework
 from src.explainer.propositional_logic import LogicalExpression, Implies
 
+from src.explainer.explanation_settings import (
+    EXPLANATION_DEPTH_ALLOWED_VALUES,
+    ASSUMPTIONS_VERBOSITY_ALLOWED_VALUES,
+    PRINT_MODE_ALLOWED_VALUES
+)
+
 # Dynamically get all adjective and explanation classes
 adjective_classes = {name: cls for name, cls in inspect.getmembers(sys.modules['src.explainer.adjective'], inspect.isclass) 
                      if issubclass(cls, Adjective) and cls is not Adjective}
@@ -33,7 +39,8 @@ class ExplainerGradioInterface:
         "addadjective": 3,
         "addexplanation": 4,
         "deleteadjective": 5,
-        "other": 6
+        "settings": 6,
+        "other": 7
     }
 
     cool_html_text_container = """<pre style="
@@ -63,11 +70,13 @@ class ExplainerGradioInterface:
         self.graph_visualizer = self.GraphVisualizer(self.nodes, explanation_depth, self.get_adjective_names)
         self.ai_explainer = self.AIExplainer(game, explaining_agent, explain_in_hyperlink_mode)
         self.interface_builder = self.InterfaceBuilder(
+            self.game,
             self.tab_ids,
             explain_in_hyperlink_mode,
             self.get_adjective_names,
             self.ai_explainer.update_ai_explanation,
-            self.graph_visualizer.visualize_graph
+            self.graph_visualizer.visualize_graph,
+            self.apply_explainer_settings
         )
 
     def on_load(self, request: gr.Request):
@@ -94,6 +103,18 @@ class ExplainerGradioInterface:
     def get_adjective_names(self):
         """Get a list of all adjective names in the graph."""
         return list(self.nodes.keys())
+
+    def apply_explainer_settings(self, with_framework, explanation_depth, assumptions_verbosity, print_depth, print_implicit_assumptions, print_mode):
+        """Apply the explainer settings."""
+        settings_dict = {
+            'with_framework': with_framework,
+            'explanation_depth': explanation_depth,
+            'assumptions_verbosity': assumptions_verbosity,
+            'print_depth': print_depth,
+            'print_implicit_assumptions': print_implicit_assumptions,
+            'print_mode': print_mode
+        }
+        self.game.explainer.configure_settings(settings_dict)
     
     def launch(self):
         """Launch the Gradio interface."""
@@ -101,12 +122,14 @@ class ExplainerGradioInterface:
         self.demo.launch()
 
     class InterfaceBuilder:
-        def __init__(self, tab_ids, explain_in_hyperlink_mode, get_adjective_names, update_ai_explanation, visualize_graph):
+        def __init__(self, game, tab_ids, explain_in_hyperlink_mode, get_adjective_names, update_ai_explanation, visualize_graph, apply_explainer_settings):
+            self.game = game
             self.tab_ids = tab_ids
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
             self.get_adjective_names = get_adjective_names
             self.update_ai_explanation = update_ai_explanation
             self.visualize_graph = visualize_graph
+            self.apply_explainer_settings = apply_explainer_settings
 
         def update_dropdowns(self):
             """Update all dropdowns with current adjective names."""
@@ -155,6 +178,40 @@ class ExplainerGradioInterface:
 
             return components
 
+        def build_explainer_settings_components(self):
+            """Build components for explainer settings."""
+            components = {}
+            
+            with gr.Row():
+                with gr.Column(scale=1):
+                    components["with_framework"] = gr.Textbox(
+                        label="Framework Name", 
+                        value=self.game.explainer.settings.with_framework,
+                        visible=False) # For now this is not customizable
+                    components["explanation_depth"] = gr.Dropdown(
+                        choices=EXPLANATION_DEPTH_ALLOWED_VALUES,
+                        label="Explanation Depth",
+                        value=self.game.explainer.settings.explanation_depth
+                    )
+                    components["assumptions_verbosity"] = gr.Dropdown(
+                        choices=ASSUMPTIONS_VERBOSITY_ALLOWED_VALUES,
+                        label="Assumptions Verbosity",
+                        value=self.game.explainer.settings.assumptions_verbosity
+                    )
+                
+                with gr.Column(scale=1):
+                    components["print_depth"] = gr.Checkbox(label="Print Depth", value=False)
+                    components["print_implicit_assumptions"] = gr.Checkbox(label="Print Implicit Assumptions", value=True)
+                    components["print_mode"] = gr.Dropdown(
+                        choices=PRINT_MODE_ALLOWED_VALUES,
+                        label="Print Mode",
+                        value=self.game.explainer.settings.print_mode
+                    )
+            
+            components["apply_settings_button"] = gr.Button("Apply Settings")
+
+            return components
+
         def connect_components(self, components):
             """
             Connect the components of the interface.
@@ -177,6 +234,15 @@ class ExplainerGradioInterface:
                     outputs=[components["graph_output"]]
                 )
 
+            # Settings
+            if "apply_settings_button" in components:
+                components["apply_settings_button"].click(
+                    self.apply_explainer_settings,
+                    inputs=[components["with_framework"], components["explanation_depth"], components["assumptions_verbosity"], 
+                            components["print_depth"], components["print_implicit_assumptions"], components["print_mode"]],
+                    outputs=[]
+                )
+
             # Update dropdowns
             dropdown_components = [comp for comp in [components.get("root_adjective"), 
                                                     components.get("explain_adj_name")] if comp is not None]
@@ -194,8 +260,10 @@ class ExplainerGradioInterface:
                         ai_explanation_components = self.build_ai_explanation_components()
                     with gr.TabItem("Visualize", id=self.tab_ids["visualize"]):
                         visualize_components = self.build_visualize_components()
+                    with gr.TabItem("Settings", id=self.tab_ids["settings"]):
+                        settings_components = self.build_explainer_settings_components()
 
-                components = {**ai_explanation_components, **visualize_components}
+                components = {**ai_explanation_components, **visualize_components, **settings_components}
 
                 # Connect components
                 self.connect_components(components)

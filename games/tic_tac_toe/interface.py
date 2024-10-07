@@ -275,9 +275,12 @@ class TicTacToeGradioInterface(GameInterface):
 
                 with gr.TabItem("Visualize", self.explainer_interface.tab_ids["visualize"]):
                     visualize_components = self.explainer_interface.interface_builder.build_visualize_components()
+                
+                with gr.TabItem("Settings", self.explainer_interface.tab_ids["settings"]):
+                    explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components()
 
             # Handle components connections   
-            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **visualize_components})
+            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **visualize_components, **explainer_settings_components})
 
             all_available_outputs = [self.board_gallery, self.showing_state, 
                                      self.status, self.output_text, 

@@ -1,13 +1,14 @@
 from src.explainer.propositional_logic import LogicalExpression
 
+EXPLANATION_DEPTH_ALLOWED_VALUES = list(range(0, 10))
 def _validate_explanation_depth(value):
-    if not isinstance(value, int) or value < 0:
-        raise ValueError("Explanation depth must be a positive integer or 0.")
+    if not isinstance(value, int) or value not in EXPLANATION_DEPTH_ALLOWED_VALUES:
+        raise ValueError(f"Explanation depth must be a positive integer or 0.")
 
+ASSUMPTIONS_VERBOSITY_ALLOWED_VALUES = ['verbose', 'minimal', 'no', 'if_asked']
 def _validate_assumptions_verbosity(value):
-    allowed_values = ['verbose', 'minimal', 'no', 'if_asked']
-    if value not in allowed_values:
-        raise ValueError(f"Assumptions verbosity must be one of: {', '.join(allowed_values)}")
+    if value not in ASSUMPTIONS_VERBOSITY_ALLOWED_VALUES:
+        raise ValueError(f"Assumptions verbosity must be one of: {', '.join(ASSUMPTIONS_VERBOSITY_ALLOWED_VALUES)}")
 
 def _validate_boolean(value):
     if not isinstance(value, bool):
@@ -17,10 +18,10 @@ def _validate_string(value):
     if not isinstance(value, str):
         raise ValueError("Tried to set a String setting to a non string value.")
 
+PRINT_MODE_ALLOWED_VALUES = ['logic', 'verbal']
 def _validate_print_mode(value):
-    allowed_values = ['logic', 'verbal']
-    if value not in allowed_values:
-        raise ValueError(f"Print mode must be one of: {', '.join(allowed_values)}")
+    if value not in PRINT_MODE_ALLOWED_VALUES:
+        raise ValueError(f"Print mode must be one of: {', '.join(PRINT_MODE_ALLOWED_VALUES)}")
 
 class ExplanationSettings:
     """
