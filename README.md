@@ -1,13 +1,13 @@
 ---
 title: X Tree Search
-emoji: 👀
+emoji: 👁️‍🗨️
 colorFrom: green
 colorTo: green
 sdk: gradio
 sdk_version: 4.44.1
 app_file: app.py
 pinned: false
-license: cc-by-4.0
+license: cc-by-nc-4.0
 short_description: Tree-Search algorithms interactive explainer
 ---
 
@@ -94,13 +94,14 @@ We welcome contributions! Please contact me for more information at nicoloddo.r@
 
 ## License
 
-This project is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0).
+This project is licensed under the Creative Commons Attribution Non-Commercial 4.0 International License (CC BY-NC 4.0).
 
 This means you are free to:
 - Share — copy and redistribute the material in any medium or format
 - Adapt — remix, transform, and build upon the material for any purpose, even commercially
 
 Under the following terms:
-- Attribution — You must give appropriate credit citing the repository and authors.
+- Attribution 
+- NonCommercial
 
-You can find more information about the license [here](https://creativecommons.org/licenses/by/4.0/).
+You can find more information about the license [here](https://creativecommons.org/licenses/by-nc/4.0/).
