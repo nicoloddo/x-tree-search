@@ -246,7 +246,7 @@ class Adjective(ABC):
 class BooleanAdjective(Adjective):
     """Represents a boolean adjective."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None, *, skip_statement: bool = False):
         """
         Initialize the BooleanAdjective.
         
@@ -260,7 +260,7 @@ class BooleanAdjective(Adjective):
         :type tactics: List['Tactic'] | None, optional
         """
         explanation = explanation or PossessionAssumption(name, definition)
-        super().__init__(name, AdjectiveType.STATIC, explanation, tactics, definition = definition)
+        super().__init__(name, AdjectiveType.STATIC, explanation, tactics, definition = definition, skip_statement = skip_statement)
 
     def _proposition(self, evaluation: bool = True, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the adjective """
