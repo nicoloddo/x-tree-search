@@ -32,7 +32,7 @@ class AlphaBetaExplainer:
         
         # Define settings
         settings = {
-            'explanation_depth': 3,
+            'explanation_depth': 4,
             'print_implicit_assumptions': False,
             'assumptions_verbosity': 'verbose',
             'print_mode': 'verbal',
