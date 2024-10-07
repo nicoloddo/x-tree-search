@@ -1,6 +1,9 @@
 from typing import Dict
 import copy
 
+import graphviz
+import tempfile
+
 class MiniMaxNode:
     """
     A wrapper for nodes in the game tree for use with the MiniMax algorithm.
@@ -290,3 +293,76 @@ class MiniMax:
         
         for child in node.children:
             self.print_tree(child, level + 1, child == node.score_child)
+
+    def visualize_move_tree(self, root_node):
+        dot = graphviz.Digraph(comment='Visualize Move Tree')
+        dot.attr(rankdir='TB')  # Left to Right or Top to Bottom layout
+        dot.attr(dpi='300')  # Set high resolution
+        dot.attr('node', shape='rectangle', style='filled', fontname='Arial', fontsize='10')
+
+        def add_node_to_graph(node, parent_id=None):
+            if not node.has_score:
+                return
+            
+            node_id = str(node.id)
+            label = node_id
+            
+            # Color coding
+            if node.is_leaf:
+                fillcolor = 'lightblue'
+            elif node.maximizing_player_turn:
+                fillcolor = 'green'
+            else:
+                fillcolor = 'pink'
+            if not node.fully_searched:
+                fillcolor = 'light' + fillcolor
+            
+            # Node label
+            label += f"\nScore: {node.score}"
+            
+            dot.node(node_id, label, fillcolor=fillcolor)
+            
+            if parent_id:
+                dot.edge(parent_id, node_id)
+            
+            for child in node.children:
+                add_node_to_graph(child, node_id)
+            
+            # Add red X for pruned nodes
+            if not node.fully_searched:
+                prune_id = f"{node_id}_prune"
+                pruned_label = "max depth reached" if node.max_search_depth_reached else "pruned"
+                dot.node(prune_id, pruned_label, color='white', fontcolor='red', shape='plaintext')
+                dot.edge(node_id, prune_id, color='red')
+
+        add_node_to_graph(root_node)
+
+        # Render the graph
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+            tmp_filename = tmp_file.name
+
+        dot.render(tmp_filename, format='png', cleanup=True)
+        
+        return tmp_filename + '.png'
+
+    def visualize_legend_move_tree(self):
+        dot = graphviz.Digraph(comment='Legend')
+        dot.attr(dpi='200')  # Set high resolution
+        dot.attr('node', shape='rectangle', style='filled', fontname='Arial', fontsize='10')
+
+        dot.attr(label='Legend')
+        dot.attr(labelloc='t')  # 't' for top, 'b' for bottom (default)
+        
+        dot.attr(fontsize='12', fontweight='bold')
+        dot.node('legend_maximizer', 'Maximizer turn', fillcolor='green', style='filled')
+        dot.node('legend_minimizer', 'Minimizer turn', fillcolor='pink', style='filled')
+        dot.node('legend_leaf', 'Leaf Node', fillcolor='lightblue', style='filled')
+
+        # Render the graph
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+            tmp_filename = tmp_file.name
+
+        dot.render(tmp_filename, format='png', cleanup=True)
+        
+        return tmp_filename + '.png'
+        
