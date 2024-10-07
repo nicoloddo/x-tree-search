@@ -294,15 +294,15 @@ class MiniMax:
         for child in node.children:
             self.print_tree(child, level + 1, child == node.score_child)
 
-    def visualize_move_tree(self, root_node):
-        dot = graphviz.Digraph(comment='Visualize Move Tree')
-        dot.attr(rankdir='TB')  # Left to Right or Top to Bottom layout
-        dot.attr(dpi='300')  # Set high resolution
+    def visualize_decision_tree(self, root_node):
+        dot = graphviz.Digraph(comment='Visualize Decision Tree')
         dot.attr('node', shape='rectangle', style='filled', fontname='Arial', fontsize='10')
 
-        def add_node_to_graph(node, parent_id=None):
+        def add_node_to_graph(node, parent_id=None, count_nodes = 0):
             if not node.has_score:
-                return
+                return count_nodes
+            
+            count_nodes += 1
             
             node_id = str(node.id)
             label = node_id
@@ -311,11 +311,9 @@ class MiniMax:
             if node.is_leaf:
                 fillcolor = 'lightblue'
             elif node.maximizing_player_turn:
-                fillcolor = 'green'
+                fillcolor = 'green' if node.fully_searched else 'lightgreen'
             else:
-                fillcolor = 'pink'
-            if not node.fully_searched:
-                fillcolor = 'light' + fillcolor
+                fillcolor = 'deeppink' if not node.fully_searched else 'pink'
             
             # Node label
             label += f"\nScore: {node.score}"
@@ -326,7 +324,7 @@ class MiniMax:
                 dot.edge(parent_id, node_id)
             
             for child in node.children:
-                add_node_to_graph(child, node_id)
+                count_nodes = add_node_to_graph(child, node_id, count_nodes)
             
             # Add red X for pruned nodes
             if not node.fully_searched:
@@ -334,14 +332,26 @@ class MiniMax:
                 pruned_label = "max depth reached" if node.max_search_depth_reached else "pruned"
                 dot.node(prune_id, pruned_label, color='white', fontcolor='red', shape='plaintext')
                 dot.edge(node_id, prune_id, color='red')
+            
+            return count_nodes
 
-        add_node_to_graph(root_node)
+        count_nodes = add_node_to_graph(root_node)
+        if count_nodes > 1000:
+            raise Exception(f"Too many nodes ({count_nodes}) to visualize.")
+        elif count_nodes > 50: # More than 50 nodes but less than 1000
+            dot.attr(layout="twopi")
+            dot.attr(overlap='scale') # Don't overlap nodes
+        else: # Less than 50 nodes
+            dot.attr(rankdir='TB')  # Left to Right or Top to Bottom layout
+            dot.attr(dpi='300')  # Set high resolution
+        
+        dot.attr(root=str(root_node.id))
 
         # Render the graph
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
             tmp_filename = tmp_file.name
 
-        dot.render(tmp_filename, format='png', cleanup=True)
+        dot.render(tmp_filename, format='png', cleanup=True, )
         
         return tmp_filename + '.png'
 
@@ -355,7 +365,9 @@ class MiniMax:
         
         dot.attr(fontsize='12', fontweight='bold')
         dot.node('legend_maximizer', 'Maximizer turn', fillcolor='green', style='filled')
-        dot.node('legend_minimizer', 'Minimizer turn', fillcolor='pink', style='filled')
+        dot.node('legend_maximizer_pruned', 'Maximizer turn\n(pruned)', fillcolor='lightgreen', style='filled')
+        dot.node('legend_minimizer', 'Minimizer turn', fillcolor='deeppink', style='filled')
+        dot.node('legend_minimizer_pruned', 'Minimizer turn\n(pruned)', fillcolor='pink', style='filled')
         dot.node('legend_leaf', 'Leaf Node', fillcolor='lightblue', style='filled')
 
         # Render the graph
