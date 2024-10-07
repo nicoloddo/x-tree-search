@@ -243,10 +243,10 @@ class TicTacToeGradioInterface(GameInterface):
             }
         """, fill_width=True) as demo:
             with gr.Tabs() as tabs:
-                with gr.TabItem("Game", id=self.explainer_interface.tab_ids["other"] + 0):
+                with gr.TabItem("Game and Explain", id=self.explainer_interface.tab_ids["other"] + 0):
                     with gr.Row(equal_height=False):
                         with gr.Column(scale=1):
-                            gr.Markdown("# Tic Tac Toe")
+                            gr.Markdown("# Tic Tac Toe (vs Alpha-Beta Pruning Minimax)")
                             with gr.Row():
                                 self.status = gr.Textbox(label="Status", value=self.status, scale=1)
                                 self.showing_state = gr.Textbox(label="Showing", value=self.showing_state, scale=1)
@@ -273,14 +273,17 @@ class TicTacToeGradioInterface(GameInterface):
                             self.ai_explanation_components = self.explainer_interface.interface_builder.build_ai_explanation_components(
                                 toggles={"skip_score_toggle": ("Skip Score Statement (the explainer is designed around skipping the score statement, problems may arise when this is disabled)", True)})
 
-                with gr.TabItem("Visualize", self.explainer_interface.tab_ids["visualize"]):
+                with gr.TabItem("Visualize Move Tree", self.explainer_interface.tab_ids["visualize_move_tree"]):
+                    visualize_move_tree_components = self.explainer_interface.interface_builder.build_visualize_move_tree_components()
+
+                with gr.TabItem("Visualize Framework", self.explainer_interface.tab_ids["visualize"]):
                     visualize_components = self.explainer_interface.interface_builder.build_visualize_components()
                 
                 with gr.TabItem("Settings", self.explainer_interface.tab_ids["settings"]):
                     explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components()
 
             # Handle components connections   
-            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **visualize_components, **explainer_settings_components})
+            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **visualize_components, **visualize_move_tree_components, **explainer_settings_components})
 
             all_available_outputs = [self.board_gallery, self.showing_state, 
                                      self.status, self.output_text, 

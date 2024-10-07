@@ -34,13 +34,11 @@ class Node:
 
 class ExplainerGradioInterface:
     tab_ids = {
-        "aiexplanation": 1,
+        "ai_explanation": 1,
         "visualize": 2,
-        "addadjective": 3,
-        "addexplanation": 4,
-        "deleteadjective": 5,
-        "settings": 6,
-        "other": 7
+        "visualize_move_tree": 3,
+        "settings": 4,
+        "other": 5
     }
 
     cool_html_text_container = """<pre style="
@@ -71,10 +69,12 @@ class ExplainerGradioInterface:
         self.ai_explainer = self.AIExplainer(game, explaining_agent, explain_in_hyperlink_mode)
         self.interface_builder = self.InterfaceBuilder(
             self.game,
+            self.explaining_agent,
             self.tab_ids,
             explain_in_hyperlink_mode,
             self.get_adjective_names,
             self.ai_explainer.update_ai_explanation,
+            self.ai_explainer.visualize_move_tree,
             self.graph_visualizer.visualize_graph,
             self.apply_explainer_settings
         )
@@ -122,12 +122,14 @@ class ExplainerGradioInterface:
         self.demo.launch()
 
     class InterfaceBuilder:
-        def __init__(self, game, tab_ids, explain_in_hyperlink_mode, get_adjective_names, update_ai_explanation, visualize_graph, apply_explainer_settings):
+        def __init__(self, game, explaining_agent, tab_ids, explain_in_hyperlink_mode, get_adjective_names, update_ai_explanation, visualize_move_tree, visualize_graph, apply_explainer_settings):
             self.game = game
+            self.explaining_agent = explaining_agent
             self.tab_ids = tab_ids
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
             self.get_adjective_names = get_adjective_names
             self.update_ai_explanation = update_ai_explanation
+            self.visualize_move_tree = visualize_move_tree
             self.visualize_graph = visualize_graph
             self.apply_explainer_settings = apply_explainer_settings
 
@@ -170,11 +172,27 @@ class ExplainerGradioInterface:
             Build the visualize components.
             """
             components = {}
-            gr.Markdown("""# Visualize the chain of explanations defined in the framework.\n
-                        You can zoom in through the browser, just wait for the graph to load.""")
+            gr.Markdown("""# Visualize the chain of explanations defined in the framework
+                        You can zoom in through the browser, just wait for the graph to load.
+                        Consider opening the image in a new tab for a better experience.""")
             components["root_adjective"] = gr.Dropdown(choices=self.get_adjective_names(), label="Select Root Adjective (optional)")
             components["visualize_button"] = gr.Button("Visualize Framework")
-            components["graph_output"] = gr.Image(label="Graph Visualization")
+            components["graph_output"] = gr.Image(label="")
+
+            return components
+        
+        def build_visualize_move_tree_components(self):
+            """Build components for visualizing the move tree."""
+            components = {}
+            
+            gr.Markdown("""# Visualize the Move Tree
+                        ### Here you can visualize the AI's decision making tree and understand better the complexity that the explainer is trying to handle.
+                        
+                        You can zoom in through the browser, just wait for the graph to load.
+                        Consider opening the image in a new tab for a better experience.""")
+            components["move_tree_legend"] = gr.Image(value=self.explaining_agent.core.visualize_legend_move_tree())
+            components["visualize_move_tree_button"] = gr.Button("Generate Move Tree")
+            components["move_tree_output"] = gr.Image(label="")
 
             return components
 
@@ -234,6 +252,13 @@ class ExplainerGradioInterface:
                     outputs=[components["graph_output"]]
                 )
 
+            # Visualize Move Tree
+            if "visualize_move_tree_button" in components:
+                components["visualize_move_tree_button"].click(
+                    self.visualize_move_tree,
+                    outputs=[components["move_tree_output"]]
+                )
+
             # Settings
             if "apply_settings_button" in components:
                 components["apply_settings_button"].click(
@@ -256,14 +281,16 @@ class ExplainerGradioInterface:
                 gr.Markdown("# X-Tree-Search Explainer")
                 
                 with gr.Tabs():
-                    with gr.TabItem("Explain", id=self.tab_ids["aiexplanation"]):
+                    with gr.TabItem("Explain", id=self.tab_ids["ai_explanation"]):
                         ai_explanation_components = self.build_ai_explanation_components()
                     with gr.TabItem("Visualize", id=self.tab_ids["visualize"]):
                         visualize_components = self.build_visualize_components()
+                    with gr.TabItem("Visualize Move Tree", id=self.tab_ids["move_tree"]):
+                        move_tree_components = self.build_visualize_move_tree_components()
                     with gr.TabItem("Settings", id=self.tab_ids["settings"]):
                         settings_components = self.build_explainer_settings_components()
 
-                components = {**ai_explanation_components, **visualize_components, **settings_components}
+                components = {**ai_explanation_components, **visualize_components, **move_tree_components, **settings_components}
 
                 # Connect components
                 self.connect_components(components)
@@ -329,7 +356,7 @@ class ExplainerGradioInterface:
                         # Replace node references with HTML hyperlinks
                         explanation = re.sub(
                             r'::node::\((.*?)\)\[(.*?)\]',
-                            lambda m: f'<a href="?node_id={node_id}&adjective={adjective}&show_node_id={m.group(1)}" style=" text-decoration: none;"><b style="color: var(--color-accent);">{m.group(2)}</b></a>',
+                            lambda m: f'<a href="?node_id={node_id}&adjective={adjective}&show_node_id={m.group(1)}" title="{m.group(1)}" style=" text-decoration: none;"><b style="color: var(--color-accent);">{m.group(2)}</b></a>',
                             explanation
                         )
 
@@ -343,7 +370,11 @@ class ExplainerGradioInterface:
                 explaining_question += ExplainerGradioInterface.cool_html_text_container.format("P.S. You can click on a move in the explanation to see it in the board.")
 
             return full_return, explaining_question
-        
+
+        def visualize_move_tree(self):
+            """Generate a visualization of the move tree."""
+            return self.explaining_agent.core.visualize_move_tree(self.explaining_agent.choice.parent)
+
     class GraphVisualizer:
         """Class for visualizing the explanation graph."""
         def __init__(self, nodes, explanation_depth, get_adjective_names):
