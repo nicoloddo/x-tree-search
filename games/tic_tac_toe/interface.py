@@ -227,10 +227,14 @@ class TicTacToeGradioInterface(GameInterface):
         self.explaining_agent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
         self.explainer_interface = ExplainerGradioInterface(game=self.game, explanation_depth=3, explaining_agent=self.explaining_agent, explain_in_hyperlink_mode=interface_hyperlink_mode)
 
-    def create_interface(self):
+    def start(self, share_gradio=False):
         """
-        Creates the game interface.
-        """        
+        Start the game interface.
+
+        Initializes the game state and launches the Gradio interface.
+        """
+        self.started = True
+        
         with gr.Blocks(css="""
             .grid-container {
                 grid-column-gap: 0px; 
@@ -327,17 +331,7 @@ class TicTacToeGradioInterface(GameInterface):
                 inputs=[],
                 outputs=all_available_outputs,
             )
-
-        return demo        
-    
-    def start(self, share_gradio=False):
-        """
-        Start the game interface.
-
-        Initializes the game state and launches the Gradio interface.
-        """
-        self.started = True
-        demo = self.create_interface()
+        
         demo.launch(share=share_gradio)
 
     def restart_game(self):

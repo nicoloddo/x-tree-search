@@ -148,7 +148,7 @@ class TicTacToe(Game):
     async def start_game(self, share_gradio=False):
         await self.process_turn()  
         if self.interface_mode == 'gradio':
-            return self.interface.start(share_gradio=share_gradio)          
+            self.interface.start(share_gradio=share_gradio)          
         else:
             self.interface.start()          
 
