@@ -101,7 +101,7 @@ class AlphaBetaExplainer:
 
                         explanation_if_true = CompositeExplanation(
                             Possession("the most forward in the future I looked"),
-                            Assumption("when I can't look further in the future, my evaluation of a move is qualitative, only based on the board position after it."),
+                            Assumption("when I can't look further in the future, my evaluation of a move is qualitative, only based on the board position after it"),
                         ),
                     
                         explanation_if_false = ConditionalExplanation(
