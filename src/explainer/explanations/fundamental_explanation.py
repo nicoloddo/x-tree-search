@@ -1,7 +1,7 @@
 from .base import Explanation
 from src.explainer.common.utils import AdjectiveType
 
-from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And
+from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And, Implies
 
 from typing import Any, List
 
@@ -258,11 +258,12 @@ class GroupComparison(Explanation):
             group_comparison_explanation = self.forward_explanation(comparison_adjective, node, comparison_group)
 
             # Remove redundant information
-            if first_group_added:
-                if isinstance(group_comparison_explanation.antecedent, And):
-                    group_comparison_explanation.antecedent.exprs[0].nullify()
-            if len(comparison_group) == len(group): # The same comparison is true for the whole group
-                group_comparison_explanation.consequent.object = "it" if len(comparison_group) == 1 else "them"
+            if isinstance(group_comparison_explanation, Implies):
+                if first_group_added:
+                    if isinstance(group_comparison_explanation.antecedent, And):
+                        group_comparison_explanation.antecedent.exprs[0].nullify()
+                if len(comparison_group) == len(group): # The same comparison is true for the whole group
+                    group_comparison_explanation.consequent.object = "it" if len(comparison_group) == 1 else "them"
                 
             comparison_explanations_per_group.append(group_comparison_explanation)
             first_group_added = True
