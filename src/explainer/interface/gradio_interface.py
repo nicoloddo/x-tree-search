@@ -157,7 +157,7 @@ class ExplainerGradioInterface:
             choices = self.get_adjective_names()
             return [gr.update(choices=choices, value=None) for _ in range(4)]
         
-        def build_ai_explanation_components(self, toggles: Dict[str, tuple[str, bool]] = None):
+        def build_ai_explanation_components(self, toggles: Dict[str, tuple[str, bool]] = None, *, additional_info: str = None):
             """
             Build the AI explanation components.
 
@@ -174,6 +174,8 @@ class ExplainerGradioInterface:
             components["comparison_id_input"] = gr.Textbox(label="In comparison to (you can drag and drop from the explanation)", visible=False)
             components["explain_button"] = gr.Button("Explain", visible=self.explain_in_hyperlink_mode)
             components["explaining_question"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format("Why ...?"), label="Question", visible=self.explain_in_hyperlink_mode)
+            if self.explain_in_hyperlink_mode and additional_info is not None:
+                components["additional_info"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format(additional_info))
             
             if self.explain_in_hyperlink_mode:
                 components["explanation_output"] = gr.HTML(value=self.update_ai_explanation()[0], label="AI move explanation")
@@ -416,8 +418,6 @@ class ExplainerGradioInterface:
                 full_return = f"```markdown\n{explanation}\n```"
 
             explaining_question = ExplainerGradioInterface.cool_html_text_container.format(explaining_question)
-            if self.explain_in_hyperlink_mode:
-                explaining_question += ExplainerGradioInterface.cool_html_text_container.format("P.S. You can click on a move in the explanation to see it in the board.")
 
             return full_return, explaining_question
 
