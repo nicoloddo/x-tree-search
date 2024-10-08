@@ -97,37 +97,46 @@ class AlphaBetaExplainer:
                     
                     # That's not a final move
                     explanation_if_false = ConditionalExplanation(
-                        condition=If("possession", "not worth exploring after checking the first possible next move"),
-                        
-                        # The node has not been pruned, we have the full next future consequences list (until final moves or max search depth are reached)
-                        explanation_if_false = CompositeExplanation(
-                            Assumption("We assume the opponent will do their best move and us our best move.", necessary=True),
-                            RecursivePossession("as next move", any_stop_conditions = [If("possession", "as next move", "a win"), # final move
-                                                                                        If("possession", "as next move", "a loss"), # final move
-                                                                                        If("possession", "as next move", "a draw"), # final move
-                                                                                        If("possession", "as next move", "the most forward in the future I looked")])), # max search depth
+                        condition = If("possession", "the most forward in the future I looked"),
 
-                        # The node has been pruned, we only have one children future consequence
-                        explanation_if_true = ConditionalExplanation(
-                            condition = If("possession", "as next move", "final move"), # Is the next move (the only one available) a final move?
-
-                            # The only children of the move that we considered is actually a final move.
-                            # In this case, we don't need to explain why the node was not worth exploring after checking the first possible next move,
-                            # users usually understand easily why this next possible move is not worth exploring after checking the first possible next move when it is a final move.
-                            # We simply can say if it is a win, loss or draw.
-                            explanation_if_true = ConditionalExplanation(
-                                condition=If("possession", "as next move", "a win"),
-                                explanation_if_true=Possession("as next move", "a win"),
-                                explanation_if_false= ConditionalExplanation(
-                                    condition=If("possession", "as next move", "a loss"),
-                                    explanation_if_true = Possession("as next move", "a loss"),
-                                    explanation_if_false = Possession ("as next move", "a draw")
-                                    )
-                                ),
-
-                            # Next move is not a final move, thus we need explain that the node was simply not worth exploring after checking the first possible next move and why.
-                            explanation_if_false = Possession("not worth exploring after checking the first possible next move")
+                        explanation_if_true = CompositeExplanation(
+                            Possession("the most forward in the future I looked"),
+                            Assumption("when I can't look further in the future, my evaluation of a move is qualitative, only based on the board position after it."),
                         ),
+                    
+                        explanation_if_false = ConditionalExplanation(
+                            condition=If("possession", "not worth exploring after checking the first possible next move"),
+                            
+                            # The node has not been pruned, we have the full next future consequences list (until final moves or max search depth are reached)
+                            explanation_if_false = CompositeExplanation(
+                                Assumption("We assume the opponent will do their best move and us our best move.", necessary=True),
+                                RecursivePossession("as next move", any_stop_conditions = [If("possession", "as next move", "a win"), # final move
+                                                                                            If("possession", "as next move", "a loss"), # final move
+                                                                                            If("possession", "as next move", "a draw"), # final move
+                                                                                            If("possession", "as next move", "the most forward in the future I looked")])), # max search depth
+
+                            # The node has been pruned, we only have one children future consequence
+                            explanation_if_true = ConditionalExplanation(
+                                condition = If("possession", "as next move", "final move"), # Is the next move (the only one available) a final move?
+
+                                # The only children of the move that we considered is actually a final move.
+                                # In this case, we don't need to explain why the node was not worth exploring after checking the first possible next move,
+                                # users usually understand easily why this next possible move is not worth exploring after checking the first possible next move when it is a final move.
+                                # We simply can say if it is a win, loss or draw.
+                                explanation_if_true = ConditionalExplanation(
+                                    condition=If("possession", "as next move", "a win"),
+                                    explanation_if_true=Possession("as next move", "a win"),
+                                    explanation_if_false= ConditionalExplanation(
+                                        condition=If("possession", "as next move", "a loss"),
+                                        explanation_if_true = Possession("as next move", "a loss"),
+                                        explanation_if_false = Possession ("as next move", "a draw")
+                                        )
+                                    ),
+
+                                # Next move is not a final move, thus we need explain that the node was simply not worth exploring after checking the first possible next move and why.
+                                explanation_if_false = Possession("not worth exploring after checking the first possible next move")
+                            ),
+                        )
                     )
                 ),
             ),                    
