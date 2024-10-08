@@ -338,6 +338,8 @@ class CompactSameExplanations(SpecificTactic):
         """
         Build the CompactSameExplanations tactic.
 
+        Note: the tactic will not compact Recursive Possessions.
+
         The tactic takes each explanation part of the adjective it was attached to (the explanation needs to be composite for this
         to make sense applying), and it checks if those parts have analogous explanations that could be compacted.
         To do so, you specify the adjectives which explanations might be analogous across the main adjective's explanation parts,
@@ -464,9 +466,7 @@ class CompactSameExplanations(SpecificTactic):
             # We add the subjects to the previously seen instance
             if not isinstance(seen.subject, list):
                 seen.subject = [seen.subject]
-            seen.subject.extend(subjects_to_add) 
-            #TODO: Handle the case the subjects were already a list and we are adding a new list,
-            # Like in the case of NodesGroupPointerAdjective
+            seen.subject.extend(subjects_to_add)
             
             # We nullify explanation for this occurrence
             explanation.antecedent.exprs[explanation_part_to_nullify_index].nullify()
@@ -475,6 +475,9 @@ class CompactSameExplanations(SpecificTactic):
         most_relevant_predicate_indexes = []
         for i, expl in enumerate(explanations_book):
             if len(expl['subexpression']) == 0:
+                continue
+
+            if RecursivePossession in expl['explanation_type']: # We do not compact Recursive Possessions
                 continue
 
             relevant_predicates_indexes = [p for p, predicate in enumerate(expl['predicate']) if predicate in self.from_adjectives]
