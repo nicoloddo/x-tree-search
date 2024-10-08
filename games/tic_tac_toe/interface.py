@@ -291,7 +291,8 @@ class TicTacToeGradioInterface(GameInterface):
                                      self.status, self.output_text, 
                                      self.ai_explanation_components["explanation_output"], 
                                      self.ai_explanation_components["id_input"],
-                                     self.ai_explanation_components["explaining_question"]]
+                                     self.ai_explanation_components["explain_adj_name"],
+                                     self.ai_explanation_components["explaining_question"],]
             
             self.showing_state.change(
                 self.update_showing_state,
@@ -381,7 +382,7 @@ class TicTacToeGradioInterface(GameInterface):
         adjective = explain_adjective or "the best"
         ai_explanation, explaining_question = self.explainer_interface.ai_explainer.update_ai_explanation(explain_node_id, adjective)
 
-        return board_gallery, showing_state, status, output_text, ai_explanation, show_node_id, explaining_question
+        return board_gallery, showing_state, status, output_text, ai_explanation, show_node_id, adjective,explaining_question
 
     def get_updated_board_gallery(self, node_id=None):
         """
