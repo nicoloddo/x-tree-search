@@ -1,6 +1,6 @@
 from src.explainer.propositional_logic import LogicalExpression
 
-EXPLANATION_DEPTH_ALLOWED_VALUES = list(range(0, 10))
+EXPLANATION_DEPTH_ALLOWED_VALUES = list(range(1, 10))
 def _validate_explanation_depth(value):
     if not isinstance(value, int) or value not in EXPLANATION_DEPTH_ALLOWED_VALUES:
         raise ValueError(f"Explanation depth must be a positive integer or 0.")

@@ -173,6 +173,7 @@ class ExplainerGradioInterface:
                     components["explain_adj_name"] = gr.Dropdown(choices=self.get_adjective_names(), label="Why is it ...? Why it has that ...?", visible=self.explain_in_hyperlink_mode)
             components["comparison_id_input"] = gr.Textbox(label="In comparison to (you can drag and drop from the explanation)", visible=False)
             components["explain_button"] = gr.Button("Explain", visible=self.explain_in_hyperlink_mode)
+            components["explanation_depth"] = gr.Slider(minimum=min(EXPLANATION_DEPTH_ALLOWED_VALUES), maximum=max(EXPLANATION_DEPTH_ALLOWED_VALUES), step=1, value=self.game.explainer.settings.explanation_depth, label="Explanation Depth")
             components["explaining_question"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format("Why ...?"), label="Question", visible=self.explain_in_hyperlink_mode)
             if self.explain_in_hyperlink_mode and additional_info is not None:
                 components["additional_info"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format(additional_info))
@@ -228,11 +229,9 @@ class ExplainerGradioInterface:
                         label="Framework Name", 
                         value=self.game.explainer.settings.with_framework,
                         visible=False) # For now this is not customizable
-                    components["explanation_depth"] = gr.Dropdown(
-                        choices=EXPLANATION_DEPTH_ALLOWED_VALUES,
-                        label="Explanation Depth",
-                        value=self.game.explainer.settings.explanation_depth
-                    )
+                    
+                    # Explanation Depth setting has been moved to the AI explanation section
+
                     components["assumptions_verbosity"] = gr.Dropdown(
                         choices=ASSUMPTIONS_VERBOSITY_ALLOWED_VALUES,
                         label="Assumptions Verbosity",
@@ -262,7 +261,12 @@ class ExplainerGradioInterface:
             if "explain_button" in components:
                 components["explain_button"].click(
                     self.update_ai_explanation,
-                    inputs=[components["id_input"], components["explain_adj_name"], components["comparison_id_input"]],
+                    inputs=[components["id_input"], components["explain_adj_name"], components["comparison_id_input"], components["explanation_depth"]],
+                    outputs=[components["explanation_output"], components["explaining_question"]]
+                )
+                components["explanation_depth"].change(
+                    self.update_ai_explanation,
+                    inputs=[components["id_input"], components["explain_adj_name"], components["comparison_id_input"], components["explanation_depth"]],
                     outputs=[components["explanation_output"], components["explaining_question"]]
                 )
                 components["id_input"].change(
@@ -340,7 +344,7 @@ class ExplainerGradioInterface:
             self.explaining_agent = explaining_agent
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
 
-        def update_ai_explanation(self, node_id=None, adjective=None, comparison_id=None):
+        def update_ai_explanation(self, node_id=None, adjective=None, comparison_id=None, explanation_depth=None):
             """
             Update the AI explanation.
 
@@ -351,6 +355,11 @@ class ExplainerGradioInterface:
                 node_id = None
             if comparison_id == '':
                 comparison_id = None
+
+            if explanation_depth is None:
+                explanation_depth = self.game.explainer.settings.explanation_depth
+            else:
+                explanation_depth = int(explanation_depth)
 
             explanation = ""
             explaining_question = "Why ...?"
@@ -380,10 +389,10 @@ class ExplainerGradioInterface:
 
                     # Explain
                     if comparison_id is None:
-                        explanation = self.game.explainer.explain(node, adjective, print_context=False)
+                        explanation = self.game.explainer.explain(node, adjective, print_context=False, explanation_depth=explanation_depth)
                     else:
                         comparison_node = self.explaining_agent.core.nodes[comparison_id]
-                        explanation = self.game.explainer.explain(node, adjective, comparison_node, print_context=False)
+                        explanation = self.game.explainer.explain(node, adjective, comparison_node, print_context=False, explanation_depth=explanation_depth)
 
                     # Build explaining_question
                     if isinstance(explanation, Implies):
