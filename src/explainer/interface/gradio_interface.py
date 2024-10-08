@@ -7,7 +7,7 @@ import graphviz
 import re
 from urllib.parse import urlencode
 
-from src.explainer.adjective import Adjective
+from src.explainer.adjective import Adjective, AdjectiveType
 from src.explainer.explanation import Explanation, Assumption, CompositeExplanation, ConditionalExplanation
 from src.explainer.framework import ArgumentationFramework
 from src.explainer.propositional_logic import LogicalExpression, Implies
@@ -68,15 +68,17 @@ class ExplainerGradioInterface:
         self.graph_visualizer = self.GraphVisualizer(self.nodes, explanation_depth, self.get_adjective_names)
         self.ai_explainer = self.AIExplainer(game, explaining_agent, explain_in_hyperlink_mode)
         self.interface_builder = self.InterfaceBuilder(
-            self.game,
-            self.explaining_agent,
-            self.tab_ids,
-            explain_in_hyperlink_mode,
-            self.get_adjective_names,
-            self.ai_explainer.update_ai_explanation,
-            self.ai_explainer.visualize_decision_tree,
-            self.graph_visualizer.visualize_graph,
-            self.apply_explainer_settings
+            game=self.game,
+            explaining_agent=self.explaining_agent,
+            tab_ids=self.tab_ids,
+            explain_in_hyperlink_mode=explain_in_hyperlink_mode,
+            get_adjective_names=self.get_adjective_names,
+            update_ai_explanation=self.ai_explainer.update_ai_explanation,
+            transform_hyperlink_to_node_id=self.transform_hyperlink_to_node_id,
+            check_if_comparison_adjective=self.check_if_comparison_adjective,
+            visualize_decision_tree=self.ai_explainer.visualize_decision_tree,
+            visualize_graph=self.graph_visualizer.visualize_graph,
+            apply_explainer_settings=self.apply_explainer_settings
         )
 
     def on_load(self, request: gr.Request):
@@ -116,22 +118,39 @@ class ExplainerGradioInterface:
         }
         self.game.explainer.configure_settings(settings_dict)
     
+    def transform_hyperlink_to_node_id(self, node_id):
+        """Transform the hyperlink to the node id."""
+        if "http" in node_id:
+            return node_id.split("show_node_id=")[1]
+        else:
+            return node_id
+    
+    def check_if_comparison_adjective(self, adjective_name):
+        """Check if the adjective name is a comparison adjective."""
+        adjective = self.framework.get_adjective(adjective_name)
+        if adjective.type == AdjectiveType.COMPARISON:
+            return gr.update(visible=True, value=None)
+        else:
+            return gr.update(visible=False, value=None)
+    
     def launch(self):
         """Launch the Gradio interface."""
         self.demo = self.interface_builder.build_interface()
         self.demo.launch()
 
     class InterfaceBuilder:
-        def __init__(self, game, explaining_agent, tab_ids, explain_in_hyperlink_mode, get_adjective_names, update_ai_explanation, visualize_decision_tree, visualize_graph, apply_explainer_settings):
-            self.game = game
-            self.explaining_agent = explaining_agent
-            self.tab_ids = tab_ids
-            self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
-            self.get_adjective_names = get_adjective_names
-            self.update_ai_explanation = update_ai_explanation
-            self.visualize_decision_tree = visualize_decision_tree
-            self.visualize_graph = visualize_graph
-            self.apply_explainer_settings = apply_explainer_settings
+        def __init__(self, **kwargs):
+            self.game = kwargs.get('game')
+            self.explaining_agent = kwargs.get('explaining_agent')
+            self.tab_ids = kwargs.get('tab_ids')
+            self.explain_in_hyperlink_mode = kwargs.get('explain_in_hyperlink_mode')
+            self.get_adjective_names = kwargs.get('get_adjective_names')
+            self.update_ai_explanation = kwargs.get('update_ai_explanation')
+            self.transform_hyperlink_to_node_id = kwargs.get('transform_hyperlink_to_node_id')
+            self.check_if_comparison_adjective = kwargs.get('check_if_comparison_adjective')
+            self.visualize_decision_tree = kwargs.get('visualize_decision_tree')
+            self.visualize_graph = kwargs.get('visualize_graph')
+            self.apply_explainer_settings = kwargs.get('apply_explainer_settings')
 
         def update_dropdowns(self):
             """Update all dropdowns with current adjective names."""
@@ -149,9 +168,10 @@ class ExplainerGradioInterface:
             
             with gr.Row():
                 with gr.Column(scale=1):
-                    components["id_input"] = gr.Textbox(label="Ask further about", visible=self.explain_in_hyperlink_mode)
+                    components["id_input"] = gr.Textbox(label="Ask further about (you can drag and drop a move from the explanation)", visible=self.explain_in_hyperlink_mode)
                 with gr.Column(scale=1):
                     components["explain_adj_name"] = gr.Dropdown(choices=self.get_adjective_names(), label="Why is it ...? Why it has that ...?", visible=self.explain_in_hyperlink_mode)
+            components["comparison_id_input"] = gr.Textbox(label="In comparison to (you can drag and drop from the explanation)", visible=False)
             components["explain_button"] = gr.Button("Explain", visible=self.explain_in_hyperlink_mode)
             components["explaining_question"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format("Why ...?"), label="Question", visible=self.explain_in_hyperlink_mode)
             
@@ -240,8 +260,23 @@ class ExplainerGradioInterface:
             if "explain_button" in components:
                 components["explain_button"].click(
                     self.update_ai_explanation,
-                    inputs=[components["id_input"], components["explain_adj_name"]],
+                    inputs=[components["id_input"], components["explain_adj_name"], components["comparison_id_input"]],
                     outputs=[components["explanation_output"], components["explaining_question"]]
+                )
+                components["id_input"].change(
+                    self.transform_hyperlink_to_node_id,
+                    inputs=[components["id_input"]],
+                    outputs=[components["id_input"]]
+                )
+                components["explain_adj_name"].change(
+                    self.check_if_comparison_adjective,
+                    inputs=[components["explain_adj_name"]],
+                    outputs=[components["comparison_id_input"]]
+                )
+                components["comparison_id_input"].change(
+                    self.transform_hyperlink_to_node_id,
+                    inputs=[components["comparison_id_input"]],
+                    outputs=[components["comparison_id_input"]]
                 )
 
             # Visualize
@@ -303,13 +338,18 @@ class ExplainerGradioInterface:
             self.explaining_agent = explaining_agent
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
 
-        def update_ai_explanation(self, node_id=None, adjective=None):
+        def update_ai_explanation(self, node_id=None, adjective=None, comparison_id=None):
             """
             Update the AI explanation.
 
             :param node_id: The ID of the node to explain.
             :param adjective: The adjective to use in the explanation.
             """
+            if node_id == '':
+                node_id = None
+            if comparison_id == '':
+                comparison_id = None
+
             explanation = ""
             explaining_question = "Why ...?"
             
@@ -336,14 +376,24 @@ class ExplainerGradioInterface:
                     else:
                         activated = False
 
-                    explanation = self.game.explainer.explain(node, adjective, print_context=False)
+                    # Explain
+                    if comparison_id is None:
+                        explanation = self.game.explainer.explain(node, adjective, print_context=False)
+                    else:
+                        comparison_node = self.explaining_agent.core.nodes[comparison_id]
+                        explanation = self.game.explainer.explain(node, adjective, comparison_node, print_context=False)
 
                     # Build explaining_question
                     if isinstance(explanation, Implies):
                         explanation.consequent.build_str_components()
                         verb_str = explanation.consequent.verb_str
                         predicate_str = explanation.consequent.predicate_str
-                        explaining_question = f"Why {verb_str} {node.game_tree_node_string} [id: {node.id}]{' that' if verb_str != 'is' else ''} {predicate_str}?"
+                        
+                        object_str = explanation.consequent.object_str
+                        if object_str.count("::node::") == 1: # We are simply comparing two nodes
+                            object_str = f" {comparison_node.game_tree_node_string} [id: {comparison_node.id}]"                            
+
+                        explaining_question = f"Why {verb_str} {node.game_tree_node_string} [id: {node.id}]{' that' if verb_str != 'is' else ''} {predicate_str}{object_str}?"
                     else:
                         explaining_question = f""
                         

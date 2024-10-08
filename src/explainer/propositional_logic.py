@@ -89,7 +89,7 @@ class Proposition(LogicalExpression):
 
     def _to_str(self) -> str:
         self.build_str_components()
-        to_string = f"{self.subject_str} {self.verb_str} {self.predicate_str}{self.evaluation_str}"
+        to_string = f"{self.subject_str} {self.verb_str} {self.predicate_str}{self.evaluation_str}{self.object_str}"
         if hasattr(self, "additional_info"):
             to_string += f" ({self.additional_info})"
         return to_string
@@ -110,18 +110,15 @@ class Proposition(LogicalExpression):
             subject = self.subject
 
         if self.object is None:
-            object = None
+            object = ""
         elif self.tree_node_cls is not None and isinstance(self.object, self.tree_node_cls):
-            object = format_node(self.object)
+            object = " " + format_node(self.object)
         elif isinstance(self.object, list):
-            object = ', '.join(format_node(item) if self.tree_node_cls is not None and  isinstance(item, self.tree_node_cls) else str(item) for item in self.object)
+            object = " " + ', '.join(format_node(item) if self.tree_node_cls is not None and  isinstance(item, self.tree_node_cls) else str(item) for item in self.object)
         else:
-            object = self.object
+            object = " " + self.object
 
-        if object is not None:
-            predicate = f"{self.predicate} {object}"
-        else:
-            predicate = self.predicate
+        predicate = self.predicate
 
         verb_type = self.to_be if isinstance(self.evaluation, bool) else self.to_have
         verb = verb_type[verb_number]
@@ -155,6 +152,7 @@ class Proposition(LogicalExpression):
         self.verb_str = verb
         self.predicate_str = predicate
         self.evaluation_str = evaluation
+        self.object_str = object
 
 class Implies(LogicalExpression):
     """Represents the implication between two logical expressions."""
