@@ -239,8 +239,8 @@ class ExplainerGradioInterface:
                     )
                 
                 with gr.Column(scale=1):
-                    components["print_depth"] = gr.Checkbox(label="Print Depth", value=False)
-                    components["print_implicit_assumptions"] = gr.Checkbox(label="Print Implicit Assumptions", value=True)
+                    components["print_depth"] = gr.Checkbox(label="Print Depth", value=self.game.explainer.settings.print_depth)
+                    components["print_implicit_assumptions"] = gr.Checkbox(label="Print Implicit Assumptions", value=self.game.explainer.settings.print_implicit_assumptions)
                     components["print_mode"] = gr.Dropdown(
                         choices=PRINT_MODE_ALLOWED_VALUES,
                         label="Print Mode",
