@@ -25,7 +25,7 @@ class If(Explanation):
         :type condition_type: str
         :param args: Arguments for the condition (see usage examples)
         :type args: str
-        :param value: An optional value for possession conditions, defaults to True
+        :param value: An optional value for possession conditions, against which the adjective is compared, defaults to True
         :type value: Any, optional
         :param explain_further: Whether to explain the condition further, defaults to True
         :type explain_further: bool, optional
@@ -40,8 +40,10 @@ class If(Explanation):
 
         if condition_type == "possession":
             self.condition = Possession(*args, explain_further=explain_further, forward_possessions_explanations=forward_possessions_explanations)
+            self.description = f"{self.condition.pointer_adjective_name + ' ' if self.condition.pointer_adjective_name else ''}{self.condition.adjective_name}"
         elif condition_type == "comparison":
             self.condition = Comparison(*args, explain_further=explain_further, forward_possessions_explanations=forward_possessions_explanations)
+            self.description = f"{self.condition.comparison_adjective_name}"
         else:
             raise ValueError("Invalid condition_type. Must be either 'possession' or 'comparison'.")
 

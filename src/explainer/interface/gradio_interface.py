@@ -565,7 +565,7 @@ class ExplainerGradioInterface:
         def _process_conditional_explanation(self, dot, parent_id, explanation, exp_id, processed_nodes, explanation_depth, edge_label):
             """Process a conditional explanation, adding condition and branches to the graph."""
             condition_id = f"{exp_id}_condition"
-            dot.node(condition_id, f"If\n{explanation.condition.adjective_name}", fillcolor='yellow')
+            dot.node(condition_id, f"If\n{explanation.condition.description}", fillcolor='yellow')
             dot.edge(parent_id, condition_id, label=edge_label)
 
             self._process_explanation(dot, condition_id, explanation.explanation_if_true, f"{exp_id}_true", processed_nodes, explanation_depth, 'True')
