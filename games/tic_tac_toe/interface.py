@@ -320,8 +320,8 @@ class TicTacToeGradioInterface(GameInterface):
             skip_score_toggle = self.ai_explanation_components["skip_score_toggle"]
             skip_score_toggle.change(
                 self.toggle_skip_score,
-                inputs=[skip_score_toggle],
-                outputs=all_available_outputs
+                inputs=[skip_score_toggle, self.ai_explanation_components["id_input"], self.ai_explanation_components["explain_adj_name"], self.ai_explanation_components["comparison_id_input"], self.ai_explanation_components["explanation_depth"]],
+                outputs=[self.ai_explanation_components["explanation_output"], self.ai_explanation_components["explaining_question"]]
             )
 
             # Initial update
@@ -529,7 +529,7 @@ class TicTacToeGradioInterface(GameInterface):
         else:
             raise ValueError(f"Invalid type {type}")
 
-    def toggle_skip_score(self, skip_score: bool):
+    def toggle_skip_score(self, skip_score: bool, explain_node_id: str, explain_adjective: str, comparison_id: str, explanation_depth: int):
         """
         Toggle the skip score statement setting and update the explanation.
 
@@ -540,8 +540,10 @@ class TicTacToeGradioInterface(GameInterface):
         """
         self.skip_score_statement = skip_score
         self.game.explainer.frameworks['highlevel'].get_adjective('score').skip_statement = skip_score
+
+        ai_explanation, explaining_question = self.explainer_interface.ai_explainer.update_ai_explanation(explain_node_id, explain_adjective, comparison_id, explanation_depth)
         
-        return self.update()
+        return ai_explanation, explaining_question
 
     async def process_move(self, evt: gr.SelectData):
         """
