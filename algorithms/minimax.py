@@ -313,7 +313,7 @@ class MiniMax:
             elif node.maximizing_player_turn:
                 fillcolor = 'green' if node.fully_searched else 'lightgreen'
             else:
-                fillcolor = 'deeppink' if not node.fully_searched else 'pink'
+                fillcolor = 'deeppink' if node.fully_searched else 'pink'
             
             # Node label
             label += f"\nScore: {node.score}"
