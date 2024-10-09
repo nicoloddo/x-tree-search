@@ -199,7 +199,7 @@ class TicTacToeGradioInterface(GameInterface):
     assets_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
     empty_cell_name = "cell"
 
-    def __init__(self, game, interface_hyperlink_mode=True):
+    def __init__(self, game=None, interface_hyperlink_mode=True, *, create_game_method: callable = None):
         """
         Initialize the TicTacToeGradioInterface.
 
@@ -209,9 +209,7 @@ class TicTacToeGradioInterface(GameInterface):
         :type game: TicTacToe
         :raises AttributeError: If the game instance doesn't have a 'get_current_player' method
         """
-        super().__init__(game)
-        if not hasattr(self.game, 'get_current_player'):
-            raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the Gradio interface.")
+        super().__init__()
         
         self.board_gallery = None
         self.cell_images = self.create_cell_images()
@@ -222,10 +220,32 @@ class TicTacToeGradioInterface(GameInterface):
         self.ai_explanation = None
         self.ai_explanation_components = None
         self.skip_score_statement = True
+        
+        self.explainer_interface = ExplainerGradioInterface(explain_in_hyperlink_mode=interface_hyperlink_mode)
+        
+        self.game = None
+        self.explaining_agent = None
+        self.explainer = None
+
+        if game is not None:
+            if create_game_method is not None:
+                raise SyntaxError("Do not provide an create_game_method method if you are already providing a game instance.")
+            self.set_game(game)
+        elif create_game_method is not None:
+            self.create_game_method = create_game_method
+        else:
+            raise SyntaxError("Either provide a game instance or a create_game_method method.")
+
+    def set_game(self, game):
+        if not hasattr(game, 'get_current_player'):
+            raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the Gradio interface.")
+
+        self.game = game
+        self.explaining_agent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
         self.explainer = game.explainer
 
-        self.explaining_agent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
-        self.explainer_interface = ExplainerGradioInterface(game=self.game, explanation_depth=3, explaining_agent=self.explaining_agent, explain_in_hyperlink_mode=interface_hyperlink_mode)
+        self.explainer_interface.set_game(self.game)
+        self.explainer_interface.set_explaining_agent(self.explaining_agent)
 
     def start(self, share_gradio=False):
         """
@@ -234,7 +254,10 @@ class TicTacToeGradioInterface(GameInterface):
         Initializes the game state and launches the Gradio interface.
         """
         self.started = True
+        demo = self.create_interface()
+        demo.launch(share=share_gradio)
         
+    def create_interface(self):
         with gr.Blocks(css="""
             .grid-container {
                 grid-column-gap: 0px; 
@@ -251,8 +274,8 @@ class TicTacToeGradioInterface(GameInterface):
                                 self.status = gr.Textbox(label="Status", value=self.status, scale=1)
                                 self.showing_state = gr.Textbox(label="Showing (drag and drop to change)", value=self.showing_state, scale=1, interactive=True)
                             with gr.Row():
-                                restart_button = gr.Button("Restart Game", scale=1)
-                                show_current_button = gr.Button("Return to Current State", scale=1)
+                                self.restart_button = gr.Button("Start Game", scale=1)
+                                self.show_current_button = gr.Button("Return to Current State", scale=1)
 
                             self.gallery_settings = {
                                 "columns": 3,
@@ -276,16 +299,16 @@ class TicTacToeGradioInterface(GameInterface):
                             )
 
                 with gr.TabItem("Visualize Decision Tree", self.explainer_interface.tab_ids["visualize_decision_tree"]):
-                    visualize_decision_tree_components = self.explainer_interface.interface_builder.build_visualize_decision_tree_components()
+                    self.visualize_decision_tree_components = self.explainer_interface.interface_builder.build_visualize_decision_tree_components()
 
                 with gr.TabItem("Visualize Framework", self.explainer_interface.tab_ids["visualize"]):
-                    visualize_components = self.explainer_interface.interface_builder.build_visualize_components()
+                    self.visualize_components = self.explainer_interface.interface_builder.build_visualize_components()
                 
                 with gr.TabItem("Settings", self.explainer_interface.tab_ids["settings"]):
-                    explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components()
+                    self.explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components()
 
             # Handle components connections   
-            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **visualize_components, **visualize_decision_tree_components, **explainer_settings_components})
+            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **self.visualize_components, **self.visualize_decision_tree_components, **self.explainer_settings_components})
 
             all_available_outputs = [self.board_gallery, self.showing_state, 
                                      self.status, self.output_text, 
@@ -306,16 +329,16 @@ class TicTacToeGradioInterface(GameInterface):
                 outputs=all_available_outputs
             )
 
-            show_current_button.click(
+            self.show_current_button.click(
                 self.get_updated_board_gallery,
                 inputs=[],
                 outputs=[self.board_gallery, self.showing_state, self.ai_explanation_components["id_input"]]
             )
 
-            restart_button.click(
+            self.restart_button.click(
                 self.restart_game,
                 inputs=[],
-                outputs=all_available_outputs
+                outputs=all_available_outputs + [self.restart_button, self.ai_explanation_components["explanation_depth"]] + list(self.explainer_settings_components.values())
             )
 
             skip_score_toggle = self.ai_explanation_components["skip_score_toggle"]
@@ -331,15 +354,30 @@ class TicTacToeGradioInterface(GameInterface):
                 inputs=[],
                 outputs=all_available_outputs,
             )
-        
-        demo.launch(share=share_gradio)
 
+        return demo
+
+    def start_game(self):
+        """
+        Start the game.
+        """
+        self.set_game(self.create_game_method())
+        self.game.interface = self
+        asyncio.run(self.game.start_game())
+    
     def restart_game(self):
         """
         Restart the game.
         """
-        self.game.restart()
-        return self.update()
+        if self.game is None:
+            self.start_game()
+            explanation_depth = self.game.explainer.settings.explanation_depth
+            explainer_settings = self.explainer_interface.interface_builder.update_explainer_settings()
+        else:
+            self.game.restart()
+            explanation_depth = self.ai_explanation_components["explanation_depth"].value
+            explainer_settings = self.explainer_settings_components.values()
+        return self.update(), gr.update(value="Restart Game"), explanation_depth, explainer_settings
 
     def on_load(self, request: gr.Request):
         """
@@ -373,6 +411,11 @@ class TicTacToeGradioInterface(GameInterface):
         :return: Updated board images, status, output text, and AI explanation
         :rtype: Tuple[List[str], str, str, str]
         """
+        if self.game is None:
+            return gr.Gallery(), "Start a Game to show the board", "", "", "", "", "", ""
+        elif self.explaining_agent is None:
+            return gr.Gallery(), "Had some problems finding the explaining agent, please check your game definition", "", "", "", "", "", ""
+        
         board_gallery, showing_state, show_node_id = self.get_updated_board_gallery(show_node_id)
         status = self.get_updated_status()
         output_text = self.output_text  # Update in case the self.output_text was changed
@@ -393,6 +436,11 @@ class TicTacToeGradioInterface(GameInterface):
         :return: The updated board gallery, showing state, and node ID
         :rtype: Tuple[gr.Gallery, str, str]
         """
+        if self.game is None:
+            return gr.Gallery(), "Start a Game to show the board", None
+        elif self.explaining_agent is None:
+            return gr.Gallery(), "Had some problems finding the explaining agent, please check your game definition", None
+        
         # Determine the node to display and its corresponding board state
         if node_id is not None:
             # If a specific node is requested, fetch it from the explaining agent's core
@@ -483,6 +531,11 @@ class TicTacToeGradioInterface(GameInterface):
         """
         Update the showing state.
         """
+        if self.game is None:
+            return gr.Gallery(), "Start a Game to show the board", None
+        elif self.explaining_agent is None:
+            return gr.Gallery(), "Had some problems finding the explaining agent, please check your game definition", None
+        
         showing_state = self.explainer_interface.transform_hyperlink_to_node_id(showing_state)
 
         if showing_state in self.explaining_agent.core.nodes:

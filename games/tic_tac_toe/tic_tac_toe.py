@@ -42,6 +42,8 @@ class TicTacToe(Game):
             self.interface = TicTacToeJupyterInterface(self)
         elif interface_mode == 'gradio':
             self.interface = TicTacToeGradioInterface(self, interface_hyperlink_mode)
+        elif interface_mode == 'gradio_app':
+            pass # Interface is created in the app.py file
         else:
             raise ValueError(f"Unsupported interface mode: {interface_mode}")
 
@@ -147,10 +149,15 @@ class TicTacToe(Game):
     """Turn taking logic"""
     async def start_game(self, share_gradio=False):
         await self.process_turn()  
+
         if self.interface_mode == 'gradio':
-            self.interface.start(share_gradio=share_gradio)          
+            self.interface.start(share_gradio=share_gradio)
+        elif self.interface_mode == 'gradio_app':
+            pass # Create and start the interface in the app.py file
+        elif self.interface_mode == 'jupyter':
+            self.interface.start()
         else:
-            self.interface.start()          
+            raise ValueError(f"Unsupported interface mode: {self.interface_mode}")
 
     async def process_turn(self) -> None:
         """

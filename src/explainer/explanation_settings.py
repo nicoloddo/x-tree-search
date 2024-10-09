@@ -49,15 +49,17 @@ class ExplanationSettings:
     - print_mode: Set to 'logic' or 'verbal'.
     Decides if you want to print the explanation in logic form or verbally in natural language.
     """  
+    default_settings = {
+        'with_framework' : "",
+        'explanation_depth': 8,
+        'assumptions_verbosity': 'if_asked',
+        'print_depth': False,
+        'print_implicit_assumptions': True,
+        'print_mode': 'logic'
+    }
+    
     def __init__(self):
-        self._settings = {
-            'with_framework' : None,
-            'explanation_depth': 8,
-            'assumptions_verbosity': 'if_asked',
-            'print_depth': False,
-            'print_implicit_assumptions': True,
-            'print_mode': 'logic'
-        }
+        self._settings = ExplanationSettings.default_settings
 
     _validators = {
         'with_framework': _validate_string,
