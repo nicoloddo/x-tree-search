@@ -141,6 +141,8 @@ class ExplainerGradioInterface:
     
     def check_if_comparison_adjective(self, adjective_name):
         """Check if the adjective name is a comparison adjective."""
+        if adjective_name is None or adjective_name == "" or self.framework is None:
+            return gr.update(visible=False, value=None)
         adjective = self.framework.get_adjective(adjective_name)
         if adjective.type == AdjectiveType.COMPARISON:
             return gr.update(visible=True, value=None)
@@ -176,10 +178,14 @@ class ExplainerGradioInterface:
         def update_dropdowns(self):
             """Update all dropdowns with current adjective names."""
             choices = self.get_adjective_names()
-            return [gr.update(choices=choices, value=None) for _ in range(4)]
+            return [gr.update(choices=choices, value=None) for _ in range(len(self.dropdown_components))]
 
-        def update_explainer_settings(self):
-            """Update the explainer settings."""
+        def get_decision_tree_legend(self):
+            """Get the decision tree visualization legend"""
+            return self.explaining_agent.core.visualize_legend_move_tree() if self.explaining_agent is not None else None
+
+        def get_default_explainer_settings(self):
+            """Returns the default explainer settings"""
             default_settings = ExplanationSettings.default_settings
             if self.game is not None:
                 explainer = self.game.explainer
@@ -190,7 +196,11 @@ class ExplainerGradioInterface:
                     "print_implicit_assumptions" : explainer.settings.print_implicit_assumptions,
                     "print_mode" : explainer.settings.print_mode
                 } 
-            
+            return default_settings
+
+        def reset_explainer_settings(self):
+            """Reset the explainer settings."""
+            default_settings = self.get_default_explainer_settings()
             return [gr.update(value=default_settings[key]) for key in default_settings]
         
         def build_ai_explanation_components(self, toggles: Dict[str, tuple[str, bool]] = None, *, additional_info: str = None):
@@ -251,10 +261,10 @@ class ExplainerGradioInterface:
                         
                         You can zoom in through the browser, just wait for the graph to load.
                         Consider opening the image in a new tab for a better experience.""")
-            legend = self.explaining_agent.core.visualize_legend_move_tree() if self.explaining_agent is not None else None
-            components["move_tree_legend"] = gr.Image(value=legend)
+            legend = self.get_decision_tree_legend()
+            components["move_tree_legend"] = gr.Image(value=legend, interactive=False)
             components["visualize_decision_tree_button"] = gr.Button("Generate Decision Tree")
-            components["move_tree_output"] = gr.Image(label="")
+            components["move_tree_output"] = gr.Image(label="", interactive=False)
 
             return components
 
@@ -262,16 +272,7 @@ class ExplainerGradioInterface:
             """Build components for explainer settings."""
             components = {}
 
-            default_values = ExplanationSettings.default_settings
-            if self.game is not None:
-                explainer = self.game.explainer
-                default_values = {
-                    "with_framework" : explainer.settings.with_framework,
-                    "assumptions_verbosity" : explainer.settings.assumptions_verbosity,
-                    "print_depth" : explainer.settings.print_depth,
-                    "print_implicit_assumptions" : explainer.settings.print_implicit_assumptions,
-                    "print_mode" : explainer.settings.print_mode
-                }                
+            default_values = self.get_default_explainer_settings()            
 
             with gr.Row():
                 with gr.Column(scale=1):
@@ -360,12 +361,12 @@ class ExplainerGradioInterface:
                 )
 
             # Update dropdowns
-            dropdown_components = [comp for comp in [components.get("root_adjective"), 
+            self.dropdown_components = [comp for comp in [components.get("root_adjective"), 
                                                     components.get("explain_adj_name")] if comp is not None]
-            if dropdown_components:
+            if self.dropdown_components:
                 for button in []: #  No buttons need to update the dropdowns right now
                     if button:
-                        button.click(self.update_dropdowns, outputs=dropdown_components)
+                        button.click(self.update_dropdowns, outputs=self.dropdown_components)
 
         def build_interface(self):
             with gr.Blocks() as demo:

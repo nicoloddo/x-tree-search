@@ -306,6 +306,7 @@ class TicTacToeGradioInterface(GameInterface):
                 
                 with gr.TabItem("Settings", self.explainer_interface.tab_ids["settings"]):
                     self.explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components()
+                    self.explainer_settings_fields = list(self.explainer_settings_components.values())[:-1] # exclude the apply button
 
             # Handle components connections   
             self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **self.visualize_components, **self.visualize_decision_tree_components, **self.explainer_settings_components})
@@ -338,7 +339,11 @@ class TicTacToeGradioInterface(GameInterface):
             self.restart_button.click(
                 self.restart_game,
                 inputs=[],
-                outputs=all_available_outputs + [self.restart_button, self.ai_explanation_components["explanation_depth"]] + list(self.explainer_settings_components.values())
+                outputs=all_available_outputs + [self.restart_button, 
+                                                 self.ai_explanation_components["explanation_depth"], 
+                                                 self.visualize_decision_tree_components["move_tree_legend"]] + 
+                                                 self.explainer_settings_fields + 
+                                                 self.explainer_interface.interface_builder.dropdown_components
             )
 
             skip_score_toggle = self.ai_explanation_components["skip_score_toggle"]
@@ -372,12 +377,35 @@ class TicTacToeGradioInterface(GameInterface):
         if self.game is None:
             self.start_game()
             explanation_depth = self.game.explainer.settings.explanation_depth
-            explainer_settings = self.explainer_interface.interface_builder.update_explainer_settings()
         else:
             self.game.restart()
             explanation_depth = self.ai_explanation_components["explanation_depth"].value
-            explainer_settings = self.explainer_settings_components.values()
-        return self.update(), gr.update(value="Restart Game"), explanation_depth, explainer_settings
+
+        # Get the updated interface
+        board_gallery, showing_state, status, output_text, ai_explanation, id_input, explain_adj_name, explaining_question = self.update()
+
+        # Get the default explainer settings
+        explainer_settings = self.explainer_interface.interface_builder.reset_explainer_settings()
+
+        # Get the default legend
+        legend = self.explainer_interface.interface_builder.get_decision_tree_legend()
+
+        # Return the components
+        return (
+            board_gallery,
+            showing_state,
+            status,
+            output_text,
+            ai_explanation,
+            id_input,
+            explain_adj_name,
+            explaining_question,
+            gr.update(value="Restart Game"),  # restart_button
+            explanation_depth,
+            legend,
+            *explainer_settings,  # Unpack the explainer settings
+            *self.explainer_interface.interface_builder.update_dropdowns()
+        )
 
     def on_load(self, request: gr.Request):
         """
@@ -390,13 +418,13 @@ class TicTacToeGradioInterface(GameInterface):
         explain_adjective = None
         if request:
             query_params = dict(request.query_params)
-            if 'show_node_id' in query_params:
-                show_node_id = query_params['show_node_id']
-                if show_node_id in self.explaining_agent.core.nodes:
-                    explain_node_id = show_node_id
-                    explain_adjective = query_params['adjective']
-                else:
-                    show_node_id = None
+
+            if self.game is not None: # Parameters that can't be handled without game
+                if 'show_node_id' in query_params:
+                    show_node_id = query_params['show_node_id']
+                    if show_node_id in self.explaining_agent.core.nodes:
+                        explain_node_id = show_node_id
+                        explain_adjective = query_params['adjective']
 
         return self.update(explain_node_id=explain_node_id, explain_adjective=explain_adjective, show_node_id=show_node_id)
 
@@ -412,9 +440,7 @@ class TicTacToeGradioInterface(GameInterface):
         :rtype: Tuple[List[str], str, str, str]
         """
         if self.game is None:
-            return gr.Gallery(), "Start a Game to show the board", "", "", "", "", "", ""
-        elif self.explaining_agent is None:
-            return gr.Gallery(), "Had some problems finding the explaining agent, please check your game definition", "", "", "", "", "", ""
+            return gr.Gallery(), "Start a Game to show the board", "Start a Game to show the board", "", "", "", "", ""
         
         board_gallery, showing_state, show_node_id = self.get_updated_board_gallery(show_node_id)
         status = self.get_updated_status()
@@ -438,8 +464,6 @@ class TicTacToeGradioInterface(GameInterface):
         """
         if self.game is None:
             return gr.Gallery(), "Start a Game to show the board", None
-        elif self.explaining_agent is None:
-            return gr.Gallery(), "Had some problems finding the explaining agent, please check your game definition", None
         
         # Determine the node to display and its corresponding board state
         if node_id is not None:
@@ -463,8 +487,12 @@ class TicTacToeGradioInterface(GameInterface):
 
         else: # no node requested or valid
             # If no specific node is requested, use the current choice of the explaining agent
-            node_id = self.explaining_agent.choice.id if self.explaining_agent.choice else ""
-            parent_state = self.explaining_agent.choice.parent_state if self.explaining_agent.choice else None
+            if self.explaining_agent is not None:
+                node_id = self.explaining_agent.choice.id if self.explaining_agent.choice else ""
+                parent_state = self.explaining_agent.choice.parent_state if self.explaining_agent.choice else None
+            else:
+                node_id = None
+                parent_state = None
             board_state = self.game.model.action_spaces["board"]
             showing_state = f"Current State ({node_id})" if node_id else "Current State"
 
@@ -533,8 +561,8 @@ class TicTacToeGradioInterface(GameInterface):
         """
         if self.game is None:
             return gr.Gallery(), "Start a Game to show the board", None
-        elif self.explaining_agent is None:
-            return gr.Gallery(), "Had some problems finding the explaining agent, please check your game definition", None
+        if self.explaining_agent is None:
+            return gr.Gallery(), "No explaining agent was found", None
         
         showing_state = self.explainer_interface.transform_hyperlink_to_node_id(showing_state)
 
