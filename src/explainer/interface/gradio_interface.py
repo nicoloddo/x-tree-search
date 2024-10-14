@@ -54,8 +54,8 @@ class ExplainerGradioInterface:
     def __init__(self, *, framework=None, explain_in_hyperlink_mode=True):
         """Initialize the ExplainerInterface with an optional game to explain."""
     
-        self.game = None
-        self.explaining_agent = None
+        self.get_game = None
+        self.get_explaining_agent = None
         self.framework = framework
         self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
 
@@ -77,22 +77,35 @@ class ExplainerGradioInterface:
             apply_explainer_settings=self.apply_explainer_settings
         )
     
-    def set_game(self, game):
-        self.game = game
+    @property
+    def game(self):
+        if self.get_game is not None:
+            return self.get_game()
+        else:
+            return None
+    
+    @property
+    def explaining_agent(self):
+        if self.get_explaining_agent is not None:
+            return self.get_explaining_agent()
+        else:
+            return None
+
+    def set_game_getter(self, get_game):
+        self.get_game = get_game
 
         if self.game:
             self.framework = self.game.explainer.framework or ArgumentationFramework(refer_to_nodes_as="node")
         
         self.load_framework()
 
-    def get_game(self):
-        return self.game
+        self.ai_explainer.get_game = get_game
+        self.interface_builder.get_game = get_game
 
-    def set_explaining_agent(self, explaining_agent):
-        self.explaining_agent = explaining_agent
-
-    def get_explaining_agent(self):
-        return self.explaining_agent
+    def set_explaining_agent_getter(self, get_explaining_agent):
+        self.get_explaining_agent = get_explaining_agent
+        self.ai_explainer.get_explaining_agent = get_explaining_agent
+        self.interface_builder.get_explaining_agent = get_explaining_agent
 
     def on_load(self, request: gr.Request):
         """
@@ -170,10 +183,17 @@ class ExplainerGradioInterface:
 
         @property
         def game(self):
-            return self.get_game()
+            if self.get_game is not None:
+                return self.get_game()
+            else:
+                return None
+        
         @property
         def explaining_agent(self):
-            return self.get_explaining_agent()
+            if self.get_explaining_agent is not None:
+                return self.get_explaining_agent()
+            else:
+                return None
         
         def update_dropdowns(self):
             """Update all dropdowns with current adjective names."""
@@ -397,10 +417,17 @@ class ExplainerGradioInterface:
 
         @property
         def game(self):
-            return self.get_game()
+            if self.get_game is not None:
+                return self.get_game()
+            else:
+                return None
+        
         @property
         def explaining_agent(self):
-            return self.get_explaining_agent()
+            if self.get_explaining_agent is not None:
+                return self.get_explaining_agent()
+            else:
+                return None
         
         def update_ai_explanation(self, node_id=None, adjective=None, comparison_id=None, explanation_depth=None):
             """

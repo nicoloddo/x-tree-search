@@ -235,6 +235,12 @@ class TicTacToeGradioInterface(GameInterface):
             self.create_game_method = create_game_method
         else:
             raise SyntaxError("Either provide a game instance or a create_game_method method.")
+        
+    def get_game(self):
+        return self.game
+    
+    def get_explaining_agent(self):
+        return self.explaining_agent
 
     def set_game(self, game):
         if not hasattr(game, 'get_current_player'):
@@ -244,8 +250,8 @@ class TicTacToeGradioInterface(GameInterface):
         self.explaining_agent = next((player for player in self.game.players.values() if not isinstance(player, User)), None)
         self.explainer = game.explainer
 
-        self.explainer_interface.set_game(self.game)
-        self.explainer_interface.set_explaining_agent(self.explaining_agent)
+        self.explainer_interface.set_game_getter(self.get_game)
+        self.explainer_interface.set_explaining_agent_getter(self.get_explaining_agent)
 
     def start(self, share_gradio=False):
         """
