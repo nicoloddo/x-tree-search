@@ -49,63 +49,44 @@ class ExplainerGradioInterface:
         overflow: auto;
         border-radius: var(--radius-sm);
         padding: var(--spacing-lg) var(--spacing-xl);">{}</pre>"""
+    
+    @classmethod
+    def transform_hyperlink_to_node_id(cls, node_id):
+        """Transform the hyperlink to the node id."""
+        pattern = r'::node::\((.*?)\)\[(.*?)\]'
+        match = re.search(pattern, node_id)
+        
+        if match:
+            node_id = match.group(1)
+            node_title = match.group(2)
+            return node_id, node_title
+        else:
+            return node_id, None
 
     """Main class for building and managing the explainer interface."""
-    def __init__(self, *, framework=None, explain_in_hyperlink_mode=True):
+    def __init__(self, *, explainer=None, explain_in_hyperlink_mode=True):
         """Initialize the ExplainerInterface with an optional game to explain."""
     
-        self.get_game = None
-        self.get_explaining_agent = None
-        self.framework = framework
-        self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
-
         self.nodes = {}
 
+        self.explainer = explainer
+        self.framework = explainer.framework or ArgumentationFramework(refer_to_nodes_as="node")
+        self.load_framework()
+        self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
+
         self.graph_visualizer = self.GraphVisualizer(self.nodes, depth=3, get_adjective_names=self.get_adjective_names)
-        self.ai_explainer = self.AIExplainer(self.get_game, self.get_explaining_agent, explain_in_hyperlink_mode)
+        self.ai_explainer = self.AIExplainer(self.explainer, explain_in_hyperlink_mode)
         self.interface_builder = self.InterfaceBuilder(
-            get_game=self.get_game,
-            get_explaining_agent=self.get_explaining_agent,
+            explainer=explainer,
             tab_ids=ExplainerGradioInterface.tab_ids,
             explain_in_hyperlink_mode=explain_in_hyperlink_mode,
             get_adjective_names=self.get_adjective_names,
             update_ai_explanation=self.ai_explainer.update_ai_explanation,
-            transform_hyperlink_to_node_id=self.transform_hyperlink_to_node_id,
             check_if_comparison_adjective=self.check_if_comparison_adjective,
             visualize_decision_tree=self.ai_explainer.visualize_decision_tree,
             visualize_graph=self.graph_visualizer.visualize_graph,
             apply_explainer_settings=self.apply_explainer_settings
         )
-    
-    @property
-    def game(self):
-        if self.get_game is not None:
-            return self.get_game()
-        else:
-            return None
-    
-    @property
-    def explaining_agent(self):
-        if self.get_explaining_agent is not None:
-            return self.get_explaining_agent()
-        else:
-            return None
-
-    def set_game_getter(self, get_game):
-        self.get_game = get_game
-
-        if self.game:
-            self.framework = self.game.explainer.framework or ArgumentationFramework(refer_to_nodes_as="node")
-        
-        self.load_framework()
-
-        self.ai_explainer.get_game = get_game
-        self.interface_builder.get_game = get_game
-
-    def set_explaining_agent_getter(self, get_explaining_agent):
-        self.get_explaining_agent = get_explaining_agent
-        self.ai_explainer.get_explaining_agent = get_explaining_agent
-        self.interface_builder.get_explaining_agent = get_explaining_agent
 
     def on_load(self, request: gr.Request):
         """
@@ -142,15 +123,7 @@ class ExplainerGradioInterface:
             'print_implicit_assumptions': print_implicit_assumptions,
             'print_mode': print_mode
         }
-        if self.game is not None:
-            self.game.explainer.configure_settings(settings_dict)
-    
-    def transform_hyperlink_to_node_id(self, node_id):
-        """Transform the hyperlink to the node id."""
-        if "http" in node_id:
-            return node_id.split("show_node_id=")[1]
-        else:
-            return node_id
+        self.explainer.configure_settings(settings_dict)
     
     def check_if_comparison_adjective(self, adjective_name):
         """Check if the adjective name is a comparison adjective."""
@@ -169,53 +142,36 @@ class ExplainerGradioInterface:
 
     class InterfaceBuilder:
         def __init__(self, **kwargs):
-            self.get_game = kwargs.get('get_game')
-            self.get_explaining_agent = kwargs.get('get_explaining_agent')
+            self.explainer = kwargs.get('explainer')
             self.tab_ids = kwargs.get('tab_ids')
             self.explain_in_hyperlink_mode = kwargs.get('explain_in_hyperlink_mode')
             self.get_adjective_names = kwargs.get('get_adjective_names')
             self.update_ai_explanation = kwargs.get('update_ai_explanation')
-            self.transform_hyperlink_to_node_id = kwargs.get('transform_hyperlink_to_node_id')
             self.check_if_comparison_adjective = kwargs.get('check_if_comparison_adjective')
             self.visualize_decision_tree = kwargs.get('visualize_decision_tree')
             self.visualize_graph = kwargs.get('visualize_graph')
             self.apply_explainer_settings = kwargs.get('apply_explainer_settings')
-
-        @property
-        def game(self):
-            if self.get_game is not None:
-                return self.get_game()
-            else:
-                return None
-        
-        @property
-        def explaining_agent(self):
-            if self.get_explaining_agent is not None:
-                return self.get_explaining_agent()
-            else:
-                return None
         
         def update_dropdowns(self):
             """Update all dropdowns with current adjective names."""
             choices = self.get_adjective_names()
             return [gr.update(choices=choices, value=None) for _ in range(len(self.dropdown_components))]
 
-        def get_decision_tree_legend(self):
+        def get_decision_tree_legend(self, game):
             """Get the decision tree visualization legend"""
-            return self.explaining_agent.core.visualize_legend_move_tree() if self.explaining_agent is not None else None
+            return game.explaining_agent.core.visualize_legend_move_tree() if game.explaining_agent is not None else None
 
         def get_default_explainer_settings(self):
             """Returns the default explainer settings"""
             default_settings = ExplanationSettings.default_settings
-            if self.game is not None:
-                explainer = self.game.explainer
-                default_settings = {
-                    "with_framework" : explainer.settings.with_framework,
-                    "assumptions_verbosity" : explainer.settings.assumptions_verbosity,
-                    "print_depth" : explainer.settings.print_depth,
-                    "print_implicit_assumptions" : explainer.settings.print_implicit_assumptions,
-                    "print_mode" : explainer.settings.print_mode
-                } 
+            explainer = self.explainer
+            default_settings = {
+                "with_framework" : explainer.settings.with_framework,
+                "assumptions_verbosity" : explainer.settings.assumptions_verbosity,
+                "print_depth" : explainer.settings.print_depth,
+                "print_implicit_assumptions" : explainer.settings.print_implicit_assumptions,
+                "print_mode" : explainer.settings.print_mode
+            } 
             return default_settings
 
         def reset_explainer_settings(self):
@@ -223,7 +179,7 @@ class ExplainerGradioInterface:
             default_settings = self.get_default_explainer_settings()
             return [gr.update(value=default_settings[key]) for key in default_settings]
         
-        def build_ai_explanation_components(self, toggles: Dict[str, tuple[str, bool]] = None, *, additional_info: str = None):
+        def build_ai_explanation_components(self, game_state_component, toggles: Dict[str, tuple[str, bool]] = None, *, additional_info: str = None):
             """
             Build the AI explanation components.
 
@@ -240,14 +196,14 @@ class ExplainerGradioInterface:
             components["comparison_id_input"] = gr.Textbox(label="In comparison to (you can drag and drop from the explanation)", visible=False)
             components["explain_button"] = gr.Button("Explain", visible=self.explain_in_hyperlink_mode)
 
-            default_explanation_depth = self.game.explainer.settings.explanation_depth if self.game is not None else ExplanationSettings.default_settings["explanation_depth"]
+            default_explanation_depth = self.explainer.settings.explanation_depth if self.explainer is not None else ExplanationSettings.default_settings["explanation_depth"]
             components["explanation_depth"] = gr.Slider(minimum=min(EXPLANATION_DEPTH_ALLOWED_VALUES), maximum=max(EXPLANATION_DEPTH_ALLOWED_VALUES), step=1, value=default_explanation_depth, label="Explanation Depth")
             components["explaining_question"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format("Why ...?"), label="Question", visible=self.explain_in_hyperlink_mode)
             if self.explain_in_hyperlink_mode and additional_info is not None:
                 components["additional_info"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format(additional_info))
             
             if self.explain_in_hyperlink_mode:
-                components["explanation_output"] = gr.HTML(value=self.update_ai_explanation()[0], label="AI move explanation")
+                components["explanation_output"] = gr.HTML(value=self.update_ai_explanation(game_state_component.value)[0], label="AI move explanation")
             else:
                 components["explanation_output"] = gr.Markdown(value="", label="AI move explanation")
 
@@ -272,7 +228,7 @@ class ExplainerGradioInterface:
 
             return components
         
-        def build_visualize_decision_tree_components(self):
+        def build_visualize_decision_tree_components(self, game_state_component):
             """Build components for visualizing the Decision Tree."""
             components = {}
             
@@ -281,7 +237,7 @@ class ExplainerGradioInterface:
                         
                         You can zoom in through the browser, just wait for the graph to load.
                         Consider opening the image in a new tab for a better experience.""")
-            legend = self.get_decision_tree_legend()
+            legend = self.get_decision_tree_legend(game_state_component.value)
             components["move_tree_legend"] = gr.Image(value=legend, interactive=False)
             components["visualize_decision_tree_button"] = gr.Button("Generate Decision Tree")
             components["move_tree_output"] = gr.Image(label="", interactive=False)
@@ -322,7 +278,7 @@ class ExplainerGradioInterface:
 
             return components
 
-        def connect_components(self, components):
+        def connect_components(self, components, game_state_component):
             """
             Connect the components of the interface.
 
@@ -341,7 +297,7 @@ class ExplainerGradioInterface:
                     outputs=[components["explanation_output"], components["explaining_question"]]
                 )
                 components["id_input"].change(
-                    self.transform_hyperlink_to_node_id,
+                    ExplainerGradioInterface.transform_hyperlink_to_node_id,
                     inputs=[components["id_input"]],
                     outputs=[components["id_input"]]
                 )
@@ -351,7 +307,7 @@ class ExplainerGradioInterface:
                     outputs=[components["comparison_id_input"]]
                 )
                 components["comparison_id_input"].change(
-                    self.transform_hyperlink_to_node_id,
+                    ExplainerGradioInterface.transform_hyperlink_to_node_id,
                     inputs=[components["comparison_id_input"]],
                     outputs=[components["comparison_id_input"]]
                 )
@@ -368,6 +324,7 @@ class ExplainerGradioInterface:
             if "visualize_decision_tree_button" in components:
                 components["visualize_decision_tree_button"].click(
                     self.visualize_decision_tree,
+                    inputs=[game_state_component],
                     outputs=[components["move_tree_output"]]
                 )
 
@@ -410,26 +367,11 @@ class ExplainerGradioInterface:
             return demo
         
     class AIExplainer:
-        def __init__(self, get_game, get_explaining_agent, explain_in_hyperlink_mode):
-            self.get_game = get_game
-            self.get_explaining_agent = get_explaining_agent
+        def __init__(self, explainer, explain_in_hyperlink_mode):
+            self.explainer = explainer
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
-
-        @property
-        def game(self):
-            if self.get_game is not None:
-                return self.get_game()
-            else:
-                return None
         
-        @property
-        def explaining_agent(self):
-            if self.get_explaining_agent is not None:
-                return self.get_explaining_agent()
-            else:
-                return None
-        
-        def update_ai_explanation(self, node_id=None, adjective=None, comparison_id=None, explanation_depth=None):
+        def update_ai_explanation(self, game, node_id=None, adjective=None, comparison_id=None, explanation_depth=None):
             """
             Update the AI explanation.
 
@@ -446,25 +388,25 @@ class ExplainerGradioInterface:
             
             if adjective is None:
                 explanation = "No adjective was provided."
-            elif not self.game:
+            elif not game:
                 explanation = "No game was provided."
-            elif self.explaining_agent is None:
+            elif game.explaining_agent is None:
                 explanation = "No explaining agent was found."
             else:
                 if explanation_depth is None:
-                    explanation_depth = self.game.explainer.settings.explanation_depth
+                    explanation_depth = self.explainer.settings.explanation_depth
                 else:
                     explanation_depth = int(explanation_depth)
             
                 if node_id is None:
-                    node = self.explaining_agent.choice
+                    node = game.explaining_agent.choice
                     if node is not None:
                         node_id = node.id
                 else:
-                    node = self.explaining_agent.core.nodes[node_id]
+                    node = game.explaining_agent.core.nodes[node_id]
                 
                 if node is None:
-                    explanation = f"No {self.game.explainer.framework.refer_to_nodes_as} to explain was found."
+                    explanation = f"No {self.explainer.framework.refer_to_nodes_as} to explain was found."
                 else:
                     # All is good, we can explain
                     if self.explain_in_hyperlink_mode:
@@ -474,10 +416,10 @@ class ExplainerGradioInterface:
 
                     # Explain
                     if comparison_id is None:
-                        explanation = self.game.explainer.explain(node, adjective, print_context=False, explanation_depth=explanation_depth)
+                        explanation = self.explainer.explain(node, adjective, print_context=False, explanation_depth=explanation_depth)
                     else:
-                        comparison_node = self.explaining_agent.core.nodes[comparison_id]
-                        explanation = self.game.explainer.explain(node, adjective, comparison_node, print_context=False, explanation_depth=explanation_depth)
+                        comparison_node = game.explaining_agent.core.nodes[comparison_id]
+                        explanation = self.explainer.explain(node, adjective, comparison_node, print_context=False, explanation_depth=explanation_depth)
 
                     # Build explaining_question
                     if isinstance(explanation, Implies):
@@ -502,7 +444,7 @@ class ExplainerGradioInterface:
                         # Replace node references with HTML hyperlinks
                         explanation = re.sub(
                             r'::node::\((.*?)\)\[(.*?)\]',
-                            lambda m: f'<a href="?node_id={node_id}&adjective={adjective}&show_node_id={m.group(1)}" title="{m.group(1)}" style=" text-decoration: none;"><b style="color: var(--color-accent);">{m.group(2)}</b></a>',
+                            lambda m: f'<span class="draggable-node" data-node="::node::({m.group(1)})[{m.group(2)}]" title="{m.group(1)}" style="cursor: grab; color: var(--color-accent); font-weight: bold;">{m.group(2)}</span>',
                             explanation
                         )
 
@@ -515,11 +457,11 @@ class ExplainerGradioInterface:
 
             return full_return, explaining_question
 
-        def visualize_decision_tree(self):
+        def visualize_decision_tree(self, game):
             """Generate a visualization of the Decision Tree."""
-            root_node = self.explaining_agent.choice.parent
+            root_node = game.explaining_agent.choice.parent
             try:
-                return self.explaining_agent.core.visualize_decision_tree(root_node)
+                return game.explaining_agent.core.visualize_decision_tree(root_node)
             except Exception as e:
                 raise gr.Error(f"Error: {e}")
 
@@ -689,8 +631,7 @@ if __name__ == "__main__":
     if True:
         from explainers.alphabeta_explainer import AlphaBetaExplainer
         explainer = AlphaBetaExplainer()
-        framework = explainer.frameworks['highlevel']
-        builder = ExplainerGradioInterface(framework=framework, explanation_depth=3, explaining_agent=None)
+        builder = ExplainerGradioInterface(explainer=explainer, explanation_depth=3)
         builder.launch()
         #builder.visualize_graph("as next move", debug=True)
         #builder.visualize_graph("as next move")
