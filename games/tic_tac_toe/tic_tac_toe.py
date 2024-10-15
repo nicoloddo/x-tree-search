@@ -18,6 +18,10 @@ class TicTacToe(Game):
         :param players: The players to use for the game.
         :type players: list
         """
+        if interface_mode == 'gradio_app' and explainer is not None:
+            raise ValueError("""Interface mode 'gradio_app' does not support explainers in the game constructor. 
+                             Pass it to the interface instead.""")
+        
         _child_init_params = {
             'players': players,
             'explainer': explainer,
@@ -25,11 +29,10 @@ class TicTacToe(Game):
             'interface_hyperlink_mode': interface_hyperlink_mode
         }
         super().__init__(_child_init_params, players=players)
-        self.explainer = explainer
         self.interface_mode = interface_mode
-        self.select_interface(interface_mode, interface_hyperlink_mode)
+        self.select_interface(interface_mode, interface_hyperlink_mode, explainer)
 
-    def select_interface(self, interface_mode, interface_hyperlink_mode):
+    def select_interface(self, interface_mode, interface_hyperlink_mode, explainer):
         """
         Select the interface for the game.
 
@@ -41,9 +44,9 @@ class TicTacToe(Game):
                 raise ValueError("Interface hyperlink mode is not supported for Jupyter interface.")
             self.interface = TicTacToeJupyterInterface(self)
         elif interface_mode == 'gradio':
-            self.interface = TicTacToeGradioInterface(self, interface_hyperlink_mode)
+            self.interface = TicTacToeGradioInterface(self, explainer, interface_hyperlink_mode)
         elif interface_mode == 'gradio_app':
-            pass # Interface is created in the app.py file
+            self.interface = None # Interface is created in the app.py file
         else:
             raise ValueError(f"Unsupported interface mode: {interface_mode}")
 
@@ -123,9 +126,10 @@ class TicTacToe(Game):
         else:
             raise ValueError("Player variable has to be 0 or 1")
 
-        action_dict, broken_rule_string = self.model.action("board", player, coordinates, sign, return_broken_rule_string=self.interface.started)
+        return_broken_rule_string = self.interface_mode == 'gradio' or self.interface_mode == 'gradio_app'
+        action_dict, broken_rule_string = self.model.action("board", player, coordinates, sign, return_broken_rule_string=return_broken_rule_string)
         if broken_rule_string:
-            self.interface.output(broken_rule_string, type="error")
+            raise ValueError(broken_rule_string)
     
     def winner(self):
         if np.all(self.model.action_spaces["board"] != FREE_LABEL):
@@ -167,16 +171,17 @@ class TicTacToe(Game):
 
         if not isinstance(current_player, User): # User is handled by the interface
             await current_player.play(self)
-            if self.interface.started:
+            if self.interface is not None and self.interface.started:
                 self.interface.output("")
 
-        if self.interface.started:
+        if self.interface is not None and self.interface.started:
             self.interface.update()
 
     async def continue_game(self) -> None:
         """
         Continue the game after a move has been made.
         """
-        self.interface.update()
+        if self.interface is not None:
+            self.interface.update()
         if not self.ended:
             await self.process_turn()

@@ -58,9 +58,11 @@ class User:
             action_space = inputs['action_space']
             action = {'who': self.id, 'where': where, 'what': what, 'action_space': action_space}
             game.act(action)
-            game.interface.update()  # Update after user's move
+            if game.interface is not None:
+                game.interface.update()  # Update after user's move
             await game.continue_game()
-            game.interface.update()  # Update again after AI's move
+            if game.interface is not None:
+                game.interface.update()  # Update again after AI's move
 
         if game.interface_mode == 'cmd':
             
