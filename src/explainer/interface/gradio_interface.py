@@ -502,7 +502,7 @@ class ExplainerGradioInterface:
                         # Replace node references with HTML hyperlinks
                         explanation = re.sub(
                             r'::node::\((.*?)\)\[(.*?)\]',
-                            lambda m: f'<a href="?node_id={node_id}&adjective={adjective}&show_node_id={m.group(1)}" title="{m.group(1)}" style=" text-decoration: none;"><b style="color: var(--color-accent);">{m.group(2)}</b></a>',
+                            lambda m: self.create_hyperlink(m, node_id, adjective, self.game._interface_session_game_id),
                             explanation
                         )
 
@@ -514,7 +514,21 @@ class ExplainerGradioInterface:
             explaining_question = ExplainerGradioInterface.cool_html_text_container.format(explaining_question)
 
             return full_return, explaining_question
-
+        
+        def create_hyperlink(self, match, node_id, adjective, game_id):
+            # Update parameters for the new link
+            hyperlink_params = {
+                'game_id': game_id,
+                'node_id': node_id,
+                'adjective': adjective,
+                'show_node_id': match.group(1)
+            }
+            
+            # Create query string
+            query_string = urlencode(hyperlink_params)
+        
+            return f'<a href="?{query_string}" title="{match.group(1)}" style="text-decoration: none;"><b style="color: var(--color-accent);">{match.group(2)}</b></a>'
+    
         def visualize_decision_tree(self):
             """Generate a visualization of the Decision Tree."""
             root_node = self.explaining_agent.choice.parent
