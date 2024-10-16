@@ -8,11 +8,10 @@ import asyncio
 def create_game_method():
     opponent = GameAgent(agent_id=0, core=MiniMax(simple_depth_dependant_scoring_function, max_depth=6, use_alpha_beta=True))
     game = TicTacToe(players=[opponent, User(agent_id=1)],
-                    interface_mode='gradio_app', 
+                    interface_mode='gradio', 
                     interface_hyperlink_mode=True)
 
     game.explaining_agent = opponent
-    asyncio.run(game.start_game())
     return game
 
 explainer = AlphaBetaExplainer()

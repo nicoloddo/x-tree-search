@@ -235,7 +235,7 @@ class TicTacToeGradioInterface(GameInterface):
 
         :param game: The TicTacToe game instance
         :type game: TicTacToe
-        :raises AttributeError: If the game instance doesn't have a 'get_current_player' method
+        :raises AttributeError: If the game instance doesn't have a 'get_current_player' or 'explaining_agent' attributes
         """
         super().__init__()
         self.board_gallery = None
@@ -575,9 +575,13 @@ class TicTacToeGradioInterface(GameInterface):
             game = self.init_game
         else:
             game = self.create_game_method()
-            if not hasattr(game, 'get_current_player'):
-                raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the Gradio interface.")
 
+        if not hasattr(game, 'get_current_player'):
+            raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the gradio interface.")
+        elif not hasattr(game, 'explaining_agent'):
+            raise AttributeError("The game instance does not have an 'explaining_agent' attribute, thus it does not support the gradio interface.")
+
+        asyncio.run(game.start_game())
         return game
     
     def restart_game(self, game):
@@ -587,7 +591,7 @@ class TicTacToeGradioInterface(GameInterface):
         if game is None:
             raise gr.Error("Game is None")
         game.restart()
-        return self.update()
+        return self.update(game)
 
     async def process_move(self, game, evt: gr.SelectData):
         """
