@@ -209,7 +209,11 @@ class Implies(LogicalExpression):
         super().set_record(record)
 
     def _to_str(self) -> str:
-
+        if self.antecedent is None:
+            return str(self.consequent)
+        elif self.consequent is None:
+            return str(self.antecedent)
+        
         if self.print_mode == 'logic':
             operator_string = self.symbol
         elif self.print_mode == 'verbal':
