@@ -248,8 +248,8 @@ class TicTacToeGradioInterface(GameInterface):
         self.ai_explanation_components = None
         self.skip_score_statement = True
         
-        self.explainer = explainer
-        self.explainer_interface = ExplainerGradioInterface(explainer=explainer, explain_in_hyperlink_mode=interface_hyperlink_mode)
+        self.init_explainer = explainer
+        self.explainer_interface = ExplainerGradioInterface(explainer=self.init_explainer, explain_in_hyperlink_mode=interface_hyperlink_mode)
 
         self.init_game = None
         if game is not None:
@@ -278,6 +278,8 @@ class TicTacToeGradioInterface(GameInterface):
                 """, # Perfectionates the board display
             fill_width=True) as demo:
             game_state = gr.State(self.create_game())
+            explainer_state = gr.State(self.init_explainer)
+
             with gr.Tabs() as tabs:
                 with gr.TabItem("Game and Explain", id=self.explainer_interface.tab_ids["other"] + 0):
                     with gr.Row(equal_height=False):
@@ -308,6 +310,7 @@ class TicTacToeGradioInterface(GameInterface):
                             gr.Markdown("# AI Move Explanation")
                             self.ai_explanation_components = self.explainer_interface.interface_builder.build_ai_explanation_components(
                                 game_state,
+                                explainer_state,
                                 toggles={"skip_score_toggle": ("Skip Score Statement (the explainer is designed around skipping the score statement, problems may arise when this is disabled)", True)},
                                 additional_info="P.S. To visualize a move on the board you can drag and drop the move from the explanation to the \"Showing\" widget."
                             )
@@ -325,7 +328,9 @@ class TicTacToeGradioInterface(GameInterface):
             #*********************************
             # 2. Handle components connections 
             #
-            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **self.visualize_components, **self.visualize_decision_tree_components, **self.explainer_settings_components}, game_state)
+            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **self.visualize_components, 
+                                                                           **self.visualize_decision_tree_components, **self.explainer_settings_components}, 
+                                                                           game_state, explainer_state)
 
             all_available_outputs = [game_state, self.board_gallery, self.showing_state, 
                                      self.status, self.output_text, 
@@ -339,7 +344,7 @@ class TicTacToeGradioInterface(GameInterface):
             
             game_state.change(
                 self.update,
-                inputs=[game_state],
+                inputs=[game_state, explainer_state],
                 outputs=all_available_outputs
             )
 
@@ -351,7 +356,7 @@ class TicTacToeGradioInterface(GameInterface):
 
             self.board_gallery.select(
                 self.process_move,
-                inputs=[game_state],
+                inputs=[game_state, explainer_state],
                 outputs=all_available_outputs
             )
 
@@ -363,32 +368,32 @@ class TicTacToeGradioInterface(GameInterface):
 
             self.restart_button.click(
                 self.restart_game,
-                inputs=[game_state],
+                inputs=[game_state, explainer_state],
                 outputs=all_available_outputs
             )
 
-            def toggle_skip_score(game, skip_score: bool, current_node_id: str, current_adjective: str, current_comparison_id: str, explanation_depth: int):
+            def toggle_skip_score(game, explainer, skip_score: bool, current_node_id: str, current_adjective: str, current_comparison_id: str, explanation_depth: int):
                 """
                 Toggle the skip score statement setting and update the explanation.
                 """
                 self.skip_score_statement = skip_score
-                self.explainer.frameworks['highlevel'].get_adjective('score').skip_statement = skip_score
+                explainer.frameworks['highlevel'].get_adjective('score').skip_statement = skip_score
 
-                ai_explanation, explaining_question, _, _, _ = self.explainer_interface.ai_explainer.update_ai_explanation(game, current_node_id, current_adjective, current_comparison_id, explanation_depth)
+                ai_explanation, explaining_question, _, _, _ = self.explainer_interface.ai_explainer.update_ai_explanation(game, explainer, current_node_id, current_adjective, current_comparison_id, explanation_depth)
                 
                 return ai_explanation, explaining_question
 
             skip_score_toggle = self.ai_explanation_components["skip_score_toggle"]
             skip_score_toggle.change(
                 toggle_skip_score,
-                inputs=[game_state, skip_score_toggle, self.ai_explanation_components["current_node_id"], self.ai_explanation_components["current_adjective"], self.ai_explanation_components["current_comparison_id"], self.ai_explanation_components["explanation_depth"]],
+                inputs=[game_state, explainer_state, skip_score_toggle, self.ai_explanation_components["current_node_id"], self.ai_explanation_components["current_adjective"], self.ai_explanation_components["current_comparison_id"], self.ai_explanation_components["explanation_depth"]],
                 outputs=[self.ai_explanation_components["explanation_output"], self.ai_explanation_components["explaining_question"]]
             )
 
             # Initial update
             demo.load(
                 self.on_load,
-                inputs=[game_state],
+                inputs=[game_state, explainer_state],
                 outputs=all_available_outputs,
             )
 
@@ -404,13 +409,13 @@ class TicTacToeGradioInterface(GameInterface):
         demo = self.create_interface()
         demo.launch(share=share_gradio)
 
-    def on_load(self, game, request: gr.Request):
+    def on_load(self, game, explainer, request: gr.Request):
         """
         On load event handler.
         """
         self.explainer_interface.on_load(request)
 
-        return self.update(game)
+        return self.update(game, explainer)
     
     def output(self, text: str, type: str = "info"):
         """
@@ -432,7 +437,7 @@ class TicTacToeGradioInterface(GameInterface):
         else:
             raise ValueError(f"Invalid type {type}")
 
-    def update(self, game, show_node_id=None):
+    def update(self, game, explainer, show_node_id=None):
         """
         Update the game state in the interface.
 
@@ -470,7 +475,7 @@ class TicTacToeGradioInterface(GameInterface):
         explaining_question = self.ai_explanation_components["explaining_question"].value
 
         adjective = "the best"
-        ai_explanation, explaining_question, current_node_id, current_adjective, current_comparison_id = self.explainer_interface.ai_explainer.update_ai_explanation(game, None, adjective)
+        ai_explanation, explaining_question, current_node_id, current_adjective, current_comparison_id = self.explainer_interface.ai_explainer.update_ai_explanation(game, explainer, None, adjective)
 
         return game, board_gallery, showing_state, status, output_text, ai_explanation, show_node_id, adjective, explaining_question, current_node_id, current_adjective, current_comparison_id
 
@@ -584,16 +589,16 @@ class TicTacToeGradioInterface(GameInterface):
         asyncio.run(game.start_game())
         return game
     
-    def restart_game(self, game):
+    def restart_game(self, game, explainer):
         """
         Restart the game.
         """
         if game is None:
             raise gr.Error("Game is None")
         game.restart()
-        return self.update(game)
+        return self.update(game, explainer)
 
-    async def process_move(self, game, evt: gr.SelectData):
+    async def process_move(self, game, explainer, evt: gr.SelectData):
         """
         Process a move made by the current player.
 
@@ -615,7 +620,7 @@ class TicTacToeGradioInterface(GameInterface):
             print("Full traceback:")
             traceback.print_exc()
 
-        return self.update(game)
+        return self.update(game, explainer)
 
 
 if __name__ == "__main__":

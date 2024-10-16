@@ -71,15 +71,15 @@ class ExplainerGradioInterface:
     
         self.nodes = {}
 
-        self.explainer = explainer
+        self.init_explainer = explainer
         self.framework = explainer.framework or ArgumentationFramework(refer_to_nodes_as="node")
         self.load_framework()
         self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
 
         self.graph_visualizer = self.GraphVisualizer(self.nodes, depth=3, get_adjective_names=self.get_adjective_names)
-        self.ai_explainer = self.AIExplainer(self.explainer, explain_in_hyperlink_mode)
+        self.ai_explainer = self.AIExplainer(self.init_explainer, explain_in_hyperlink_mode)
         self.interface_builder = self.InterfaceBuilder(
-            explainer=explainer,
+            explainer=self.init_explainer,
             tab_ids=ExplainerGradioInterface.tab_ids,
             explain_in_hyperlink_mode=explain_in_hyperlink_mode,
             get_adjective_names=self.get_adjective_names,
@@ -115,7 +115,7 @@ class ExplainerGradioInterface:
         """Get a list of all adjective names in the graph."""
         return list(self.nodes.keys())
 
-    def apply_explainer_settings(self, with_framework, explanation_depth, assumptions_verbosity, print_depth, print_implicit_assumptions, print_mode):
+    def apply_explainer_settings(self, explainer, with_framework, explanation_depth, assumptions_verbosity, print_depth, print_implicit_assumptions, print_mode):
         """Apply the explainer settings."""
         settings_dict = {
             'with_framework': with_framework,
@@ -125,7 +125,8 @@ class ExplainerGradioInterface:
             'print_implicit_assumptions': print_implicit_assumptions,
             'print_mode': print_mode
         }
-        self.explainer.configure_settings(settings_dict)
+        explainer.configure_settings(settings_dict)
+        return explainer
     
     def check_if_comparison_adjective(self, adjective_name):
         """Check if the adjective name is a comparison adjective."""
@@ -144,7 +145,7 @@ class ExplainerGradioInterface:
 
     class InterfaceBuilder:
         def __init__(self, **kwargs):
-            self.explainer = kwargs.get('explainer')
+            self.init_explainer = kwargs.get('explainer')
             self.tab_ids = kwargs.get('tab_ids')
             self.explain_in_hyperlink_mode = kwargs.get('explain_in_hyperlink_mode')
             self.get_adjective_names = kwargs.get('get_adjective_names')
@@ -166,7 +167,7 @@ class ExplainerGradioInterface:
         def get_default_explainer_settings(self):
             """Returns the default explainer settings"""
             default_settings = ExplanationSettings.default_settings
-            explainer = self.explainer
+            explainer = self.init_explainer
             default_settings = {
                 "with_framework" : explainer.settings.with_framework,
                 "assumptions_verbosity" : explainer.settings.assumptions_verbosity,
@@ -181,7 +182,7 @@ class ExplainerGradioInterface:
             default_settings = self.get_default_explainer_settings()
             return [gr.update(value=default_settings[key]) for key in default_settings]
         
-        def build_ai_explanation_components(self, game_state_component, toggles: Dict[str, tuple[str, bool]] = None, *, additional_info: str = None):
+        def build_ai_explanation_components(self, game_state_component, explainer_state_component, toggles: Dict[str, tuple[str, bool]] = None, *, additional_info: str = None):
             """
             Build the AI explanation components.
 
@@ -203,14 +204,14 @@ class ExplainerGradioInterface:
 
             components["explain_button"] = gr.Button("Explain", visible=self.explain_in_hyperlink_mode)
 
-            default_explanation_depth = self.explainer.settings.explanation_depth if self.explainer is not None else ExplanationSettings.default_settings["explanation_depth"]
+            default_explanation_depth = self.init_explainer.settings.explanation_depth if self.init_explainer is not None else ExplanationSettings.default_settings["explanation_depth"]
             components["explanation_depth"] = gr.Slider(minimum=min(EXPLANATION_DEPTH_ALLOWED_VALUES), maximum=max(EXPLANATION_DEPTH_ALLOWED_VALUES), step=1, value=default_explanation_depth, label="Explanation Depth")
             components["explaining_question"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format("Why ...?"), label="Question", visible=self.explain_in_hyperlink_mode)
             if self.explain_in_hyperlink_mode and additional_info is not None:
                 components["additional_info"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format(additional_info))
             
             if self.explain_in_hyperlink_mode:
-                components["explanation_output"] = gr.HTML(value=self.update_ai_explanation(game_state_component.value)[0], label="AI move explanation")
+                components["explanation_output"] = gr.HTML(value=self.update_ai_explanation(game_state_component.value, explainer_state_component.value)[0], label="AI move explanation")
             else:
                 components["explanation_output"] = gr.Markdown(value="", label="AI move explanation")
 
@@ -285,7 +286,7 @@ class ExplainerGradioInterface:
 
             return components
 
-        def connect_components(self, components, game_state_component):
+        def connect_components(self, components, game_state_component, explainer_state_component):
             """
             Connect the components of the interface.
 
@@ -295,12 +296,12 @@ class ExplainerGradioInterface:
             if "explain_button" in components:
                 components["explain_button"].click(
                     self.update_ai_explanation,
-                    inputs=[game_state_component, components["id_input"], components["explain_adj_name"], components["comparison_id_input"], components["explanation_depth"]],
+                    inputs=[game_state_component, explainer_state_component, components["id_input"], components["explain_adj_name"], components["comparison_id_input"], components["explanation_depth"]],
                     outputs=[components["explanation_output"], components["explaining_question"], components["current_node_id"], components["current_adjective"], components["current_comparison_id"]]
                 )
                 components["explanation_depth"].change(
                     self.update_ai_explanation,
-                    inputs=[game_state_component, components["id_input"], components["explain_adj_name"], components["comparison_id_input"], components["explanation_depth"]],
+                    inputs=[game_state_component, explainer_state_component, components["id_input"], components["explain_adj_name"], components["comparison_id_input"], components["explanation_depth"]],
                     outputs=[components["explanation_output"], components["explaining_question"], components["current_node_id"], components["current_adjective"], components["current_comparison_id"]]
                 )
                 components["id_input"].change(
@@ -355,9 +356,9 @@ class ExplainerGradioInterface:
             if "apply_settings_button" in components:
                 components["apply_settings_button"].click(
                     self.apply_explainer_settings,
-                    inputs=[components["with_framework"], components["explanation_depth"], components["assumptions_verbosity"], 
+                    inputs=[explainer_state_component, components["with_framework"], components["explanation_depth"], components["assumptions_verbosity"], 
                             components["print_depth"], components["print_implicit_assumptions"], components["print_mode"]],
-                    outputs=[]
+                    outputs=[explainer_state_component]
                 )
 
             # Update dropdowns
@@ -391,10 +392,10 @@ class ExplainerGradioInterface:
         
     class AIExplainer:
         def __init__(self, explainer, explain_in_hyperlink_mode):
-            self.explainer = explainer
+            self.init_explainer = explainer
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
         
-        def update_ai_explanation(self, game, node_id=None, adjective=None, comparison_id=None, explanation_depth=None):
+        def update_ai_explanation(self, game, explainer, node_id=None, adjective=None, comparison_id=None, explanation_depth=None):
             """
             Update the AI explanation.
 
@@ -423,7 +424,7 @@ class ExplainerGradioInterface:
                 explanation = "No explaining agent was found."
             else:
                 if explanation_depth is None:
-                    explanation_depth = self.explainer.settings.explanation_depth
+                    explanation_depth = explainer.settings.explanation_depth
                 else:
                     explanation_depth = int(explanation_depth)
             
@@ -435,7 +436,7 @@ class ExplainerGradioInterface:
                     node = game.explaining_agent.core.nodes[node_id]
                 
                 if node is None:
-                    explanation = f"No {self.explainer.framework.refer_to_nodes_as} to explain was found."
+                    explanation = f"No {explainer.framework.refer_to_nodes_as} to explain was found."
                 else:
                     # All is good, we can explain
                     if self.explain_in_hyperlink_mode:
@@ -447,11 +448,11 @@ class ExplainerGradioInterface:
                     current_node_id = node.id
                     current_adjective = adjective
                     if comparison_id is None:
-                        explanation = self.explainer.explain(node, adjective, print_context=False, explanation_depth=explanation_depth)
+                        explanation = explainer.explain(node, adjective, print_context=False, explanation_depth=explanation_depth)
                     else:
                         current_comparison_id = comparison_id
                         comparison_node = game.explaining_agent.core.nodes[comparison_id]
-                        explanation = self.explainer.explain(node, adjective, comparison_node, print_context=False, explanation_depth=explanation_depth)
+                        explanation = explainer.explain(node, adjective, comparison_node, print_context=False, explanation_depth=explanation_depth)
 
                     # Build explaining_question
                     if isinstance(explanation, Implies):

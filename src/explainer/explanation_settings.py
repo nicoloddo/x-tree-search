@@ -1,3 +1,4 @@
+import copy
 from src.explainer.propositional_logic import LogicalExpression
 
 EXPLANATION_DEPTH_ALLOWED_VALUES = list(range(1, 10))
@@ -89,7 +90,8 @@ class ExplanationSettings:
     def __getattr__(self, name):
         if name in self._settings:
             return self._settings[name]
-        raise AttributeError(f"'ArgumentationSettings' object has no attribute '{name}'")
+        # Try to get the attribute from the class
+        return getattr(self.__class__, name)
 
     def __setattr__(self, name, value):
         if name.startswith('_'):
@@ -112,3 +114,8 @@ class ExplanationSettings:
     def actuate_all(self):
         for key, value in self._settings.items():
             self._actuators[key](self, value)
+    
+    def __deepcopy__(self, memo):
+        new_settings = ExplanationSettings()
+        new_settings._settings = copy.deepcopy(self._settings, memo)
+        return new_settings
