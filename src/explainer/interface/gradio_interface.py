@@ -375,7 +375,7 @@ class ExplainerGradioInterface:
                 with gr.Tabs():
                     with gr.TabItem("Explain", id=self.tab_ids["ai_explanation"]):
                         ai_explanation_components = self.build_ai_explanation_components()
-                    with gr.TabItem("Visualize", id=self.tab_ids["visualize"]):
+                    with gr.TabItem("Visualize Framework", id=self.tab_ids["visualize"]):
                         visualize_components = self.build_visualize_components()
                     with gr.TabItem("Visualize Decision Tree", id=self.tab_ids["move_tree"]):
                         move_tree_components = self.build_visualize_decision_tree_components()
