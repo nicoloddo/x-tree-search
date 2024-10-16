@@ -199,6 +199,34 @@ class TicTacToeGradioInterface(GameInterface):
     assets_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
     empty_cell_name = "cell"
 
+    @classmethod
+    def create_board_cell_images(cls):
+        """
+        Create and store all possible cell images.
+        """
+        cell_size = 100
+        images = {}
+        for cell_type in ['empty', 'X', 'O', 'X_red', 'O_red']:
+            img = Image.new('RGB', (cell_size, cell_size), color='white')
+            draw = ImageDraw.Draw(img)
+            
+            # Draw border
+            draw.rectangle([0, 0, cell_size-1, cell_size-1], outline='black', width=2)
+            
+            if cell_type != 'empty':
+                font = ImageFont.load_default().font_variant(size=80)
+                text = cell_type[0]  # 'X' or 'O'
+                text_color = 'red' if cell_type.endswith('_red') else 'black'
+                
+                left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+                text_width = right - left
+                text_height = bottom - top
+                position = ((cell_size - text_width) / 2, (cell_size - text_height*1.7) / 2)
+                draw.text(position, text, font=font, fill=text_color)
+            
+            images[cell_type] = img
+        return images
+
     def __init__(self, game=None, explainer=None, interface_hyperlink_mode=True, *, create_game_method: callable = None):
         """
         Initialize the TicTacToeGradioInterface.
@@ -211,7 +239,7 @@ class TicTacToeGradioInterface(GameInterface):
         """
         super().__init__()
         self.board_gallery = None
-        self.cell_images = self.create_cell_images()
+        self.board_cell_images = TicTacToeGradioInterface.create_board_cell_images()
         self.showing_state = None
         self.gallery_settings = None
         self.status = None
@@ -232,28 +260,14 @@ class TicTacToeGradioInterface(GameInterface):
             self.create_game_method = create_game_method
         else:
             raise SyntaxError("Either provide a game instance or a create_game_method method.")
-
-    def create_game(self):
-        if self.init_game is not None:
-            game = self.init_game
-        else:
-            game = self.create_game_method()
-            if not hasattr(game, 'get_current_player'):
-                raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the Gradio interface.")
-
-        return game
-
-    def start(self, share_gradio=False):
-        """
-        Start the game interface.
-
-        Initializes the game state and launches the Gradio interface.
-        """
-        self.started = True
-        demo = self.create_interface()
-        demo.launch(share=share_gradio)
         
     def create_interface(self):
+        """
+        Create the interface for the Tic Tac Toe game.
+        """
+        #************************
+        # 1. Define the interface
+        #
         with gr.Blocks(
             css="""
                 .grid-container {
@@ -262,17 +276,6 @@ class TicTacToeGradioInterface(GameInterface):
                     overflow: hidden;
                 }
                 """, # Perfectionates the board display
-            js="""
-                function setupDraggableNodes() {
-                    document.querySelectorAll('.draggable-node').forEach(node => {
-                        node.draggable = true;
-                        node.addEventListener('dragstart', (e) => {
-                            e.dataTransfer.setData('text/plain', node.dataset.node);
-                        });
-                    });
-                    return 'Draggable nodes set up';
-                }
-                """, # Allows for drag and drop of moves in the explanation
             fill_width=True) as demo:
             game_state = gr.State(self.create_game())
             with gr.Tabs() as tabs:
@@ -319,7 +322,9 @@ class TicTacToeGradioInterface(GameInterface):
                     self.explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components()
                     self.explainer_settings_fields = list(self.explainer_settings_components.values())[:-1] # exclude the apply button
 
-            # Handle components connections   
+            #*********************************
+            # 2. Handle components connections 
+            #
             self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **self.visualize_components, **self.visualize_decision_tree_components, **self.explainer_settings_components}, game_state)
 
             all_available_outputs = [game_state, self.board_gallery, self.showing_state, 
@@ -327,7 +332,10 @@ class TicTacToeGradioInterface(GameInterface):
                                      self.ai_explanation_components["explanation_output"], 
                                      self.ai_explanation_components["id_input"],
                                      self.ai_explanation_components["explain_adj_name"],
-                                     self.ai_explanation_components["explaining_question"],]
+                                     self.ai_explanation_components["explaining_question"],
+                                     self.ai_explanation_components["current_node_id"],
+                                     self.ai_explanation_components["current_adjective"],
+                                     self.ai_explanation_components["current_comparison_id"]]
             
             game_state.change(
                 self.update,
@@ -348,7 +356,7 @@ class TicTacToeGradioInterface(GameInterface):
             )
 
             self.show_current_button.click(
-                self.get_updated_board_gallery,
+                self.update_board_gallery,
                 inputs=[game_state],
                 outputs=[self.board_gallery, self.showing_state, self.ai_explanation_components["id_input"]]
             )
@@ -359,10 +367,21 @@ class TicTacToeGradioInterface(GameInterface):
                 outputs=all_available_outputs
             )
 
+            def toggle_skip_score(game, skip_score: bool, current_node_id: str, current_adjective: str, current_comparison_id: str, explanation_depth: int):
+                """
+                Toggle the skip score statement setting and update the explanation.
+                """
+                self.skip_score_statement = skip_score
+                self.explainer.frameworks['highlevel'].get_adjective('score').skip_statement = skip_score
+
+                ai_explanation, explaining_question, _, _, _ = self.explainer_interface.ai_explainer.update_ai_explanation(game, current_node_id, current_adjective, current_comparison_id, explanation_depth)
+                
+                return ai_explanation, explaining_question
+
             skip_score_toggle = self.ai_explanation_components["skip_score_toggle"]
             skip_score_toggle.change(
-                self.toggle_skip_score,
-                inputs=[skip_score_toggle, self.ai_explanation_components["id_input"], self.ai_explanation_components["explain_adj_name"], self.ai_explanation_components["comparison_id_input"], self.ai_explanation_components["explanation_depth"]],
+                toggle_skip_score,
+                inputs=[game_state, skip_score_toggle, self.ai_explanation_components["current_node_id"], self.ai_explanation_components["current_adjective"], self.ai_explanation_components["current_comparison_id"], self.ai_explanation_components["explanation_depth"]],
                 outputs=[self.ai_explanation_components["explanation_output"], self.ai_explanation_components["explaining_question"]]
             )
 
@@ -374,15 +393,16 @@ class TicTacToeGradioInterface(GameInterface):
             )
 
         return demo
-    
-    def restart_game(self, game):
+
+    def start(self, share_gradio=False):
         """
-        Restart the game.
+        Start the game interface.
+
+        Initializes the game state and launches the Gradio interface.
         """
-        if game is None:
-            raise gr.Error("Game is None")
-        game.restart()
-        return self.update()
+        self.started = True
+        demo = self.create_interface()
+        demo.launch(share=share_gradio)
 
     def on_load(self, game, request: gr.Request):
         """
@@ -391,6 +411,26 @@ class TicTacToeGradioInterface(GameInterface):
         self.explainer_interface.on_load(request)
 
         return self.update(game)
+    
+    def output(self, text: str, type: str = "info"):
+        """
+        Handle output information.
+
+        :param text: The text to display in the output area
+        :type text: str
+        """
+        if len(text) == 0:
+            return
+        
+        if type == "info":
+            self.output_text = ExplainerGradioInterface.cool_html_text_container.format(text)
+            gr.Info(text)
+        elif type == "error":
+            gr.Warning(text)
+        elif type == "warning":
+            gr.Warning(text)
+        else:
+            raise ValueError(f"Invalid type {type}")
 
     def update(self, game, show_node_id=None):
         """
@@ -406,18 +446,35 @@ class TicTacToeGradioInterface(GameInterface):
         if game is None:
             return gr.Gallery(), "Start a Game to show the board", None, None, None, None, None, None
         
-        board_gallery, showing_state, show_node_id = self.get_updated_board_gallery(game, show_node_id)
-        status = self.get_updated_status(game)
+        def get_updated_status(game):
+            """
+            Get the updated status based on the current game state.
+
+            :return: Updated status text
+            :rtype: str
+            """
+            if game.ended:
+                winner = game.winner()
+                if winner is None:
+                    return "Game Over! It's a draw!"
+                else:
+                    return f"Game Over! Player {'X' if winner == 0 else 'O'} wins!"
+            else:
+                next_player = 'X' if game.get_current_player().id == 0 else 'O'
+                return f"Player {next_player}'s turn"
+        
+        board_gallery, showing_state, show_node_id = self.update_board_gallery(game, show_node_id)
+        status = get_updated_status(game)
         output_text = self.output_text  # Update in case the self.output_text was changed
         ai_explanation = self.ai_explanation_components["explanation_output"].value
         explaining_question = self.ai_explanation_components["explaining_question"].value
 
         adjective = "the best"
-        ai_explanation, explaining_question = self.explainer_interface.ai_explainer.update_ai_explanation(game, None, adjective)
+        ai_explanation, explaining_question, current_node_id, current_adjective, current_comparison_id = self.explainer_interface.ai_explainer.update_ai_explanation(game, None, adjective)
 
-        return game, board_gallery, showing_state, status, output_text, ai_explanation, show_node_id, adjective, explaining_question
+        return game, board_gallery, showing_state, status, output_text, ai_explanation, show_node_id, adjective, explaining_question, current_node_id, current_adjective, current_comparison_id
 
-    def get_updated_board_gallery(self, game, node_id=None):
+    def update_board_gallery(self, game, node_id=None):
         """
         Get the updated board images based on the current game state.
 
@@ -463,13 +520,30 @@ class TicTacToeGradioInterface(GameInterface):
             board_state = game.model.action_spaces["board"]
             showing_state = f"Current State ({node_id})" if node_id else "Current State"
 
+        # After determining the node and board state, we can get the cell images and update the gallery
+        def get_cell_image(cell_value, is_changed, i, j):
+            """
+            Get the appropriate cell image and add the index.
+            """
+            if cell_value == '' or cell_value == ' ':
+                img = self.board_cell_images['empty'].copy()
+            else:
+                img_key = f"{cell_value}_red" if is_changed else cell_value
+                img = self.board_cell_images[img_key].copy()
+            
+            # Add index to the image
+            draw = ImageDraw.Draw(img)
+            font = ImageFont.load_default().font_variant(size=15)
+            draw.text((5, 3), f"{i},{j}", font=font, fill='blue')
+            
+            return img
 
         updated_images = []
         for i in range(3):
             for j in range(3):
                 cell_value = board_state[i, j]
                 is_changed = parent_state is not None and parent_state[i, j] != cell_value
-                cell_image = self.get_cell_image(cell_value, is_changed, i, j)
+                cell_image = get_cell_image(cell_value, is_changed, i, j)
                 updated_images.append(cell_image)
         
         board_gallery = gr.Gallery(
@@ -478,117 +552,42 @@ class TicTacToeGradioInterface(GameInterface):
         )
         return board_gallery, showing_state, node_id
     
-    def get_cell_image(self, cell_value, is_changed, i, j):
-        """
-        Get the appropriate cell image and add the index.
-        """
-        if cell_value == '' or cell_value == ' ':
-            img = self.cell_images['empty'].copy()
-        else:
-            img_key = f"{cell_value}_red" if is_changed else cell_value
-            img = self.cell_images[img_key].copy()
-        
-        # Add index to the image
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default().font_variant(size=15)
-        draw.text((5, 3), f"{i},{j}", font=font, fill='blue')
-        
-        return img
-    
-    def create_cell_images(self):
-        """
-        Create and store all possible cell images.
-        """
-        cell_size = 100
-        images = {}
-        for cell_type in ['empty', 'X', 'O', 'X_red', 'O_red']:
-            img = Image.new('RGB', (cell_size, cell_size), color='white')
-            draw = ImageDraw.Draw(img)
-            
-            # Draw border
-            draw.rectangle([0, 0, cell_size-1, cell_size-1], outline='black', width=2)
-            
-            if cell_type != 'empty':
-                font = ImageFont.load_default().font_variant(size=80)
-                text = cell_type[0]  # 'X' or 'O'
-                text_color = 'red' if cell_type.endswith('_red') else 'black'
-                
-                left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
-                text_width = right - left
-                text_height = bottom - top
-                position = ((cell_size - text_width) / 2, (cell_size - text_height*1.7) / 2)
-                draw.text(position, text, font=font, fill=text_color)
-            
-            images[cell_type] = img
-        return images
-    
     def update_showing_state(self, game, showing_state):
         """
-        Update the showing state.
+        Update the showing state label.
         """
         if showing_state is not None:
-            showing_state, _ = self.explainer_interface.transform_hyperlink_to_node_id(showing_state)
+            showing_state = self.explainer_interface.transform_hyperlink_to_node_id(showing_state)
 
         if showing_state is not None and showing_state in game.explaining_agent.core.nodes:
             node_id = showing_state
-            board_gallery, showing_state, show_node_id = self.get_updated_board_gallery(game, node_id)
+            board_gallery, showing_state, show_node_id = self.update_board_gallery(game, node_id)
         else:
-            board_gallery, showing_state, show_node_id = self.get_updated_board_gallery(game)
+            board_gallery, showing_state, show_node_id = self.update_board_gallery(game)
         
         return board_gallery, showing_state, show_node_id
-
-    def get_updated_status(self, game):
-        """
-        Get the updated status based on the current game state.
-
-        :return: Updated status text
-        :rtype: str
-        """
-        if game.ended:
-            winner = game.winner()
-            if winner is None:
-                return "Game Over! It's a draw!"
-            else:
-                return f"Game Over! Player {'X' if winner == 0 else 'O'} wins!"
-        else:
-            next_player = 'X' if game.get_current_player().id == 0 else 'O'
-            return f"Player {next_player}'s turn"
-
-    def output(self, text: str, type: str = "info"):
-        """
-        Update the output text.
-
-        :param text: The text to display in the output area
-        :type text: str
-        """
-        if len(text) == 0:
-            return
         
-        if type == "info":
-            self.output_text = ExplainerGradioInterface.cool_html_text_container.format(text)
-            gr.Info(text)
-        elif type == "error":
-            gr.Warning(text)
-        elif type == "warning":
-            gr.Warning(text)
+    def create_game(self):
+        """
+        Create the game instance.
+        """
+        if self.init_game is not None:
+            game = self.init_game
         else:
-            raise ValueError(f"Invalid type {type}")
+            game = self.create_game_method()
+            if not hasattr(game, 'get_current_player'):
+                raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the Gradio interface.")
 
-    def toggle_skip_score(self, skip_score: bool, explain_node_id: str, explain_adjective: str, comparison_id: str, explanation_depth: int):
+        return game
+    
+    def restart_game(self, game):
         """
-        Toggle the skip score statement setting and update the explanation.
-
-        :param skip_score: Whether to skip the score statement or not
-        :type skip_score: bool
-        :return: Updated AI explanation
-        :rtype: str
+        Restart the game.
         """
-        self.skip_score_statement = skip_score
-        self.explainer.frameworks['highlevel'].get_adjective('score').skip_statement = skip_score
-
-        ai_explanation, explaining_question = self.explainer_interface.ai_explainer.update_ai_explanation(explain_node_id, explain_adjective, comparison_id, explanation_depth)
-        
-        return ai_explanation, explaining_question
+        if game is None:
+            raise gr.Error("Game is None")
+        game.restart()
+        return self.update()
 
     async def process_move(self, game, evt: gr.SelectData):
         """
