@@ -310,11 +310,9 @@ class MiniMax:
             # Color coding
             if node.is_leaf:
                 fillcolor = 'lightblue'
-            elif not node.maximizing_player_turn: # The maximizer did this move.
-                # If after the move it is the minimizer's turn, 
-                # it means that the maximizer has chosen this move.
+            elif node.maximizing_player_turn:
                 fillcolor = 'green' if node.fully_searched else 'lightgreen'
-            else: # The minimizer did this move.
+            else:
                 fillcolor = 'deeppink' if node.fully_searched else 'pink'
             
             # Node label
