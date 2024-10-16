@@ -7,32 +7,26 @@ from .interface import TicTacToeJupyterInterface, TicTacToeGradioInterface
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
-    def __init__(self, *, players=None, explainer=None, interface_mode='gradio', interface_hyperlink_mode=True):
+    def __init__(self, *, players=None, interface_mode='gradio', interface_hyperlink_mode=True):
         """
         Initialize the TicTacToe game.
 
-        :param explainer: The explainer to use for the game.
-        :type explainer: Explainer
         :param interface_mode: The interface mode to use for the game.
         :type interface_mode: str
         :param players: The players to use for the game.
         :type players: list
         """
-        if interface_mode == 'gradio_app' and explainer is not None:
-            raise ValueError("""Interface mode 'gradio_app' does not support explainers in the game constructor. 
-                             Pass it to the interface instead.""")
         
         _child_init_params = {
             'players': players,
-            'explainer': explainer,
             'interface_mode': interface_mode,
             'interface_hyperlink_mode': interface_hyperlink_mode
         }
         super().__init__(_child_init_params, players=players)
         self.interface_mode = interface_mode
-        self.select_interface(interface_mode, interface_hyperlink_mode, explainer)
+        self.select_interface(interface_mode, interface_hyperlink_mode)
 
-    def select_interface(self, interface_mode, interface_hyperlink_mode, explainer):
+    def select_interface(self, interface_mode, interface_hyperlink_mode):
         """
         Select the interface for the game.
 
@@ -44,8 +38,6 @@ class TicTacToe(Game):
                 raise ValueError("Interface hyperlink mode is not supported for Jupyter interface.")
             self.interface = TicTacToeJupyterInterface(self)
         elif interface_mode == 'gradio':
-            self.interface = TicTacToeGradioInterface(self, explainer, interface_hyperlink_mode)
-        elif interface_mode == 'gradio_app':
             self.interface = None # Interface is created in the app.py file
         else:
             raise ValueError(f"Unsupported interface mode: {interface_mode}")
@@ -126,7 +118,7 @@ class TicTacToe(Game):
         else:
             raise ValueError("Player variable has to be 0 or 1")
 
-        return_broken_rule_string = self.interface_mode == 'gradio' or self.interface_mode == 'gradio_app'
+        return_broken_rule_string = self.interface_mode == 'gradio'
         action_dict, broken_rule_string = self.model.action("board", player, coordinates, sign, return_broken_rule_string=return_broken_rule_string)
         if broken_rule_string:
             raise ValueError(broken_rule_string)
@@ -155,9 +147,7 @@ class TicTacToe(Game):
         await self.process_turn()  
 
         if self.interface_mode == 'gradio':
-            self.interface.start(share_gradio=share_gradio)
-        elif self.interface_mode == 'gradio_app':
-            pass # Create and start the interface in the app.py file
+            pass # Create and start the interface externally
         elif self.interface_mode == 'jupyter':
             self.interface.start()
         else:
