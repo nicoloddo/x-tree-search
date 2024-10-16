@@ -310,9 +310,11 @@ class MiniMax:
             # Color coding
             if node.is_leaf:
                 fillcolor = 'lightblue'
-            elif node.maximizing_player_turn:
+            elif not node.maximizing_player_turn: # The maximizer did this move.
+                # If after the move it is the minimizer's turn, 
+                # it means that the maximizer has chosen this move.
                 fillcolor = 'green' if node.fully_searched else 'lightgreen'
-            else:
+            else: # The minimizer did this move.
                 fillcolor = 'deeppink' if node.fully_searched else 'pink'
             
             # Node label
@@ -364,10 +366,10 @@ class MiniMax:
         dot.attr(labelloc='t')  # 't' for top, 'b' for bottom (default)
         
         dot.attr(fontsize='12', fontweight='bold')
-        dot.node('legend_maximizer', 'Maximizer turn', fillcolor='green', style='filled')
-        dot.node('legend_maximizer_pruned', 'Maximizer turn\n(pruned)', fillcolor='lightgreen', style='filled')
-        dot.node('legend_minimizer', 'Minimizer turn', fillcolor='deeppink', style='filled')
-        dot.node('legend_minimizer_pruned', 'Minimizer turn\n(pruned)', fillcolor='pink', style='filled')
+        dot.node('legend_maximizer', 'Maximizer move', fillcolor='green', style='filled')
+        dot.node('legend_maximizer_pruned', 'Maximizer move\n(pruned)', fillcolor='lightgreen', style='filled')
+        dot.node('legend_minimizer', 'Minimizer move', fillcolor='deeppink', style='filled')
+        dot.node('legend_minimizer_pruned', 'Minimizer move\n(pruned)', fillcolor='pink', style='filled')
         dot.node('legend_leaf', 'Leaf Node', fillcolor='lightblue', style='filled')
 
         # Render the graph
