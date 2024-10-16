@@ -52,7 +52,7 @@ class User:
         self.pause_first_turn = pause_first_turn
 
     async def play(self, game, inputs=None):
-        if game.interface_mode == 'jupyter' or game.interface_mode == 'gradio' or game.interface_mode == 'gradio_app':
+        if game.interface_mode == 'jupyter' or game.interface_mode == 'gradio':
             what = inputs['what']
             where = inputs['where']
             action_space = inputs['action_space']
