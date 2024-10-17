@@ -49,7 +49,7 @@ class TicTacToeGradioInterface(GameInterface):
             images[cell_type] = img
         return images
 
-    def __init__(self, game=None, explainer=None, interface_hyperlink_mode=True, *, create_game_method: callable = None):
+    def __init__(self, game, explainer=None, interface_hyperlink_mode=True):
         """
         Initialize the TicTacToeGradioInterface.
 
@@ -59,7 +59,12 @@ class TicTacToeGradioInterface(GameInterface):
         :type game: TicTacToe
         :raises AttributeError: If the game instance doesn't have a 'get_current_player' or 'explaining_agent' attributes
         """
-        super().__init__()
+        super().__init__(game)
+        if not hasattr(game, 'get_current_player'):
+            raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the gradio interface.")
+        elif not hasattr(game, 'explaining_agent'):
+            raise AttributeError("The game instance does not have an 'explaining_agent' attribute, thus it does not support the gradio interface.")
+    
         self.board_cell_images = TicTacToeGradioInterface.create_board_cell_images()
         self.board_gallery_settings = {
             "columns": 3,
@@ -72,18 +77,8 @@ class TicTacToeGradioInterface(GameInterface):
         self.ai_explanation_components = None
         self.skip_score_statement = True
         
-        self.init_explainer = explainer
-        self.explainer_interface = ExplainerGradioInterface(explainer=self.init_explainer, explain_in_hyperlink_mode=interface_hyperlink_mode)
-
-        self.init_game = None
-        if game is not None:
-            if create_game_method is not None:
-                raise SyntaxError("Do not provide an create_game_method method if you are already providing a game instance.")
-            self.init_game = game
-        elif create_game_method is not None:
-            self.create_game_method = create_game_method
-        else:
-            raise SyntaxError("Either provide a game instance or a create_game_method method.")
+        self.explainer = explainer
+        self.explainer_interface = ExplainerGradioInterface(explainer=self.explainer, explain_in_hyperlink_mode=interface_hyperlink_mode)
         
     def create_interface(self):
         """
@@ -101,8 +96,8 @@ class TicTacToeGradioInterface(GameInterface):
                 }
                 """, # Perfectionates the board display
             fill_width=True) as demo:
-            game_state = gr.State(self.create_game())
-            explainer_state = gr.State(self.init_explainer)
+            game_state = gr.State(self.game)
+            explainer_state = gr.State(self.explainer)
 
             with gr.Tabs() as tabs:
                 with gr.TabItem("Game and Explain", id=self.explainer_interface.tab_ids["other"] + 0):
@@ -231,7 +226,7 @@ class TicTacToeGradioInterface(GameInterface):
         On load event handler.
         """
         self.explainer_interface.on_load(request)
-
+        asyncio.run(game.start_game())
         return self.update(game, explainer)
     
     def output(self, text: str, type: str = "info"):
@@ -386,23 +381,6 @@ class TicTacToeGradioInterface(GameInterface):
             board_gallery, showing_state, show_node_id = self.update_board_gallery(game)
         
         return board_gallery, showing_state, show_node_id
-        
-    def create_game(self):
-        """
-        Create the game instance.
-        """
-        if self.init_game is not None:
-            game = self.init_game
-        else:
-            game = self.create_game_method()
-
-        if not hasattr(game, 'get_current_player'):
-            raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the gradio interface.")
-        elif not hasattr(game, 'explaining_agent'):
-            raise AttributeError("The game instance does not have an 'explaining_agent' attribute, thus it does not support the gradio interface.")
-
-        asyncio.run(game.start_game())
-        return game
     
     def restart_game(self, game, explainer):
         """

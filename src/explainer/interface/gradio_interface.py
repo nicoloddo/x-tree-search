@@ -5,7 +5,6 @@ import inspect
 import sys
 import graphviz
 import re
-from urllib.parse import urlencode
 
 from src.explainer.adjective import Adjective, AdjectiveType
 from src.explainer.explanation import Explanation, Assumption, CompositeExplanation, ConditionalExplanation

@@ -28,10 +28,10 @@ class TicTacToeJupyterInterface(GameInterface):
         :type game: TicTacToe
         :raises AttributeError: If the game instance doesn't have a 'get_current_player' method
         """
-        super().__init__()
+        super().__init__(game)
         if not hasattr(game, 'get_current_player'):
             raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the jupyter interface.")
-        self.game = game
+
         self.buttons: Dict[tuple, widgets.Button] = {}
         self.status_label: widgets.Label = None
         self.board_output: widgets.Output = None
