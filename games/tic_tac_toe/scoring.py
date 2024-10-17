@@ -44,11 +44,11 @@ def simple_depth_dependant_scoring_function(node, depth):
 
     for line in lines:
         if np.all(line == "X"):
-            score += 1000 + depth # 'X' wins
+            score += 1000 - depth # 'X' wins
         elif np.all(line == "O"):
             score -= 1000 - depth # 'O' wins
         elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
-            score += 100 + depth # 'X' is one move away from winning
+            score += 100 - depth # 'X' is one move away from winning
         elif np.count_nonzero(line == "O") == 2 and np.count_nonzero(line == "free") == 1:
             score -= 100 - depth  # 'O' is one move away from winning
 
