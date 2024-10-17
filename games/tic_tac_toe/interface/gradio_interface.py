@@ -82,7 +82,6 @@ class TicTacToeGradioInterface(GameInterface):
             "elem_id": "board"
         }
         self.ai_explanation_components = None
-        self.skip_score_statement = True
         
         self.explainer = explainer
         self.explainer_interface = ExplainerGradioInterface(explainer=self.explainer, explain_in_hyperlink_mode=interface_hyperlink_mode)
@@ -191,7 +190,6 @@ class TicTacToeGradioInterface(GameInterface):
                 """
                 Toggle the skip score statement setting and update the explanation.
                 """
-                self.skip_score_statement = skip_score
                 explainer.frameworks['highlevel'].get_adjective('score').skip_statement = skip_score
 
                 ai_explanation, explaining_question, _, _, _ = self.explainer_interface.ai_explainer.update_ai_explanation(game, explainer, current_node_id, current_adjective, current_comparison_id, explanation_depth)
