@@ -60,13 +60,15 @@ class TicTacToeGradioInterface(GameInterface):
         :raises AttributeError: If the game instance doesn't have a 'get_current_player' or 'explaining_agent' attributes
         """
         super().__init__()
-        self.board_gallery = None
         self.board_cell_images = TicTacToeGradioInterface.create_board_cell_images()
-        self.showing_state = None
-        self.gallery_settings = None
-        self.status = None
-        self.output_text = None
-        self.ai_explanation = None
+        self.board_gallery_settings = {
+            "columns": 3,
+            "rows": 3,
+            "height": "max-content",
+            "allow_preview": False,
+            "show_label": False,
+            "elem_id": "board"
+        }
         self.ai_explanation_components = None
         self.skip_score_statement = True
         
@@ -108,25 +110,16 @@ class TicTacToeGradioInterface(GameInterface):
                         with gr.Column(scale=1):
                             gr.Markdown("# Tic Tac Toe (vs Alpha-Beta Pruning Minimax)")
                             with gr.Row():
-                                self.status = gr.Textbox(label="Status", value=self.status, scale=1)
-                                self.showing_state = gr.Textbox(label="Showing (drag and drop to change)", value=self.showing_state, scale=1, interactive=True)
+                                status = gr.Textbox(label="Status", value="Starting game...", scale=1)
+                                showing_state = gr.Textbox(label="Showing (drag and drop to change)", value="Starting game...", scale=1, interactive=True)
                             with gr.Row():
-                                self.restart_button = gr.Button("Restart Game", scale=1)
-                                self.show_current_button = gr.Button("Return to Current State", scale=1)
+                                restart_button = gr.Button("Restart Game", scale=1)
+                                show_current_button = gr.Button("Return to Current State", scale=1)
 
-                            self.gallery_settings = {
-                                "columns": 3,
-                                "rows": 3,
-                                "height": "max-content",
-                                "allow_preview": False,
-                                "show_label": False,
-                                "elem_id": "board"
-                            }
-                            self.board_gallery = gr.Gallery(
+                            board_gallery = gr.Gallery(
                                 value=[],
-                                **self.gallery_settings
+                                **self.board_gallery_settings
                             )
-                            self.output_text = gr.HTML("")
                     
                         with gr.Column(scale=2):
                             gr.Markdown("# AI Move Explanation")
@@ -138,24 +131,22 @@ class TicTacToeGradioInterface(GameInterface):
                             )
 
                 with gr.TabItem("Visualize Decision Tree", self.explainer_interface.tab_ids["visualize_decision_tree"]):
-                    self.visualize_decision_tree_components = self.explainer_interface.interface_builder.build_visualize_decision_tree_components(game_state)
+                    visualize_decision_tree_components = self.explainer_interface.interface_builder.build_visualize_decision_tree_components(game_state)
 
                 with gr.TabItem("Visualize Framework", self.explainer_interface.tab_ids["visualize"]):
-                    self.visualize_components = self.explainer_interface.interface_builder.build_visualize_components()
+                    visualize_components = self.explainer_interface.interface_builder.build_visualize_components()
                 
                 with gr.TabItem("Settings", self.explainer_interface.tab_ids["settings"]):
-                    self.explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components()
-                    self.explainer_settings_fields = list(self.explainer_settings_components.values())[:-1] # exclude the apply button
+                    explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components()
 
             #*********************************
             # 2. Handle components connections 
             #
-            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **self.visualize_components, 
-                                                                           **self.visualize_decision_tree_components, **self.explainer_settings_components}, 
+            self.explainer_interface.interface_builder.connect_components({**self.ai_explanation_components, **visualize_components, 
+                                                                           **visualize_decision_tree_components, **explainer_settings_components}, 
                                                                            game_state, explainer_state)
 
-            all_available_outputs = [game_state, self.board_gallery, self.showing_state, 
-                                     self.status, self.output_text, 
+            all_available_outputs = [game_state, board_gallery, showing_state, status, 
                                      self.ai_explanation_components["explanation_output"], 
                                      self.ai_explanation_components["id_input"],
                                      self.ai_explanation_components["explain_adj_name"],
@@ -170,25 +161,25 @@ class TicTacToeGradioInterface(GameInterface):
                 outputs=all_available_outputs
             )
 
-            self.showing_state.change(
+            showing_state.change(
                 self.update_showing_state,
-                inputs=[game_state, self.showing_state],
-                outputs=[self.board_gallery, self.showing_state, self.ai_explanation_components["id_input"]]
+                inputs=[game_state, showing_state],
+                outputs=[board_gallery, showing_state, self.ai_explanation_components["id_input"]]
             )
 
-            self.board_gallery.select(
+            board_gallery.select(
                 self.process_move,
                 inputs=[game_state, explainer_state],
                 outputs=all_available_outputs
             )
 
-            self.show_current_button.click(
+            show_current_button.click(
                 self.update_board_gallery,
                 inputs=[game_state],
-                outputs=[self.board_gallery, self.showing_state, self.ai_explanation_components["id_input"]]
+                outputs=[board_gallery, showing_state, self.ai_explanation_components["id_input"]]
             )
 
-            self.restart_button.click(
+            restart_button.click(
                 self.restart_game,
                 inputs=[game_state, explainer_state],
                 outputs=all_available_outputs
@@ -208,7 +199,11 @@ class TicTacToeGradioInterface(GameInterface):
             skip_score_toggle = self.ai_explanation_components["skip_score_toggle"]
             skip_score_toggle.change(
                 toggle_skip_score,
-                inputs=[game_state, explainer_state, skip_score_toggle, self.ai_explanation_components["current_node_id"], self.ai_explanation_components["current_adjective"], self.ai_explanation_components["current_comparison_id"], self.ai_explanation_components["explanation_depth"]],
+                inputs=[game_state, explainer_state, skip_score_toggle, 
+                        self.ai_explanation_components["current_node_id"], 
+                        self.ai_explanation_components["current_adjective"], 
+                        self.ai_explanation_components["current_comparison_id"], 
+                        self.ai_explanation_components["explanation_depth"]],
                 outputs=[self.ai_explanation_components["explanation_output"], self.ai_explanation_components["explaining_question"]]
             )
 
@@ -250,7 +245,6 @@ class TicTacToeGradioInterface(GameInterface):
             return
         
         if type == "info":
-            self.output_text = ExplainerGradioInterface.cool_html_text_container.format(text)
             gr.Info(text)
         elif type == "error":
             gr.Warning(text)
@@ -292,14 +286,13 @@ class TicTacToeGradioInterface(GameInterface):
         
         board_gallery, showing_state, show_node_id = self.update_board_gallery(game, show_node_id)
         status = get_updated_status(game)
-        output_text = self.output_text  # Update in case the self.output_text was changed
         ai_explanation = self.ai_explanation_components["explanation_output"].value
         explaining_question = self.ai_explanation_components["explaining_question"].value
 
         adjective = "the best"
         ai_explanation, explaining_question, current_node_id, current_adjective, current_comparison_id = self.explainer_interface.ai_explainer.update_ai_explanation(game, explainer, None, adjective)
 
-        return game, board_gallery, showing_state, status, output_text, ai_explanation, show_node_id, adjective, explaining_question, current_node_id, current_adjective, current_comparison_id
+        return game, board_gallery, showing_state, status, ai_explanation, show_node_id, adjective, explaining_question, current_node_id, current_adjective, current_comparison_id
 
     def update_board_gallery(self, game, node_id=None):
         """
@@ -375,7 +368,7 @@ class TicTacToeGradioInterface(GameInterface):
         
         board_gallery = gr.Gallery(
             value=updated_images,
-            **self.gallery_settings
+            **self.board_gallery_settings
         )
         return board_gallery, showing_state, node_id
     
