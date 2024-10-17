@@ -3,7 +3,8 @@ import inspect
 
 from src.game.game import Game, GameModel
 from src.game.agents import User
-from .interface import TicTacToeJupyterInterface, TicTacToeGradioInterface
+from .interface.gradio_interface import TicTacToeGradioInterface
+from .interface.jupyter_interface import TicTacToeJupyterInterface
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
