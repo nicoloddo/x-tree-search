@@ -25,6 +25,9 @@ class TicTacToeGradioInterface(GameInterface):
     def create_board_cell_images(cls):
         """
         Create and store all possible cell images.
+
+        :return: A dictionary with the cell type as key and the image as value.
+        :rtype: dict
         """
         cell_size = 100
         images = {}
@@ -57,6 +60,10 @@ class TicTacToeGradioInterface(GameInterface):
 
         :param game: The TicTacToe game instance
         :type game: TicTacToe
+        :param explainer: The explainer instance
+        :type explainer: Explainer
+        :param interface_hyperlink_mode: Whether to use hyperlink mode in the interface
+        :type interface_hyperlink_mode: bool
         :raises AttributeError: If the game instance doesn't have a 'get_current_player' or 'explaining_agent' attributes
         """
         super().__init__(game)
@@ -216,6 +223,9 @@ class TicTacToeGradioInterface(GameInterface):
         Start the game interface.
 
         Initializes the game state and launches the Gradio interface.
+
+        :param share_gradio: Whether to share the Gradio interface publicly
+        :type share_gradio: bool
         """
         self.started = True
         demo = self.create_interface()
@@ -224,6 +234,14 @@ class TicTacToeGradioInterface(GameInterface):
     def on_load(self, game, explainer, request: gr.Request):
         """
         On load event handler.
+
+        :param game: The game state
+        :type game: TicTacToe
+        :param explainer: The explainer instance
+        :type explainer: Explainer
+        :param request: The Gradio request object
+        :type request: gr.Request
+        :return: Updated game state and interface components
         """
         self.explainer_interface.on_load(request)
         asyncio.run(game.start_game())
@@ -235,6 +253,8 @@ class TicTacToeGradioInterface(GameInterface):
 
         :param text: The text to display in the output area
         :type text: str
+        :param type: The type of output (info, error, or warning)
+        :type type: str
         """
         if len(text) == 0:
             return
@@ -256,8 +276,13 @@ class TicTacToeGradioInterface(GameInterface):
         Consider that due to Gradio's event handling approach, this method will not do anything when
         called directly, but it rather need to be attached to an event to be applied correctly.
 
-        :return: Updated board images, status, output text, and AI explanation
-        :rtype: Tuple[List[str], str, str, str]
+        :param game: The game state
+        :type game: TicTacToe
+        :param explainer: The explainer instance
+        :type explainer: Explainer
+        :param show_node_id: The ID of the node to show, if any
+        :type show_node_id: str, optional
+        :return: Updated game state and interface components
         """
         if game is None:
             return gr.Gallery(), "Start a Game to show the board", None, None, None, None, None, None
@@ -293,8 +318,10 @@ class TicTacToeGradioInterface(GameInterface):
         """
         Get the updated board images based on the current game state.
 
+        :param game: The game state
+        :type game: TicTacToe
         :param node_id: The ID of the node to explain
-        :type node_id: str
+        :type node_id: str, optional
         :return: The updated board gallery, showing state, and node ID
         :rtype: Tuple[gr.Gallery, str, str]
         """
@@ -370,6 +397,13 @@ class TicTacToeGradioInterface(GameInterface):
     def update_showing_state(self, game, showing_state):
         """
         Update the showing state label.
+
+        :param game: The game state
+        :type game: TicTacToe
+        :param showing_state: The current showing state
+        :type showing_state: str
+        :return: Updated board gallery, showing state, and node ID
+        :rtype: Tuple[gr.Gallery, str, str]
         """
         if showing_state is not None:
             showing_state = self.explainer_interface.transform_hyperlink_to_node_id(showing_state)
@@ -385,6 +419,12 @@ class TicTacToeGradioInterface(GameInterface):
     def restart_game(self, game, explainer):
         """
         Restart the game.
+
+        :param game: The game state
+        :type game: TicTacToe
+        :param explainer: The explainer instance
+        :type explainer: Explainer
+        :return: Updated game state and interface components
         """
         if game is None:
             raise gr.Error("Game is None")
@@ -395,10 +435,13 @@ class TicTacToeGradioInterface(GameInterface):
         """
         Process a move made by the current player.
 
+        :param game: The game state
+        :type game: TicTacToe
+        :param explainer: The explainer instance
+        :type explainer: Explainer
         :param evt: The event data containing the selected index
         :type evt: gr.SelectData
-        :return: Updated board images, status, output text, and AI explanation
-        :rtype: Tuple[gr.Gallery, str, str, str]
+        :return: Updated game state and interface components
         """
         try:
             index = evt.index

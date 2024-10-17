@@ -33,6 +33,9 @@ class Node:
         self.explanation = adjective.explanation
 
 class ExplainerGradioInterface:
+    """Main class for building and managing the explainer interface."""
+
+    # Define tab IDs for the interface
     tab_ids = {
         "ai_explanation": 1,
         "visualize": 2,
@@ -41,9 +44,11 @@ class ExplainerGradioInterface:
         "other": 5
     }
 
+    # Define patterns for node hyperlinks
     node_hyperlink_prefix = "::node::"
     node_hyperlink_pattern = r'::node::\((.*?)\)\[(.*?)\]'
 
+    # HTML template for cool text container
     cool_html_text_container = """<pre style="
         font-family: var(--font-mono); 
         font-size: var(--text-sm); 
@@ -54,7 +59,12 @@ class ExplainerGradioInterface:
     
     @classmethod
     def transform_hyperlink_to_node_id(cls, node_id):
-        """Transform the hyperlink to the node id."""
+        """
+        Transform the hyperlink to the node id.
+
+        :param node_id: The hyperlink or node ID string
+        :return: The extracted node ID
+        """
         match = re.search(cls.node_hyperlink_pattern, node_id)
         
         if match:
@@ -64,10 +74,13 @@ class ExplainerGradioInterface:
         else:
             return node_id
 
-    """Main class for building and managing the explainer interface."""
     def __init__(self, *, explainer=None, explain_in_hyperlink_mode=True):
-        """Initialize the ExplainerInterface with an optional game to explain."""
-    
+        """
+        Initialize the ExplainerInterface with an optional explainer.
+
+        :param explainer: The explainer instance to use
+        :param explain_in_hyperlink_mode: Whether to use hyperlink mode for explanations
+        """
         self.nodes = {}
 
         self.init_explainer = explainer
@@ -91,14 +104,18 @@ class ExplainerGradioInterface:
 
     def on_load(self, request: gr.Request):
         """
-        On load event handler.
+        On load event handler for the Gradio interface.
+
+        :param request: The Gradio request object
         """
         if request:
             query_params = dict(request.query_params)
-            """The tab selector does not work right now on Gradio
+            # Note: Tab selector functionality is currently not working in Gradio
+            """
             if 'tab' in query_params:
                 tab = query_params['tab']
-                return gr.Tabs(selected=self.tab_ids[tab])"""
+                return gr.Tabs(selected=self.tab_ids[tab])
+            """
 
     def load_framework(self):
         """Load the adjectives from the framework."""
@@ -106,16 +123,35 @@ class ExplainerGradioInterface:
             self._add_adjective(adjective)
 
     def _add_adjective(self, adjective):
-        """Add an adjective to the graph."""
+        """
+        Add an adjective to the graph.
+
+        :param adjective: The adjective to add
+        """
         node = Node(adjective.name, type(adjective).__name__, adjective)
         self.nodes[node.id] = node
 
     def get_adjective_names(self):
-        """Get a list of all adjective names in the graph."""
+        """
+        Get a list of all adjective names in the graph.
+
+        :return: List of adjective names
+        """
         return list(self.nodes.keys())
 
     def apply_explainer_settings(self, explainer, with_framework, explanation_depth, assumptions_verbosity, print_depth, print_implicit_assumptions, print_mode):
-        """Apply the explainer settings."""
+        """
+        Apply the explainer settings.
+
+        :param explainer: The explainer instance
+        :param with_framework: Whether to use the framework
+        :param explanation_depth: The depth of explanations
+        :param assumptions_verbosity: The verbosity level for assumptions
+        :param print_depth: Whether to print depth information
+        :param print_implicit_assumptions: Whether to print implicit assumptions
+        :param print_mode: The print mode for explanations
+        :return: The updated explainer instance
+        """
         settings_dict = {
             'with_framework': with_framework,
             'explanation_depth': explanation_depth,
@@ -128,7 +164,12 @@ class ExplainerGradioInterface:
         return explainer
     
     def check_if_comparison_adjective(self, adjective_name):
-        """Check if the adjective name is a comparison adjective."""
+        """
+        Check if the adjective name is a comparison adjective.
+
+        :param adjective_name: The name of the adjective to check
+        :return: Gradio update object with visibility and value
+        """
         if adjective_name is None or adjective_name == "" or self.framework is None:
             return gr.update(visible=False, value=None)
         adjective = self.framework.get_adjective(adjective_name)
@@ -143,6 +184,8 @@ class ExplainerGradioInterface:
         self.demo.launch()
 
     class InterfaceBuilder:
+        """Class for building the Gradio interface components."""
+
         def __init__(self, **kwargs):
             self.init_explainer = kwargs.get('explainer')
             self.tab_ids = kwargs.get('tab_ids')
@@ -155,16 +198,29 @@ class ExplainerGradioInterface:
             self.apply_explainer_settings = kwargs.get('apply_explainer_settings')
         
         def update_dropdowns(self):
-            """Update all dropdowns with current adjective names."""
+            """
+            Update all dropdowns with current adjective names.
+
+            :return: List of Gradio update objects for dropdowns
+            """
             choices = self.get_adjective_names()
             return [gr.update(choices=choices, value=None) for _ in range(len(self.dropdown_components))]
 
         def get_decision_tree_legend(self, game):
-            """Get the decision tree visualization legend"""
+            """
+            Get the decision tree visualization legend.
+
+            :param game: The game instance
+            :return: The legend for the decision tree or None
+            """
             return game.explaining_agent.core.visualize_legend_move_tree() if game.explaining_agent is not None else None
 
         def get_default_explainer_settings(self):
-            """Returns the default explainer settings"""
+            """
+            Returns the default explainer settings.
+
+            :return: Dictionary of default settings
+            """
             default_settings = ExplanationSettings.default_settings
             explainer = self.init_explainer
             default_settings = {
@@ -177,7 +233,11 @@ class ExplainerGradioInterface:
             return default_settings
 
         def reset_explainer_settings(self):
-            """Reset the explainer settings."""
+            """
+            Reset the explainer settings to default values.
+
+            :return: List of Gradio update objects for settings components
+            """
             default_settings = self.get_default_explainer_settings()
             return [gr.update(value=default_settings[key]) for key in default_settings]
         
@@ -185,11 +245,15 @@ class ExplainerGradioInterface:
             """
             Build the AI explanation components.
 
-            :param toggles: A dictionary of toggles to add to the interface. 
-            The key is the name of the toggle, the value is a tuple of the label and the value.
+            :param game_state_component: The game state component
+            :param explainer_state_component: The explainer state component
+            :param toggles: A dictionary of toggles to add to the interface
+            :param additional_info: Additional information to display
+            :return: Dictionary of created components
             """
             components = {}
             
+            # Build input components
             with gr.Row():
                 with gr.Column(scale=1):
                     components["id_input"] = gr.Textbox(label="Ask further about (you can drag and drop a move from the explanation)", visible=self.explain_in_hyperlink_mode)
@@ -197,14 +261,17 @@ class ExplainerGradioInterface:
                     components["explain_adj_name"] = gr.Dropdown(choices=self.get_adjective_names(), label="Why is it ...? Why it has that ...?", visible=self.explain_in_hyperlink_mode)
             components["comparison_id_input"] = gr.Textbox(label="In comparison to (you can drag and drop from the explanation)", visible=False)
             
+            # Hidden components for storing current state
             components["current_node_id"] = gr.Textbox(label="Current Node ID", visible=False)
             components["current_adjective"] = gr.Textbox(label="Current Adjective", visible=False)
             components["current_comparison_id"] = gr.Textbox(label="Current Comparison ID", visible=False)
 
+            # Explanation button and depth slider
             components["explain_button"] = gr.Button("Explain", visible=self.explain_in_hyperlink_mode)
-
             default_explanation_depth = self.init_explainer.settings.explanation_depth if self.init_explainer is not None else ExplanationSettings.default_settings["explanation_depth"]
             components["explanation_depth"] = gr.Slider(minimum=min(EXPLANATION_DEPTH_ALLOWED_VALUES), maximum=max(EXPLANATION_DEPTH_ALLOWED_VALUES), step=1, value=default_explanation_depth, label="Explanation Depth")
+
+            # Explanation output components
             components["explaining_question"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format("Why ...?"), label="Question", visible=self.explain_in_hyperlink_mode)
             if self.explain_in_hyperlink_mode and additional_info is not None:
                 components["additional_info"] = gr.HTML(value=ExplainerGradioInterface.cool_html_text_container.format(additional_info))
@@ -214,6 +281,7 @@ class ExplainerGradioInterface:
             else:
                 components["explanation_output"] = gr.Markdown(value="", label="AI move explanation")
 
+            # Add toggles if provided
             if toggles:
                 for name, toggle_params in toggles.items():
                     label, value = toggle_params
@@ -223,7 +291,9 @@ class ExplainerGradioInterface:
 
         def build_visualize_components(self):
             """
-            Build the visualize components.
+            Build the visualize components for the framework graph.
+
+            :return: Dictionary of created components
             """
             components = {}
             gr.Markdown("""# Visualize the chain of explanations defined in the framework
@@ -236,7 +306,12 @@ class ExplainerGradioInterface:
             return components
         
         def build_visualize_decision_tree_components(self, game_state_component):
-            """Build components for visualizing the Decision Tree."""
+            """
+            Build components for visualizing the Decision Tree.
+
+            :param game_state_component: The game state component
+            :return: Dictionary of created components
+            """
             components = {}
             
             gr.Markdown("""# Visualize the Decision Tree
@@ -252,7 +327,11 @@ class ExplainerGradioInterface:
             return components
 
         def build_explainer_settings_components(self):
-            """Build components for explainer settings."""
+            """
+            Build components for explainer settings.
+
+            :return: Dictionary of created components
+            """
             components = {}
 
             default_values = self.get_default_explainer_settings()            
@@ -262,7 +341,7 @@ class ExplainerGradioInterface:
                     components["with_framework"] = gr.Textbox(
                         label="Framework Name", 
                         value=default_values["with_framework"],
-                        visible=False) # For now this is not customizable
+                        visible=False)  # Currently not customizable
                     
                     # Explanation Depth setting has been moved to the AI explanation section
 
@@ -289,9 +368,11 @@ class ExplainerGradioInterface:
             """
             Connect the components of the interface.
 
-            :param components: The components to connect.
+            :param components: The components to connect
+            :param game_state_component: The game state component
+            :param explainer_state_component: The explainer state component
             """
-            # Explain
+            # Explain button functionality
             if "explain_button" in components:
                 components["explain_button"].click(
                     self.update_ai_explanation,
@@ -335,7 +416,7 @@ class ExplainerGradioInterface:
                     """
                 )
 
-            # Visualize
+            # Visualize framework graph
             if "visualize_button" in components:
                 components["visualize_button"].click(
                     self.visualize_graph, 
@@ -351,7 +432,7 @@ class ExplainerGradioInterface:
                     outputs=[components["move_tree_output"]]
                 )
 
-            # Settings
+            # Apply explainer settings
             if "apply_settings_button" in components:
                 components["apply_settings_button"].click(
                     self.apply_explainer_settings,
@@ -364,11 +445,16 @@ class ExplainerGradioInterface:
             self.dropdown_components = [comp for comp in [components.get("root_adjective"), 
                                                     components.get("explain_adj_name")] if comp is not None]
             if self.dropdown_components:
-                for button in []: #  No buttons need to update the dropdowns right now
+                for button in []:  # No buttons need to update the dropdowns right now
                     if button:
                         button.click(self.update_dropdowns, outputs=self.dropdown_components)
 
         def build_interface(self):
+            """
+            Build the complete Gradio interface.
+
+            :return: The Gradio Blocks object representing the interface
+            """
             with gr.Blocks() as demo:
                 gr.Markdown("# X-Tree-Search Explainer")
                 
@@ -390,6 +476,8 @@ class ExplainerGradioInterface:
             return demo
         
     class AIExplainer:
+        """Class for handling AI explanations."""
+
         def __init__(self, explainer, explain_in_hyperlink_mode):
             self.init_explainer = explainer
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
@@ -398,13 +486,19 @@ class ExplainerGradioInterface:
             """
             Update the AI explanation.
 
-            :param node_id: The ID of the node to explain.
-            :param adjective: The adjective to use in the explanation.
+            :param game: The game instance
+            :param explainer: The explainer instance
+            :param node_id: The ID of the node to explain
+            :param adjective: The adjective to use in the explanation
+            :param comparison_id: The ID of the node to compare with
+            :param explanation_depth: The depth of the explanation
+            :return: Tuple containing the explanation, question, and current state information
             """
             current_node_id = ''
             current_comparison_id = ''
             current_adjective = ''
 
+            # Handle empty inputs
             if node_id == '':
                 node_id = None
             if adjective == '':
@@ -415,6 +509,7 @@ class ExplainerGradioInterface:
             explanation = ""
             explaining_question = "Why ...?"
             
+            # Check for valid inputs
             if adjective is None:
                 explanation = "No adjective was provided."
             elif not game:
@@ -422,11 +517,13 @@ class ExplainerGradioInterface:
             elif game.explaining_agent is None:
                 explanation = "No explaining agent was found."
             else:
+                # Set explanation depth
                 if explanation_depth is None:
                     explanation_depth = explainer.settings.explanation_depth
                 else:
                     explanation_depth = int(explanation_depth)
             
+                # Get the node to explain
                 if node_id is None:
                     node = game.explaining_agent.choice
                     if node is not None:
@@ -437,13 +534,12 @@ class ExplainerGradioInterface:
                 if node is None:
                     explanation = f"No {explainer.framework.refer_to_nodes_as} to explain was found."
                 else:
-                    # All is good, we can explain
+                    # Generate explanation
                     if self.explain_in_hyperlink_mode:
                         activated = LogicalExpression.set_hyperlink_mode(self.explain_in_hyperlink_mode, node.__class__)
                     else:
                         activated = False
 
-                    # Explain
                     current_node_id = node.id
                     current_adjective = adjective
                     if comparison_id is None:
@@ -453,7 +549,7 @@ class ExplainerGradioInterface:
                         comparison_node = game.explaining_agent.core.nodes[comparison_id]
                         explanation = explainer.explain(node, adjective, comparison_node, print_context=False, explanation_depth=explanation_depth)
 
-                    # Build explaining_question
+                    # Build explaining question
                     if isinstance(explanation, Implies):
                         explanation.consequent.build_str_components()
                         verb_str = explanation.consequent.verb_str
@@ -472,14 +568,13 @@ class ExplainerGradioInterface:
                     # If we are in interface mode, we need to replace the node references with hyperlinks
                     if activated:
                         LogicalExpression.set_hyperlink_mode(False)
-
-                        # Replace node references with HTML hyperlinks
                         explanation = re.sub(
                             ExplainerGradioInterface.node_hyperlink_pattern,
                             lambda m: f'<span class="draggable-node" data-node="{ExplainerGradioInterface.node_hyperlink_prefix}({m.group(1)})[{m.group(2)}]" title="{m.group(1)}" style="cursor: grab; color: var(--color-accent); font-weight: bold;">{m.group(2)}</span>',
                             explanation
                         )
 
+            # Format the explanation output
             if self.explain_in_hyperlink_mode:
                 full_return = ExplainerGradioInterface.cool_html_text_container.format(explanation)
             else:
@@ -490,7 +585,13 @@ class ExplainerGradioInterface:
             return full_return, explaining_question, current_node_id, current_adjective, current_comparison_id
 
         def visualize_decision_tree(self, game):
-            """Generate a visualization of the Decision Tree."""
+            """
+            Generate a visualization of the Decision Tree.
+
+            :param game: The game instance
+            :return: The visualization of the decision tree
+            :raises gr.Error: If there's an error in generating the visualization
+            """
             root_node = game.explaining_agent.choice.parent
             try:
                 return game.explaining_agent.core.visualize_decision_tree(root_node)
