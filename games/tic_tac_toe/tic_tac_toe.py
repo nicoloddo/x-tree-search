@@ -49,7 +49,7 @@ class TicTacToe(Game):
     
     def expansion_constraints_self(self, agent_id):
         """Get expansion constraints for the current player.
-        Expansion constraints limit nodes child parsing to specific limits in search algorithms,
+        Expansion constraints limits the search of available moves,
         thus reducing computational costs."""
         return {'who': agent_id}
     
