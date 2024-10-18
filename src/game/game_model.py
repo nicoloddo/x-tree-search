@@ -179,13 +179,13 @@ class GameModel:
                         if what != constraints['what']:
                             continue
                     
-                    break_rules, _ = self.__break_rules(who, where, what, action_space, action_space_id, verbose=False)
+                    break_rules, _ = self.__check_rules(who, where, what, action_space, action_space_id, verbose=False)
                     if not break_rules:
                         # found available action
-                        theoretical_game = copy.deepcopy(self)
-                        action_dict, _ = theoretical_game.action(action_space_id, who, where, what) # We already know the action will not break any rules
+                        theoretical_game_model = copy.deepcopy(self)
+                        action_dict, _ = theoretical_game_model.action(action_space_id, who, where, what) # We already know the action will not break any rules
 
-                        available_actions_and_states.append({"action": action_dict, "state": theoretical_game.action_spaces[action_space_id], "game": theoretical_game})
+                        available_actions_and_states.append({"action": action_dict, "state": theoretical_game_model.action_spaces[action_space_id], "game": theoretical_game_model})
         
         return available_actions_and_states
 
@@ -206,7 +206,7 @@ class GameModel:
         action_space = self.action_spaces[action_space_id]
         where = tuple(where)
 
-        break_rules, broken_rule_string = self.__break_rules(who, where, what, action_space, action_space_id)
+        break_rules, broken_rule_string = self.__check_rules(who, where, what, action_space, action_space_id)
         if break_rules:
             if return_broken_rule_string:
                 return None, broken_rule_string
@@ -234,15 +234,6 @@ class GameModel:
             raise ValueError("Actions can only be done with the labels available to the given action space.")
         action_space[where] = what
     
-    """
-    def __theoretical_apply_action(self, action_space, where, what):
-        theoretical_action_space = copy.deepcopy(action_space)
-        if what not in theoretical_action_space.available_labels_flat:
-            raise ValueError("Actions can only be done with the labels available to the given action space.")
-        theoretical_action_space[where] = what
-        return theoretical_action_space
-    """
-    
     def theoretical_unapply_actions(self, actions_to_reverse_amount):
         ''' 
         Unapplies actions in reverse order of execution but does not actually reverse the action space environment.
@@ -268,7 +259,7 @@ class GameModel:
         return previous_action_spaces
 
     ''' Rules definition'''
-    def action_is_violation_if(self, rule, action_space_id = "general", *, rule_description): # Any argument assigned to parameters after the asterisk * can only be passed as keyword (named) arguments.
+    def action_trigger_consequence_if(self, rule, action_space_id = "general", consequence: callable = lambda: "violation", *, rule_description):
         """
         Adds a new rule to the game model after validating the rule's signature and a test run to ensure it returns a boolean.
 
@@ -329,7 +320,10 @@ class GameModel:
         else:
             wrapped = lambda who, where, what, game=self: game.__wrapped_rule(rule, who, where, what, action_space_id)
 
-        self.rules[action_space_id].append({'description':rule_description, 'broken':wrapped})
+        self.rules[action_space_id].append({'description':rule_description, 'trigger':wrapped, 'consequence':consequence})
+
+    def action_is_violation_if(self, rule, action_space_id = "general", *, rule_description):
+        self.action_trigger_consequence_if(rule, action_space_id, consequence=lambda: "violation", rule_description=rule_description)
     
     def __wrapped_rule(self, rule, who, where, what, action_space_id):
         if action_space_id:
@@ -338,7 +332,7 @@ class GameModel:
             
         return rule(who, where, what, self)
     
-    def __break_rules(self, who, where, what, action_space, rules_action_space_id, *, verbose=True):
+    def __check_rules(self, who, where, what, action_space, rules_action_space_id, *, verbose=True):
         """
         Checks all rules based on the given parameters.
 
@@ -352,31 +346,37 @@ class GameModel:
 
         Returns:
             bool: Returns True if any rule is violated, otherwise False.
+            str: Returns a string describing the broken rules, if any.
         """
         if not action_space.actions_enabled: # First check if actions are allowed in the space
+            broke_rules = True
             broken_rule_string = "Actions are not allowed in this Action Space."
-            return True, broken_rule_string
+            return broke_rules, broken_rule_string
 
         # If they are allowed check rules on the action space
         try:
+            broke_rules = False
+            broken_rules_strings = []
             for i, rule in enumerate(self.rules["general"]): # Check general rules
-                if rule['broken'](who, where, what, self):
-                    if verbose:
-                        broken_rule_string = "Broke general rule " + str(i+1) + ': ' + rule['description']
-                    else:
-                        broken_rule_string = ""
-                    return True, broken_rule_string
+                if rule['trigger'](who, where, what, self):
+                    if rule['consequence']() == "violation":
+                        broke_rules = True
+                        if verbose:
+                            broken_rules_strings.append("Broke general rule " + str(i+1) + ': ' + rule['description'])
+                        else:
+                            broken_rules_strings.append("")
                     
 
             for i, rule in enumerate(self.rules[rules_action_space_id]): # Check rules specific to that action space
-                if rule['broken'](who, where, what, self):
-                    if verbose:
-                        broken_rule_string = "Broke rule " + str(i+1) + ': ' + rule['description']
-                    else:
-                        broken_rule_string = ""
-                    return True, broken_rule_string
+                if rule['trigger'](who, where, what, self):
+                    if rule['consequence']() == "violation":
+                        broke_rules = True
+                        if verbose:
+                            broken_rules_strings.append("Broke rule " + str(i+1) + ': ' + rule['description'])
+                        else:
+                            broken_rules_strings.append("")
         
-            return False, ""
+            return broke_rules, '\n'.join(broken_rules_strings)
 
         except Exception as e:
             # Log the error and possibly re-raise or handle it as necessary
