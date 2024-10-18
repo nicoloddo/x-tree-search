@@ -179,7 +179,7 @@ class GameModel:
                         if what != constraints['what']:
                             continue
                     
-                    break_rules, _ = self.__check_rules(who, where, what, action_space, action_space_id, verbose=False)
+                    break_rules, _, _ = self.__check_rules(who, where, what, action_space, action_space_id, verbose=False)
                     if not break_rules:
                         # found available action
                         theoretical_game_model = copy.deepcopy(self)
@@ -206,19 +206,23 @@ class GameModel:
         action_space = self.action_spaces[action_space_id]
         where = tuple(where)
 
-        break_rules, broken_rule_string = self.__check_rules(who, where, what, action_space, action_space_id)
-        if break_rules:
+        break_rules, broken_rule_string, consequences = self.__check_rules(who, where, what, action_space, action_space_id)
+        if break_rules: # Check if the action breaks any rules
             if return_broken_rule_string:
                 return None, broken_rule_string
             else:
                 print("This action is not permitted.\n")
                 print(broken_rule_string)
                 return None, None
-        else:
+        else: # If the action is not breaking any rules, perform it
             what_before = action_space[where]
             self.__apply_action(action_space, where, what)
             action_dict = self.__action_to_dict(who, where, what, what_before, action_space_id)
             self.actions.append(action_dict)
+
+            # And perform the consequences of the action
+            for consequence in consequences:
+                consequence()
 
             self.check_started()
             self.check_ended()
@@ -351,12 +355,13 @@ class GameModel:
         if not action_space.actions_enabled: # First check if actions are allowed in the space
             broke_rules = True
             broken_rule_string = "Actions are not allowed in this Action Space."
-            return broke_rules, broken_rule_string
+            return broke_rules, broken_rule_string, []
 
         # If they are allowed check rules on the action space
         try:
             broke_rules = False
             broken_rules_strings = []
+            consequences = []
             for i, rule in enumerate(self.rules["general"]): # Check general rules
                 if rule['trigger'](who, where, what, self):
                     if rule['consequence']() == "violation":
@@ -365,6 +370,8 @@ class GameModel:
                             broken_rules_strings.append("Broke general rule " + str(i+1) + ': ' + rule['description'])
                         else:
                             broken_rules_strings.append("")
+                    else:
+                        consequences.append(rule['consequence']())
                     
 
             for i, rule in enumerate(self.rules[rules_action_space_id]): # Check rules specific to that action space
@@ -375,8 +382,10 @@ class GameModel:
                             broken_rules_strings.append("Broke rule " + str(i+1) + ': ' + rule['description'])
                         else:
                             broken_rules_strings.append("")
+                    else:
+                        consequences.append(rule['consequence']())
         
-            return broke_rules, '\n'.join(broken_rules_strings)
+            return broke_rules, '\n'.join(broken_rules_strings), consequences
 
         except Exception as e:
             # Log the error and possibly re-raise or handle it as necessary
