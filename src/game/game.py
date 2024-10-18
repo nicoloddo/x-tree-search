@@ -16,8 +16,9 @@ nest_asyncio.apply()
 class Game:
     GameModel.verbose = False
 
-    def __init__(self, child_init_params=None, *, players=None):
+    def __init__(self, child_init_params=None, *, players=None, main_action_space_id):
         self.child_init_params = child_init_params
+        self.main_action_space_id = main_action_space_id
 
         self.gm = self._game_model_definition()
         self.players = {} # Dictionary that holds the players as 'id': player
@@ -59,7 +60,7 @@ class Game:
     
     @property
     def tree(self):
-        return GameTree(self.gm, "board", self.action_print_attributes())
+        return GameTree(self.gm, self.main_action_space_id, self.action_print_attributes())
     
     @abstractmethod
     def _game_model_definition(self) -> GameModel:

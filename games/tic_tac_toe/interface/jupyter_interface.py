@@ -3,7 +3,7 @@ import ipywidgets as widgets
 from IPython.display import display
 import asyncio
 
-from src.game.interface import GameInterface
+from src.game.interface.interface import GameInterface
 
 class TicTacToeJupyterInterface(GameInterface):
     """

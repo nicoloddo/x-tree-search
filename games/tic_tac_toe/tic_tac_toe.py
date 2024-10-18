@@ -23,7 +23,7 @@ class TicTacToe(Game):
             'interface_mode': interface_mode,
             'interface_hyperlink_mode': interface_hyperlink_mode
         }
-        super().__init__(_child_init_params, players=players)
+        super().__init__(_child_init_params, players=players, main_action_space_id="board")
         self.interface_mode = interface_mode
         self.select_interface(interface_mode, interface_hyperlink_mode)
 
