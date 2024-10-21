@@ -22,6 +22,17 @@ class GameGradioInterface(GameInterface):
         :return: A dictionary with the cell type as key and the image as value.
         :rtype: dict
         """
+        pass
+    
+    @abstractmethod
+    def get_cell_image(self):
+        """
+        Get the cell image.
+
+        :return: The cell image
+        :rtype: Image
+        """
+        pass
 
     def __init__(self, game, game_title_md="# Game", action_spaces_to_visualize=[]):
         """
