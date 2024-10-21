@@ -1,7 +1,17 @@
+from abc import ABC, abstractmethod
+
 import asyncio
 
-class GameAgent:
-    def __init__(self, *, core, agent_id):
+class GameAgent(ABC):
+    def __init__(self, *, agent_id):
+        self.id = agent_id
+    
+    @abstractmethod
+    async def play(self, game, inputs=None):
+        pass
+
+class AIAgent(GameAgent):
+    def __init__(self, *, agent_id, core):
         """
         GameAgent initialization.
 
@@ -11,14 +21,14 @@ class GameAgent:
         :type agent_id: str
         :raises SyntaxError: If the core does not have a 'last_choice' attribute or a 'nodes' attribute.
         """
+        super().__init__(agent_id=agent_id)
         self.core = core
         if not hasattr(self.core, "last_choice"):
             raise SyntaxError("The core of a GameAgent must have a 'last_choice' attribute reflecting the last choice of the agent.")
         if not hasattr(self.core, "nodes"):
             raise SyntaxError("The core of a GameAgent must have a 'nodes' attribute reflecting the nodes of the agent.")
-        self.id = agent_id
 
-    async def play(self, game):
+    async def play(self, game, inputs=None):
         await asyncio.sleep(0.1)
         if game.gm.ended:
             return
@@ -44,9 +54,9 @@ class GameAgent:
     def choice(self):
         return self.core.last_choice
 
-class User:
+class User(GameAgent):
     def __init__(self, *, agent_id, ask_what=True, ask_where=True, pause_first_turn=False):
-        self.id = agent_id
+        super().__init__(agent_id=agent_id)
         self.ask_what = ask_what
         self.ask_where = ask_where
         self.pause_first_turn = pause_first_turn
