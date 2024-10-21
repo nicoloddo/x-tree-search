@@ -33,7 +33,7 @@ class Explanation(ABC):
     def _decontextualize(self, *args, **kwargs):
         pass
 
-    def explain(self, node: Any, *, explanation_tactics={}, current_explanation_depth, explain_further=True) -> LogicalExpression:
+    def explain(self, node: Any, *, explanation_tactics=None, current_explanation_depth, explain_further=True) -> LogicalExpression:
         """
         Generate a propositional logic explanation for the given node.
         
@@ -49,7 +49,7 @@ class Explanation(ABC):
         """
 
         self.current_explanation_depth = current_explanation_depth
-        self.explanation_tactics = explanation_tactics
+        self.explanation_tactics = explanation_tactics or {}
 
         if current_explanation_depth > self.framework.settings.explanation_depth:
             return
