@@ -13,7 +13,10 @@ class MiniMaxNode:
         score (float): The score assigned to the node by the MiniMax algorithm.
         nodes_holder (list): Pointer to the structure that holds all the nodes in the tree.
     """
-    def __init__(self, node, parent=None, nodes_holder = {}):
+    def __init__(self, node, parent=None, nodes_holder=None):
+        if nodes_holder is None:
+            nodes_holder = {}
+
         self.node = node
         self.parent = parent
         if self.parent is not None:
