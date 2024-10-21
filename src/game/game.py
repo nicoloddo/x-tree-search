@@ -16,7 +16,7 @@ nest_asyncio.apply()
 class Game:
     GameModel.verbose = False
 
-    def __init__(self, child_init_params=None, *, players=None, main_action_space_id):
+    def __init__(self, child_init_params, *, players, main_action_space_id):
         self.child_init_params = child_init_params
         self.main_action_space_id = main_action_space_id
 
@@ -33,10 +33,7 @@ class Game:
         Restart the game by creating a new instance with the same initialization parameters.
         """
         # Create a new instance of the child class: __class__ is the class of the current instance
-        if self.child_init_params:
-            new_game = self.__class__(**self.child_init_params)
-        else:
-            new_game = self.__class__(players=self.players)
+        new_game = self.__class__(**self.child_init_params)
         
         # Transfer any necessary attributes from the old game to the new game
         new_game.interface = self.interface
@@ -106,7 +103,7 @@ class Game:
         """Method to determine the winner of the game.
         Override in the specific game if you want to change its way of determining the winner."""
         return None
-
+    
     """Interface methods"""
     #TODO: Make separate Interface class for these methods
     def start(self):
