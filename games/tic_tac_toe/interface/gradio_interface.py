@@ -104,7 +104,9 @@ class TicTacToeGradioInterface(ExplainableGameGradioInterface):
             current_player = game.get_current_player()
             action = game.model.agents[current_player.id, 1]
             inputs = {'what': action, 'where': (row, col), 'action_space': self.main_action_space_id}
-            await current_player.play(game, inputs)
+            await current_player.play(game, inputs) # User move
+            self.update(game, explainer)
+            await game.continue_game() # AI move
         except Exception as e:
             self.output(str(e), type="error")
             print(f"Detailed error: {type(e).__name__}: {str(e)}")  # For debugging

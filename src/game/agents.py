@@ -68,10 +68,9 @@ class User(GameAgent):
             action_space = inputs['action_space']
             action = {'who': self.id, 'where': where, 'what': what, 'action_space': action_space}
             game.act(action)
-            if game.interface is not None:
+            if game.interface_mode == 'jupyter': # For gradio this should be handled by the interface
                 game.interface.update()  # Update after user's move
-            await game.continue_game()
-            if game.interface is not None:
+                await game.continue_game()
                 game.interface.update()  # Update again after AI's move
 
         if game.interface_mode == 'cmd':
