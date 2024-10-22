@@ -26,3 +26,9 @@ def join_arrays_respective_elements(arr1, arr2):
 
 def flatten_list(list_input):
     return list(itertools.chain.from_iterable(list_input))
+
+def parse_where_input(where_str):
+    if type(where_str) is tuple:
+        return where_str
+    x, y = map(int, where_str.strip('()').split(','))
+    return (x, y)

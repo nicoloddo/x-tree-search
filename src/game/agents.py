@@ -87,33 +87,37 @@ class User(GameAgent):
             who = self.id
 
             if self.ask_what:
-                what = await self.async_input("Insert what [insert 'exit' to exit] [click enter with no input to refresh]: ")
+                what = await self.async_input(game.what_question)
 
                 if what == 'exit':
                     game.stop = True
                     return
-                if what == '':
+                elif what == '':
                     await asyncio.sleep(0.5)
+                else:
+                    try:
+                        what = game.parse_what_input(what)
+                    except ValueError:
+                        print("Invalid input format. Please use the correct format for the action.")
+                        return await self.async_input(game.what_question)
             else:
                 what = ''
             
             if self.ask_where:
-                where_input_question = "Insert where (format: x,y) [insert 'exit' to exit] [click enter with no input to refresh]: "
-                where_str = await self.async_input(where_input_question)
+                where_str = await self.async_input(game.where_question)
                 
                 if where_str == 'exit':
                     game.stop = True
                     return
                 elif where_str == '':
                     await asyncio.sleep(0.5)
-                    return await self.async_input(where_input_question)
+                    return await self.async_input(game.where_question)
                 else:
                     try:
-                        x, y = map(int, where_str.split(','))
-                        where = (x, y)
+                        where = game.parse_where_input(where_str)
                     except ValueError:
                         print("Invalid input format. Please use 'x,y' format.")
-                        return await self.async_input(where_input_question)
+                        return await self.async_input(game.where_question)
             else:
                 where = ''
             

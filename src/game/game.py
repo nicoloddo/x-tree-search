@@ -7,6 +7,8 @@ from IPython.display import clear_output
 import numpy as np
 import copy
 
+from src.game.agents import User
+from src.game.utils import parse_where_input as ut_parse_where_input
 from src.game.game_model import GameModel
 from src.game.game_tree import GameTree
 
@@ -16,7 +18,7 @@ nest_asyncio.apply()
 class Game:
     GameModel.verbose = False
 
-    def __init__(self, child_init_params, *, players, main_action_space_id):
+    def __init__(self, child_init_params, *, players, main_action_space_id, ask_what=None, ask_where=None, what_question=None, where_question=None, parse_what_input=None, parse_where_input=None):
         self.child_init_params = child_init_params
         self.main_action_space_id = main_action_space_id
 
@@ -25,8 +27,22 @@ class Game:
         self._set_players(players)
 
         self.stop = False
-        self.clear_console = self.clear_cmd  # To keep track of the previous state
         self._previous_state = None
+
+        for player in self.players.values():
+            if isinstance(player, User):
+                if type(ask_what) is bool:
+                    player.ask_what = ask_what
+                if type(ask_where) is bool:
+                    player.ask_where = ask_where
+
+        self.what_question = what_question if what_question else "Insert what [insert 'exit' to exit] [click enter with no input to refresh]: "
+        self.where_question = where_question if where_question else "Insert where [insert 'exit' to exit] [click enter with no input to refresh]: "
+        self.parse_what_input = parse_what_input if parse_what_input else lambda what_str: what_str
+        self.parse_where_input = parse_where_input if parse_where_input else ut_parse_where_input
+
+        self.gm.parse_what_input = self.parse_what_input
+        self.gm.parse_where_input = self.parse_where_input
 
     def restart(self):
         """
@@ -103,51 +119,3 @@ class Game:
         """Method to determine the winner of the game.
         Override in the specific game if you want to change its way of determining the winner."""
         return None
-    
-    """Interface methods"""
-    #TODO: Make separate Interface class for these methods
-    def start(self):
-        self.clear_console = self.clear_cmd
-        self.update_display = self.print_state
-        asyncio.run(self._start_game())
-    
-    def print_state(self, current_state):
-        """Override in the specific game if you want to change its way of display"""
-        print(current_state)
-
-    async def _start_game(self):
-        # Start the state monitoring task
-        self.stop = False
-        state_monitoring_task = asyncio.create_task(self._monitor_game_state())
-
-        print(self.tree.get_current_state().state)
-
-        while not self.gm.ended and not self.stop:
-            await asyncio.gather(*(player.play(self) for player in self.players.values()))
-            await asyncio.sleep(0.1)  # Reduced sleep time for more responsive updates
-
-        # Stop the state monitoring task
-        state_monitoring_task.cancel()
-
-        print()
-        if self.stop:
-            print("Game paused.")
-        elif self.gm.ended:
-            print("Game finished.")
-        print()
-        print(self.tree.get_current_state().state)
-
-    async def _monitor_game_state(self):
-        """Periodically checks the game's current state and prints it if it has changed."""
-        while not self.gm.ended and not self.stop:
-            current_state = self.tree.get_current_state().state
-
-            if not np.array_equal(current_state, self._previous_state):
-                self.clear_console()
-                self.update_display(current_state)
-                self._previous_state = copy.deepcopy(current_state)
-            
-            await asyncio.sleep(0.2)  # Adjust the sleep time as needed
-    
-    def clear_cmd(self):
-        os.system('cls' if os.name == 'nt' else 'clear')  # Clear the console
