@@ -3,6 +3,7 @@ import numpy as np
 from src.game.game import Game, GameModel
 from src.game.agents import User
 from .interface.jupyter_interface import TicTacToeJupyterInterface
+from src.game.interface.cmd_interface import GameCmdInterface
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
@@ -21,7 +22,7 @@ class TicTacToe(Game):
             'interface_mode': interface_mode,
             'interface_hyperlink_mode': interface_hyperlink_mode
         }
-        super().__init__(_child_init_params, players=players, main_action_space_id="board")
+        super().__init__(_child_init_params, players=players, main_action_space_id="board", ask_what=False)
         self.interface_mode = interface_mode
         self.select_interface(interface_mode, interface_hyperlink_mode)
 
@@ -32,7 +33,9 @@ class TicTacToe(Game):
         :param interface_mode: The interface mode to use for the game.
         :type interface_mode: str
         """
-        if interface_mode == 'jupyter':
+        if interface_mode == 'cmd':
+            self.interface = GameCmdInterface(self)
+        elif interface_mode == 'jupyter':
             if interface_hyperlink_mode:
                 raise ValueError("Interface hyperlink mode is not supported for Jupyter interface.")
             self.interface = TicTacToeJupyterInterface(self)
@@ -44,7 +47,9 @@ class TicTacToe(Game):
     async def start_game(self, share_gradio=False):
         await self.process_turn()  
 
-        if self.interface_mode == 'gradio':
+        if self.interface_mode == 'cmd':
+            self.interface.start()
+        elif self.interface_mode == 'gradio':
             pass # Create and start the interface externally
         elif self.interface_mode == 'jupyter':
             self.interface.start()
