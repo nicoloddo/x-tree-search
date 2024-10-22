@@ -39,7 +39,7 @@ class Game:
         self.what_question = what_question if what_question else "Insert what [insert 'exit' to exit] [click enter with no input to refresh]: "
         self.where_question = where_question if where_question else "Insert where [insert 'exit' to exit] [click enter with no input to refresh]: "
         self.parse_what_input = parse_what_input if parse_what_input else lambda what_str: what_str
-        self.parse_where_input = parse_where_input if parse_where_input else ut_parse_where_input
+        self.parse_where_input = parse_where_input if parse_where_input else lambda where_str: where_str
 
         self.gm.parse_what_input = self.parse_what_input
         self.gm.parse_where_input = self.parse_where_input
