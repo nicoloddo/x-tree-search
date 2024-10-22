@@ -120,9 +120,9 @@ class MiniMax:
         self.nodes = self.search_root.nodes_holder
 
         best_child, best_value = self.algorithm(self.search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
-        best_child.parent_state = copy.deepcopy(best_child.parent.node.state)
 
         if best_child is not None:
+            best_child.parent_state = copy.deepcopy(best_child.parent.node.state)
             self.search_root_final = best_child.parent
             self.last_choice = best_child            
         return best_child, best_value
