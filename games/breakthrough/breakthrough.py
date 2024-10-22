@@ -28,9 +28,10 @@ class Breakthrough(Game):
             'interface_mode': interface_mode,
             'interface_hyperlink_mode': interface_hyperlink_mode
         }
-        super().__init__(_child_init_params, players=players, main_action_space_id="board",
+        super().__init__(_child_init_params, players=players, main_action_space_id="board", tree_action_space_id="pieces",
                          where_question="Insert the coordinates of the piece you want to move [insert 'exit' to exit] [click enter with no input to refresh]: ",
                          what_question="Insert the coordinates of the destination space [insert 'exit' to exit] [click enter with no input to refresh]: ",
+                         parse_where_input=ut_parse_where_input,
                          parse_what_input=ut_parse_where_input) # The what input is also in coordinates format
         
         self.interface_mode = interface_mode
@@ -83,16 +84,16 @@ class Breakthrough(Game):
         else:
             raise ValueError("A Breakthrough game should have a maximum of two players.")
         
-    def _get_piece_index(self, piece_coordinates, color=None):
-        i_range = range(self.model.action_spaces["pieces"].shape[0])
+    def _get_piece_index(self, game_model, piece_coordinates, color=None):
+        i_range = range(game_model.action_spaces["pieces"].shape[0])
         if color is None:
-            color_range = range(self.model.action_spaces["pieces"].shape[1])
+            color_range = range(game_model.action_spaces["pieces"].shape[1])
         else:
             color_range = range(self.color_to_idx[color], self.color_to_idx[color]+1) # only the pieces of the given color
 
         for i in i_range:
             for j in color_range:
-                piece_position = self.model.action_spaces["pieces"][i, j]
+                piece_position = game_model.action_spaces["pieces"][i, j]
                 piece_coordinates_str = str(piece_coordinates)
                 if piece_position == piece_coordinates_str:
                     return i, j
@@ -110,6 +111,7 @@ class Breakthrough(Game):
 
         # Disable actions on the agent feature space.
         gm.disable_actions(on="agent")
+        gm.disable_actions(on="board")
         gm.agents[1, 0] = 'starter'
         gm.agents[1, 1] = self.idx_to_color[1]
 
@@ -194,9 +196,9 @@ class Breakthrough(Game):
         )
 
         def piece_eating(action, game):
-            agent_color = game.agents[action['who']][1]
-            eaten_piece_index = self._get_piece_index(action['what'], agent_color)
-            game.action_spaces["board"][action['what']] = FREE_LABEL
+            eaten_color = self.idx_to_color[1 if action['who'] == 0 else 0]
+            board_coordinates = self.parse_what_input(action['what'])
+            eaten_piece_index = self._get_piece_index(game, board_coordinates, eaten_color)
             game.action_spaces["pieces"][eaten_piece_index] = str((-1, -1))
         gm.action_trigger_consequence_if(
             lambda who, where, what, game: game.action_spaces["board"][what] != FREE_LABEL and game.agents[who][1] != game.action_spaces["board"][what],
@@ -219,7 +221,7 @@ class Breakthrough(Game):
         return gm
     
     def act(self, action) -> None:
-        piece_index = self._get_piece_index(action['where'])
+        piece_index = self._get_piece_index(self.model, action['where'])
 
         return_broken_rule_string = self.interface_mode == 'gradio'
         action_dict, broken_rule_string = self.model.action("pieces", action['who'], piece_index, action['what'], return_broken_rule_string=return_broken_rule_string)

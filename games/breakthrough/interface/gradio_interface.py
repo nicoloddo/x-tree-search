@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 import asyncio
 import traceback
 import gradio as gr
+import copy
 
 from src.game.agents import User
 from src.explainable_game_interface.gradio_interface import ExplainableGameGradioInterface
@@ -27,20 +28,20 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         """
         cell_size = 100
         images = {}
-        for cell_type in ['empty', 'white', 'black', 'white_red', 'black_red']:
-            img = Image.new('RGB', (cell_size, cell_size), color='beige' if (cell_type == 'empty' or cell_type.startswith('white')) else 'brown')
+        for cell_type in ['empty', 'w', 'b', 'w_changed', 'b_changed']:
+            img = Image.new('RGB', (cell_size, cell_size), color='white')
             draw = ImageDraw.Draw(img)
             
             # Draw border
             draw.rectangle([0, 0, cell_size-1, cell_size-1], outline='black', width=2)
             
             if cell_type != 'empty':
-                piece_color = 'white' if cell_type.startswith('white') else 'black'
-                outline_color = 'red' if cell_type.endswith('_red') else piece_color
+                piece_color = 'coral' if cell_type.startswith('w') else 'black'
+                outline_color = 'cyan' if cell_type.endswith('_changed') else piece_color
                 
                 # Draw the piece (a filled circle)
                 padding = 10
-                draw.ellipse([padding, padding, cell_size-padding, cell_size-padding], fill=piece_color, outline=outline_color, width=3)
+                draw.ellipse([padding, padding, cell_size-padding, cell_size-padding], fill=piece_color, outline=outline_color, width=2)
             
             images[cell_type] = img
         return images
@@ -52,7 +53,7 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         if cell_value == '' or cell_value == ' ':
             img = self.board_cell_images['empty'].copy()
         else:
-            img_key = f"{cell_value}_red" if is_changed else cell_value
+            img_key = f"{cell_value}_changed" if is_changed else cell_value
             img = self.board_cell_images[img_key].copy()
         
         # Add index to the image
@@ -81,6 +82,7 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
                          action_spaces_to_visualize=[self.main_action_space_id, "agents"],
                          explainer=explainer,
                          interface_hyperlink_mode=interface_hyperlink_mode)
+        self.where = {}
         
     async def process_move(self, game, explainer, evt: gr.SelectData):
         """
@@ -97,10 +99,22 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         try:
             index = evt.index
             row, col = index // game.model.action_spaces[self.main_action_space_id].shape[1], index % game.model.action_spaces[self.main_action_space_id].shape[1]
+
             current_player = game.get_current_player()
-            action = game.model.agents[current_player.id, 1]
-            inputs = {'what': action, 'where': (row, col), 'action_space': self.main_action_space_id}
-            await current_player.play(game, inputs)
+
+            if current_player.id not in self.where: # first click
+                if game.model.action_spaces["board"][(row, col)] != game.free_label:
+                    self.where[current_player.id] = (row, col)
+            else: # second click
+                what = (row, col)
+                where = copy.deepcopy(self.where[current_player.id])
+                del self.where[current_player.id]
+
+                inputs = {'what': what, 'where': where, 'action_space': "pieces"}
+                await current_player.play(game, inputs) # User move
+                self.update(game, explainer)
+                await game.continue_game() # AI move
+
         except Exception as e:
             self.output(str(e), type="error")
             print(f"Detailed error: {type(e).__name__}: {str(e)}")  # For debugging
