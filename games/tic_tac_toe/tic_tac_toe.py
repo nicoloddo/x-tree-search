@@ -40,6 +40,16 @@ class TicTacToe(Game):
             self.interface = None # Interface is created in the app.py file
         else:
             raise ValueError(f"Unsupported interface mode: {interface_mode}")
+        
+    async def start_game(self, share_gradio=False):
+        await self.process_turn()  
+
+        if self.interface_mode == 'gradio':
+            pass # Create and start the interface externally
+        elif self.interface_mode == 'jupyter':
+            self.interface.start()
+        else:
+            raise ValueError(f"Unsupported interface mode: {self.interface_mode}")
 
     def action_print_attributes(self):
         """Which attributes to print when printing an action"""
@@ -144,16 +154,6 @@ class TicTacToe(Game):
             return next(player for player in self.players.values() if player.id != last_player) 
     
     """Turn taking logic"""
-    async def start_game(self, share_gradio=False):
-        await self.process_turn()  
-
-        if self.interface_mode == 'gradio':
-            pass # Create and start the interface externally
-        elif self.interface_mode == 'jupyter':
-            self.interface.start()
-        else:
-            raise ValueError(f"Unsupported interface mode: {self.interface_mode}")
-
     async def process_turn(self) -> None:
         """
         Process a single turn in the game.
