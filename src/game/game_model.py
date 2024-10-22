@@ -5,6 +5,7 @@ from src.game.utils import join_arrays_respective_elements, flatten_list
 import numpy as np
 import inspect
 import copy
+import warnings
 
 class GameModel:
     verbose = True
@@ -21,7 +22,9 @@ class GameModel:
         Args:
             
             agents_number(int): Amount of agents that play the game.
-            default_agent_features (list of str)): The default features of each agent.
+            default_agent_features (list of str)): The default features of each agent. Be aware that this will fix the type of the features. 
+                If you use a single char, a single char will be expected als in the additional_agent_features.      
+
             additional_agent_features (list of list of strings): For each agent feature, specify other possible labels that can be assigned to each.
 
             agent_features_descriptions (str): Strings explaining each feature of the agents (optional)
@@ -90,6 +93,14 @@ class GameModel:
                     # If no winner, return False
                     return False
             \n""")
+
+    def parse_where_input(self, where_input):
+        """Override this function to change how the where input is parsed when applying a rule in a specific action space."""
+        return where_input
+    
+    def parse_what_input(self, what_input):
+        """Override this function to change how the what input."""
+        return what_input
 
     ''' Actions spaces'''
     def add_action_space(self, action_space_id, dimensions, default_labels, additional_labels, dimensions_descriptions="No description was given."):
@@ -222,7 +233,7 @@ class GameModel:
 
             # And perform the consequences of the action
             for consequence in consequences:
-                consequence()
+                consequence(action_dict, self)
 
             self.check_started()
             self.check_ended()
@@ -234,6 +245,8 @@ class GameModel:
         return action_dict
 
     def __apply_action(self, action_space, where, what):
+        if isinstance(what, tuple):
+            what = str(what)
         if what not in action_space.available_labels_flat:
             raise ValueError("Actions can only be done with the labels available to the given action space.")
         action_space[where] = what
@@ -263,22 +276,28 @@ class GameModel:
         return previous_action_spaces
 
     ''' Rules definition'''
-    def action_trigger_consequence_if(self, rule, action_space_id = "general", consequence: callable = lambda: "violation", *, rule_description):
+    def action_trigger_consequence_if(self, rule, action_space_id = "general", consequence: callable = None, *, rule_description):
         """
         Adds a new rule to the game model after validating the rule's signature and a test run to ensure it returns a boolean.
+        Rules are checked in the order they were added. Consequences are executed in the order they were added.
+        When a rule is triggered, the consequence is executed.
+        Leave the consequence parameter blank to consider the consequence as a rule violation, this will impede the execution of the action.
 
         Args:
-            rule (callable): a previously defined function that returns True if your rule is violated.
-            action_space_id: The id of the action space to constrain with the rule. It refers to the matrix onto which the action is being performed, for example actions that modify the environment or the agents matrixes. 
+            rule (callable): a previously defined function that returns True if your rule's conditions are triggered.
+            action_space_id: The id of the action space to constrain with the rule. 
+                             It refers to the matrix onto which the action is being performed, for example actions that modify the environment or the agents matrixes. 
                              If the action is more general, you can leave the parameter blank, it will be assigned to the general rules.
+                             General rules cannot refer to "where" since you are not specifying in which action space you want to check the position.
+            consequence (callable): a previously defined function that will be executed if the rule is triggered.
             rule_description (str): a description for the rule.
 
         Definition of the rule:            
         - The rule has to have as input parameters exactly these 4: who, where, what, game
-        - The rule has to return a bool which is True if the rule is violated. You can use a conditional as rule body.
+        - The rule has to return a bool which is True if the rule is triggered. You can use a conditional as rule body.
         - The rule has to follow a specific formalism, with variable inside its body referring to:
             1. who = the index of the agent making the action. To refer to the features, use game.agents[who][feature, e.g. 1]
-            2. where = the position in the action space to apply the action to (as coordinates)
+            2. where = the value at the coordinates we are applying the action to in the given action space
             3. what = the modification to apply (which should take the value of one of the declared labels and agents_labels)
 
             4. game = the GameModel, which can be used to refer to anything inside its model, this include:
@@ -289,6 +308,17 @@ class GameModel:
                 - started = if the game has started
                 - ended = if the game has ended
         - The 'where' are treated as iterables: to compare them with a None value you should use [None]
+
+        Definition of the consequence:
+        - The consequence has to have as input parameters exactly these 2: action, game
+        - The action is a dictionary containing the information of the action that was performed,
+            including:
+                - who: index of the agent performing the action
+                - where: coordinates of the action
+                - what: value to write in the element
+                - what_before: previous value of the element
+                - on: action_space_id where action took place
+        - The consequence can apply any type of change to the game model.
 
         Examples:
         1.  Rule: Only the player whose starter can play the first turn.
@@ -310,14 +340,24 @@ class GameModel:
             Rule definition:
             mgm.action_is_violation_if(lambda who, where, what, game: where != [None], "agent", rule_description="Agents cannot modify their own features.")
         """
+        if consequence is None:
+            consequence = "violation"
+
         # Validate that the rule is a callable with the correct signature
         if not callable(rule):
             raise ValueError("The rule must be a callable function.")
+        if not callable(consequence) and consequence != "violation":
+            raise ValueError("The consequence must be a callable function.")
 
         # Check the signature of the callable to ensure it has exactly four parameters
         sig = inspect.signature(rule)
         if len(sig.parameters) != 4:
             raise ValueError("Rule function must accept exactly these arguments: who, where, what, game")
+        
+        if consequence != "violation":
+            sig_consequence = inspect.signature(consequence)
+            if len(sig_consequence.parameters) != 2:
+                raise ValueError("Consequence function must accept exactly these arguments: action, game")
 
         if action_space_id == "general":
             wrapped = lambda who, where, what, game=self: game.__wrapped_rule(rule, who, None, what, None)
@@ -327,12 +367,14 @@ class GameModel:
         self.rules[action_space_id].append({'description':rule_description, 'trigger':wrapped, 'consequence':consequence})
 
     def action_is_violation_if(self, rule, action_space_id = "general", *, rule_description):
-        self.action_trigger_consequence_if(rule, action_space_id, consequence=lambda: "violation", rule_description=rule_description)
+        self.action_trigger_consequence_if(rule, action_space_id, rule_description=rule_description)
     
     def __wrapped_rule(self, rule, who, where, what, action_space_id):
+        what = self.parse_what_input(what)
         if action_space_id:
             action_space = self.action_spaces[action_space_id]
             where = action_space[tuple(where)]
+            where = self.parse_where_input(where)
             
         return rule(who, where, what, self)
     
@@ -364,26 +406,28 @@ class GameModel:
             consequences = []
             for i, rule in enumerate(self.rules["general"]): # Check general rules
                 if rule['trigger'](who, where, what, self):
-                    if rule['consequence']() == "violation":
+                    consequence = rule['consequence']
+                    if consequence == "violation":
                         broke_rules = True
                         if verbose:
                             broken_rules_strings.append("Broke general rule " + str(i+1) + ': ' + rule['description'])
                         else:
                             broken_rules_strings.append("")
                     else:
-                        consequences.append(rule['consequence']())
+                        consequences.append(rule['consequence'])
                     
 
             for i, rule in enumerate(self.rules[rules_action_space_id]): # Check rules specific to that action space
                 if rule['trigger'](who, where, what, self):
-                    if rule['consequence']() == "violation":
+                    consequence = rule['consequence']
+                    if consequence == "violation":
                         broke_rules = True
                         if verbose:
                             broken_rules_strings.append("Broke rule " + str(i+1) + ': ' + rule['description'])
                         else:
                             broken_rules_strings.append("")
                     else:
-                        consequences.append(rule['consequence']())
+                        consequences.append(rule['consequence'])
         
             return broke_rules, '\n'.join(broken_rules_strings), consequences
 
@@ -511,7 +555,7 @@ class ActionSpace(np.ndarray):
 
         else: # numpy_matrix was provided
             if dimensions is not None or default_labels is not None:
-                warning.warn("Only 'numpy_matrix' or both 'dimensions' and 'default_labels' must be provided. numpy_matrix has precedence in this case.")
+                warnings.warn("Only 'numpy_matrix' or both 'dimensions' and 'default_labels' must be provided. numpy_matrix has precedence in this case.")
 
             if not trust_matrix_input: # if we don't trust the matrix input we check that the matrix has proper labels
                 # checking every element can be expensive. Set the trust to True if you already know that the matrix has proper labels.
