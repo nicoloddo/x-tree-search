@@ -1,5 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 import asyncio
+import traceback
+import gradio as gr
 
 from src.game.agents import User
 from src.explainable_game_interface.gradio_interface import ExplainableGameGradioInterface
@@ -59,25 +61,8 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         draw.text((5, 3), f"{i},{j}", font=font, fill='blue')
         
         return img
-    
-    def get_updated_status(self, game):
-        """
-        Get the updated status based on the current game state.
 
-        :return: Updated status text
-        :rtype: str
-        """
-        if game.ended:
-            winner = game.winner()
-            if winner is None:
-                return "Game Over! It's a draw!"
-            else:
-                return f"Game Over! Player {'X' if winner == 0 else 'O'} wins!"
-        else:
-            next_player = 'X' if game.get_current_player().id == 0 else 'O'
-            return f"Player {next_player}'s turn"
-
-    def __init__(self, game, explainer=None, interface_hyperlink_mode=True):
+    def __init__(self, game, explainer=None, interface_hyperlink_mode=True, *, game_title_md="# Breakthrough"):
         """
         Initialize the TicTacToeGradioInterface.
 
@@ -92,11 +77,38 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         :raises AttributeError: If the game instance doesn't have a 'get_current_player' or 'explaining_agent' attributes
         """
         super().__init__(game, 
-                         game_title_md="# Tic Tac Toe (vs Alpha-Beta Pruning Minimax)", 
+                         game_title_md=game_title_md, 
                          action_spaces_to_visualize=[self.main_action_space_id, "agents"],
                          explainer=explainer,
                          interface_hyperlink_mode=interface_hyperlink_mode)
+        
+    async def process_move(self, game, explainer, evt: gr.SelectData):
+        """
+        Process a move made by the current player.
 
+        :param game: The game state
+        :type game: Game
+        :param explainer: The explainer instance
+        :type explainer: Explainer
+        :param evt: The event data containing the selected index
+        :type evt: gr.SelectData
+        :return: Updated game state and interface components
+        """
+        try:
+            index = evt.index
+            row, col = index // game.model.action_spaces[self.main_action_space_id].shape[1], index % game.model.action_spaces[self.main_action_space_id].shape[1]
+            current_player = game.get_current_player()
+            action = game.model.agents[current_player.id, 1]
+            inputs = {'what': action, 'where': (row, col), 'action_space': self.main_action_space_id}
+            await current_player.play(game, inputs)
+        except Exception as e:
+            self.output(str(e), type="error")
+            print(f"Detailed error: {type(e).__name__}: {str(e)}")  # For debugging
+            print("Full traceback:")
+            traceback.print_exc()
+
+        return self.update(game, explainer)
+    
 if __name__ == "__main__":
     # Test Gradio Interface
     from games.tic_tac_toe.tic_tac_toe import TicTacToe
