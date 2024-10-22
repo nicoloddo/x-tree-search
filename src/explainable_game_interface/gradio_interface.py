@@ -1,8 +1,5 @@
 from abc import ABC, abstractmethod
-
-from PIL import Image, ImageDraw, ImageFont
-import traceback
-import asyncio
+import copy
 
 from src.game.agents import User
 from src.game.interface.gradio_interface import GameGradioInterface
@@ -41,6 +38,9 @@ class ExplainableGameGradioInterface(GameGradioInterface):
                          game_title_md=game_title_md, 
                          action_spaces_to_visualize=action_spaces_to_visualize)
         
+        self.last_board_state = None
+        self.last_updated_images = None
+
         self.ai_explanation_components = None
         self.explainer = explainer
         self.explainer_interface = ExplainerGradioInterface(explainer=self.explainer, explain_in_hyperlink_mode=interface_hyperlink_mode)
@@ -80,7 +80,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
                 .grid-container {
                     grid-column-gap: 0px; 
                     grid-row-gap: 0px; 
-                    overflow: hidden;
+                    /* overflow: hidden; */
                 }
                 """, # Perfectionates the game state display
             fill_width=True) as demo:
@@ -93,7 +93,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
                         with gr.Column(scale=1):
                             game_components = super().build_interface()
                             main_board_gallery = game_components["board_gallery"][self.main_action_space_id]
-                    
+                        
                         with gr.Column(scale=2):
                             gr.Markdown("# AI Move Explanation")
                             self.ai_explanation_components = self.explainer_interface.interface_builder.build_ai_explanation_components(
@@ -262,7 +262,6 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             else:
                 # Node is valid, we can retrieve it
                 node = game.explaining_agent.core.nodes[node_id]
-                parent_state = node.parent_state
                 current_id = game.explaining_agent.choice.id
 
                 # Determine if the requested node is the current state or a different node
@@ -277,20 +276,24 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             # If no specific node is requested, use the current choice of the explaining agent
             if game.explaining_agent is not None:
                 node_id = game.explaining_agent.choice.id if game.explaining_agent.choice else ""
-                parent_state = game.explaining_agent.choice.parent_state if game.explaining_agent.choice else None
             else:
                 node_id = None
-                parent_state = None
             board_state = game.model.action_spaces[self.main_action_space_id]
             showing_state = f"Current State ({node_id})" if node_id else "Current State"
 
         updated_images = []
-        for i in range(board_state.shape[0]):
-            for j in range(board_state.shape[1]):
-                cell_value = board_state[i, j]
-                is_changed = parent_state is not None and parent_state[i, j] != cell_value
-                cell_image = self.get_cell_image(cell_value, is_changed, i, j)
-                updated_images.append(cell_image)
+        if self.last_board_state is None or (board_state != self.last_board_state).any():
+            for i in range(board_state.shape[0]):
+                for j in range(board_state.shape[1]):
+                    cell_value = board_state[i, j]
+                    is_changed = self.last_board_state is not None and self.last_board_state[i, j] != cell_value
+                    cell_image = self.get_cell_image(cell_value, is_changed, i, j)
+                    updated_images.append(cell_image)
+        else:
+            updated_images = self.last_updated_images
+        
+        self.last_board_state = copy.deepcopy(board_state)
+        self.last_updated_images = copy.deepcopy(updated_images)
         
         board_gallery = gr.Gallery(
             value=updated_images,
