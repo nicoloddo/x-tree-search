@@ -75,7 +75,11 @@ class Game:
     
     @property
     def tree(self):
-        return GameTree(self.gm, self.tree_action_space_id, self.action_print_attributes())
+        return GameTree(self.gm, self.tree_action_space_id, self.node_string_format)
+    
+    @property
+    def node_string_format(self):
+        return "{who} does {what} in {where} on {on} modifying what was {what_before}"
     
     @abstractmethod
     def _game_model_definition(self) -> GameModel:
@@ -104,10 +108,6 @@ class Game:
             return {'who': other_id}
         """
         pass
-
-    def action_print_attributes(self):
-        """Which attributes to print when printing an action"""
-        return ['who', 'what', 'where', 'on', 'what_before']
 
     @abstractmethod
     def act(self, action) -> None:

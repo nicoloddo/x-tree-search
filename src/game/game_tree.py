@@ -2,7 +2,7 @@ from src.structures.tree import Tree
 from src.game.game_model import GameModel
 
 class GameTree(Tree):
-    def __init__(self, game, action_space_id, action_print_attributes =  ['who', 'what', 'where', 'on', 'what_before']):
+    def __init__(self, game, action_space_id, node_string_format = "{who} does {what} in {where} on {on} modifying what was {what_before}"):
         """
         Initializes the GameTree object which builds upon the Tree class.
 
@@ -17,12 +17,12 @@ class GameTree(Tree):
         Args:
             game (GameModel): An instance of the GameModel class which includes agents, action spaces, and rules.
             action_space_id (str): Identifier for the action space used to build the game tree.
-            action_print_attributes (list): List of string referring to the keys of the actions in a game model that should be printed when printing a node's action.
+            node_string_format (str): String format for the node string.
 
         Attributes:
             game (GameModel): The game model instance.
             action_space_id (str): Identifier for the relevant action space in the game model.
-            action_print_attributes (list): List of string referring to the keys of the actions in a game model that should be printed when printing a node's action.
+            node_string_format (str): String format for the node string.
 
         Raises:
             ValueError: If game is not an instance of GameModel.
@@ -35,7 +35,7 @@ class GameTree(Tree):
 
         self.game = game
         self.action_space_id = action_space_id
-        self.action_print_attributes = action_print_attributes
+        self.node_string_format = node_string_format
 
         self.root = self.__add_node(root_node_bool=True)
         self.root.state = game.action_spaces[action_space_id]
@@ -148,16 +148,15 @@ class GameTree(Tree):
         def __str__(self) -> str:
             if self.action is None:
                 return "(No action recorded)"
-            action_print_attributes = self.belonging_tree.action_print_attributes
+            node_string_format = self.belonging_tree.node_string_format
 
-            who_does = f"{str(self.action['who'])} does " if 'who' in action_print_attributes else ""
-            what_in = f"{str(self.action['what'])} in " if 'what' in action_print_attributes else ""
-            where = f"{str(self.action['where'])} " if 'where' in action_print_attributes else ""
-            on_action_space = f"on {str(self.action['on'])} " if 'on' in action_print_attributes else ""
-            modifying_what = f"modifying what was {str(self.action['what_before'])} " if 'what_before' in action_print_attributes else ""
-
-            composed_string = f"{who_does}{what_in}{where}{on_action_space}{modifying_what}"
-            composed_string = composed_string[:-1] # Remove the last space
+            composed_string = node_string_format.format(
+                who=str(self.action['who']),
+                what=str(self.action['what']),
+                where=str(self.action['where']),
+                on=str(self.action['on']),
+                what_before=str(self.action['what_before'])
+            )
             return composed_string
 
     def __add_node(self, parent=None, value=None, *, root_node_bool=False):

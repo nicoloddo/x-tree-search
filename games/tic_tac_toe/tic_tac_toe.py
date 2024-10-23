@@ -56,9 +56,9 @@ class TicTacToe(Game):
         else:
             raise ValueError(f"Unsupported interface mode: {self.interface_mode}")
 
-    def action_print_attributes(self):
-        """Which attributes to print when printing an action"""
-        return ['what', 'where']
+    @property
+    def node_string_format(self):
+        return "{what} in {where}"
     
     def expansion_constraints_self(self, agent_id):
         """Get expansion constraints for the current player.
