@@ -47,7 +47,7 @@ class BreakthroughJupyterInterface(GameJupyterInterface):
                     where = copy.deepcopy(self.where[current_player.id])
                     del self.where[current_player.id]
 
-                    inputs = {'what': what, 'where': where, 'action_space': "pieces"}
+                    inputs = {'what': what, 'where': where, 'on': "pieces"}
                     asyncio.create_task(current_player.play(self.game, inputs))
 
             except Exception as e:

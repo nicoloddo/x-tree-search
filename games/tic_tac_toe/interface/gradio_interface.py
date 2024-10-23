@@ -103,7 +103,7 @@ class TicTacToeGradioInterface(ExplainableGameGradioInterface):
             row, col = index // game.model.action_spaces[self.main_action_space_id].shape[1], index % game.model.action_spaces[self.main_action_space_id].shape[1]
             current_player = game.get_current_player()
             action = game.model.agents[current_player.id, 1]
-            inputs = {'what': action, 'where': (row, col), 'action_space': self.main_action_space_id}
+            inputs = {'what': action, 'where': (row, col), 'on': self.main_action_space_id}
             await current_player.play(game, inputs) # User move
             self.update(game, explainer)
             await game.continue_game() # AI move

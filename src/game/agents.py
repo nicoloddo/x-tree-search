@@ -65,8 +65,8 @@ class User(GameAgent):
         if game.interface_mode == 'jupyter' or game.interface_mode == 'gradio':
             what = inputs['what']
             where = inputs['where']
-            action_space = inputs['action_space']
-            action = {'who': self.id, 'where': where, 'what': what, 'action_space': action_space}
+            action_space = inputs['on']
+            action = {'who': self.id, 'where': where, 'what': what, 'on': action_space}
             game.act(action)
             if game.interface_mode == 'jupyter': # For gradio this should be handled by the interface
                 game.interface.update()  # Update after user's move
