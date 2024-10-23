@@ -34,7 +34,7 @@ class GameGradioInterface(GameInterface):
         """
         pass
 
-    def __init__(self, game, game_title_md="# Game", action_spaces_to_visualize=[]):
+    def __init__(self, game, game_title_md="# Game", action_spaces_to_visualize=[], *, help_md=None):
         """
         Initialize the GameGradioInterface.
 
@@ -65,6 +65,8 @@ class GameGradioInterface(GameInterface):
             }
             for action_space_id, action_space in game.gm.action_spaces.items() if action_space_id in action_spaces_to_visualize
         }
+
+        self.help_md = help_md
 
     @abstractmethod
     def restart_game(self):
@@ -102,6 +104,9 @@ class GameGradioInterface(GameInterface):
                     value=[],
                     **settings
                 )
+        if self.help_md:
+            with gr.Tab("Help"):
+                components["help"] = gr.Markdown(self.help_md)
         
         return components
     
