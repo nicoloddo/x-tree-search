@@ -6,7 +6,7 @@ from games.tic_tac_toe.interface.gradio_interface import TicTacToeGradioInterfac
 from games.breakthrough.interface.gradio_interface import BreakthroughGradioInterface
 from explainers.alphabeta_explainer import AlphaBetaExplainer
 
-game = 'tic_tac_toe'
+game = 'breakthrough'
 
 if game == 'tic_tac_toe':
     ai_scoring_function = tic_tac_toe_scoring_function
@@ -15,7 +15,7 @@ if game == 'tic_tac_toe':
     interface_class = TicTacToeGradioInterface
 elif game == 'breakthrough':
     ai_scoring_function = breakthrough_scoring_function
-    max_depth = 4
+    max_depth = 1
     game_class = Breakthrough
     interface_class = BreakthroughGradioInterface
 
