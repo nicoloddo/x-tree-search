@@ -29,7 +29,7 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         cell_size = 100
         images = {}
         for cell_type in ['empty', 'w', 'b', 'w_changed', 'b_changed']:
-            img = Image.new('RGB', (cell_size, cell_size), color='white')
+            img = Image.new('RGB', (cell_size, cell_size), color='beige')
             draw = ImageDraw.Draw(img)
             
             # Draw border
@@ -63,7 +63,7 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         
         return img
 
-    def __init__(self, game, explainer=None, interface_hyperlink_mode=True, *, game_title_md="# Breakthrough"):
+    def __init__(self, game, explainer=None, interface_hyperlink_mode=True, *, game_title_md="# Breakthrough vs AlphaBeta"):
         """
         Initialize the TicTacToeGradioInterface.
 
@@ -77,12 +77,30 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         :type interface_hyperlink_mode: bool
         :raises AttributeError: If the game instance doesn't have a 'get_current_player' or 'explaining_agent' attributes
         """
+        help_md = """
+        Click on a piece to select it.
+        Click on a cell to move the selected piece to that cell.
+        If you want to change the piece to move, make an invalid move to deselect the piece.
+
+        If the piece you want to select is in a cell with the orange border (previously selected cell), you won't be able to click on it. 
+        Click on an empty space so that the orange border goes to the empty cell before clicking on the piece.
+        """
         super().__init__(game, 
                          game_title_md=game_title_md, 
                          action_spaces_to_visualize=[self.main_action_space_id, "agents"],
                          explainer=explainer,
-                         interface_hyperlink_mode=interface_hyperlink_mode)
+                         interface_hyperlink_mode=interface_hyperlink_mode,
+                         game_explanation_ratio="3:4",
+                         help_md=help_md)
         self.where = {}
+
+    def preprocess_board_state(self, game, board_state):
+        """
+        Preprocess the board state.
+        """
+        if board_state.shape == (12, 2):
+            return game.pieces_state_to_board_state(board_state)
+        return board_state
         
     async def process_move(self, game, explainer, evt: gr.SelectData):
         """
@@ -110,7 +128,7 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
                 where = copy.deepcopy(self.where[current_player.id])
                 del self.where[current_player.id]
 
-                inputs = {'what': what, 'where': where, 'action_space': "pieces"}
+                inputs = {'what': what, 'where': where, 'on': "board"}
                 await current_player.play(game, inputs) # User move
                 self.update(game, explainer)
                 await game.continue_game() # AI move

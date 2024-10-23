@@ -16,7 +16,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
     the game state, handle user inputs, display game status, and explain AI moves.
     """
     
-    def __init__(self, game, game_title_md, action_spaces_to_visualize, explainer=None, interface_hyperlink_mode=True):
+    def __init__(self, game, game_title_md, action_spaces_to_visualize, explainer=None, interface_hyperlink_mode=True, game_explanation_ratio="1:2", *, help_md=None):
         """
         Initialize the ExplainableGameGradioInterface.
 
@@ -36,14 +36,15 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             raise AttributeError("The game instance does not have a 'get_current_player' method, thus it does not support the gradio interface.")
         super().__init__(game, 
                          game_title_md=game_title_md, 
-                         action_spaces_to_visualize=action_spaces_to_visualize)
-        
-        self.last_board_state = None
-        self.last_updated_images = None
+                         action_spaces_to_visualize=action_spaces_to_visualize,
+                         help_md=help_md)
 
         self.ai_explanation_components = None
         self.explainer = explainer
         self.explainer_interface = ExplainerGradioInterface(explainer=self.explainer, explain_in_hyperlink_mode=interface_hyperlink_mode)
+
+        self.game_scale = int(game_explanation_ratio.split(":")[0])
+        self.explanation_scale = int(game_explanation_ratio.split(":")[1])
 
     @property
     @abstractmethod
@@ -90,11 +91,11 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             with gr.Tabs():
                 with gr.TabItem("Game and Explain", id=self.explainer_interface.tab_ids["other"] + 0):
                     with gr.Row(equal_height=False):
-                        with gr.Column(scale=1):
+                        with gr.Column(scale=self.game_scale):
                             game_components = super().build_interface()
                             main_board_gallery = game_components["board_gallery"][self.main_action_space_id]
                         
-                        with gr.Column(scale=2):
+                        with gr.Column(scale=self.explanation_scale):
                             gr.Markdown("# AI Move Explanation")
                             self.ai_explanation_components = self.explainer_interface.interface_builder.build_ai_explanation_components(
                                 game_state,
@@ -234,6 +235,12 @@ class ExplainableGameGradioInterface(GameGradioInterface):
 
         return game, board_gallery, showing_state, status, ai_explanation, show_node_id, adjective, explaining_question, current_node_id, current_adjective, current_comparison_id
 
+    def preprocess_board_state(self, game, board_state):
+        """
+        Preprocess the board state. Override this method in the child classes if needed.
+        """
+        return board_state
+
     def update_board_gallery(self, game, node_id=None):
         """
         Get the updated game state images based on the current game state.
@@ -262,6 +269,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             else:
                 # Node is valid, we can retrieve it
                 node = game.explaining_agent.core.nodes[node_id]
+                parent_state = node.parent_state
                 current_id = game.explaining_agent.choice.id
 
                 # Determine if the requested node is the current state or a different node
@@ -276,24 +284,23 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             # If no specific node is requested, use the current choice of the explaining agent
             if game.explaining_agent is not None:
                 node_id = game.explaining_agent.choice.id if game.explaining_agent.choice else ""
+                parent_state = game.explaining_agent.choice.parent_state if game.explaining_agent.choice else None
             else:
                 node_id = None
+                parent_state = None
             board_state = game.model.action_spaces[self.main_action_space_id]
             showing_state = f"Current State ({node_id})" if node_id else "Current State"
 
+        board_state = self.preprocess_board_state(game, board_state)
+        if parent_state is not None:
+            parent_state = self.preprocess_board_state(game, parent_state)
         updated_images = []
-        if self.last_board_state is None or (board_state != self.last_board_state).any():
-            for i in range(board_state.shape[0]):
-                for j in range(board_state.shape[1]):
-                    cell_value = board_state[i, j]
-                    is_changed = self.last_board_state is not None and self.last_board_state[i, j] != cell_value
-                    cell_image = self.get_cell_image(cell_value, is_changed, i, j)
-                    updated_images.append(cell_image)
-        else:
-            updated_images = self.last_updated_images
-        
-        self.last_board_state = copy.deepcopy(board_state)
-        self.last_updated_images = copy.deepcopy(updated_images)
+        for i in range(board_state.shape[0]):
+            for j in range(board_state.shape[1]):
+                cell_value = board_state[i, j]
+                is_changed = parent_state is not None and parent_state[i, j] != cell_value
+                cell_image = self.get_cell_image(cell_value, is_changed, i, j)
+                updated_images.append(cell_image)
         
         board_gallery = gr.Gallery(
             value=updated_images,

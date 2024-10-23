@@ -1,7 +1,9 @@
 import numpy as np
+import copy
 
 from src.game.utils import parse_where_input as ut_parse_where_input
 from src.game.game import Game, GameModel
+from src.game.game_model import ActionSpace
 from src.game.agents import User
 from src.game.interface.cmd_interface import GameCmdInterface
 from games.breakthrough.interface.jupyter_interface import BreakthroughJupyterInterface
@@ -12,6 +14,25 @@ class Breakthrough(Game):
     idx_to_color = {0: 'b', 1: 'w'}
     color_to_idx = {value: key for key, value in idx_to_color.items()}
     color_side = {0: idx_to_color[0], -1: idx_to_color[1]} # 0 has the pieces on the top, -1 has the pieces on the bottom
+    board_shape = (6, 6)
+
+    @classmethod
+    def pieces_state_to_board_state(cls, pieces_state):
+        """
+        Convert the pieces state to the board state.
+        """
+        board_state = np.ndarray((cls.board_shape), dtype=object)
+        board_state.fill(FREE_LABEL)
+
+        for player_idx in range(2):
+            for piece_idx in range(12):
+                piece_coords = pieces_state[piece_idx, player_idx]
+                if piece_coords != "(-1, -1)":  # Check if the piece is still on the board
+                    row, col = eval(piece_coords)
+                    color = cls.idx_to_color[player_idx]
+                    board_state[row, col] = color
+
+        return board_state
 
     def __init__(self, *, players=None, interface_mode='gradio', interface_hyperlink_mode=True):
         """
@@ -64,10 +85,10 @@ class Breakthrough(Game):
             pass # Create and start the interface externally
         else:
             raise ValueError(f"Unsupported interface mode: {self.interface_mode}")
-        
-    def action_print_attributes(self):
-        """Which attributes to print when printing an action"""
-        return ['what', 'where']
+    
+    @property
+    def node_string_format(self):
+        return "{what_before} in {what}"
     
     def expansion_constraints_self(self, agent_id):
         """Get expansion constraints for the current player.
@@ -104,9 +125,9 @@ class Breakthrough(Game):
         agents_number=2, default_agent_features=['not starter', self.idx_to_color[0]], additional_agent_features=[['starter'], self.idx_to_color[1]], 
         agent_features_descriptions="2 players with feature 1 indicating who is starting, and feature 2 indicating their pieces' color.",
         game_name="breakthrough")
-        gm.add_action_space("board", dimensions=[6, 6], default_labels=[FREE_LABEL], additional_labels=[['w', 'b']], 
+        gm.add_action_space("board", dimensions=list(self.board_shape), default_labels=[FREE_LABEL], additional_labels=[['w', 'b']], 
                             dimensions_descriptions="6x6 board.")
-        gm.add_action_space("pieces", dimensions=[12, 2], default_labels=[str((-1, -1)), str((-1, -1))], additional_labels=[[str((x, y)) for x in range(6) for y in range(6)]]*2, 
+        gm.add_action_space("pieces", dimensions=[12, 2], default_labels=[str((-1, -1)), str((-1, -1))], additional_labels=[[str((x, y)) for x in range(self.board_shape[0]) for y in range(self.board_shape[1])]]*2, 
                             dimensions_descriptions="12 pieces x 2 sides (black and white). As values we have the coordinates of the pieces. -1 means that the piece is not on the board.")
 
         # Disable actions on the agent feature space.
@@ -221,7 +242,12 @@ class Breakthrough(Game):
         return gm
     
     def act(self, action) -> None:
-        piece_index = self._get_piece_index(self.model, action['where'])
+        if action['on'] == "board":
+            piece_index = self._get_piece_index(self.model, action['where'])
+        elif action['on'] == "pieces":
+            piece_index = action['where']
+        else:
+            raise ValueError(f"Unsupported action space: {action['on']}")
 
         return_broken_rule_string = self.interface_mode == 'gradio'
         action_dict, broken_rule_string = self.model.action("pieces", action['who'], piece_index, action['what'], return_broken_rule_string=return_broken_rule_string)
@@ -285,7 +311,3 @@ class Breakthrough(Game):
             self.interface.update()
         if not self.ended:
             await self.process_turn()
-
-if __name__ == "__main__":
-    game = Breakthrough()
-    game.start_game()

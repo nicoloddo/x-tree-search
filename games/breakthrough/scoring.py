@@ -1,8 +1,8 @@
 import numpy as np
-
+from games.breakthrough.breakthrough import Breakthrough
 def simple_depth_dependant_scoring_function(node, depth):
     """Evaluate the Breakthrough board state from the perspective of the 'b' (black) player"""
-    state = node.state
+    state = Breakthrough.pieces_state_to_board_state(node.state)
     score = 0
     
     # Count pieces for each player
