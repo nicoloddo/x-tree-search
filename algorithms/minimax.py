@@ -20,7 +20,7 @@ class MiniMaxNode:
         self.node = node
         self.parent = parent
         if self.parent is not None:
-            self.parent_state = parent.node.state
+            self.parent_state = copy.deepcopy(parent.node.state)
         else:
             self.parent_state = None
         self.children = []
@@ -122,7 +122,7 @@ class MiniMax:
         best_child, best_value = self.algorithm(self.search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
 
         if best_child is not None:
-            best_child.parent_state = copy.deepcopy(best_child.parent.node.state)
+            #best_child.parent_state = copy.deepcopy(best_child.parent.node.state)
             self.search_root_final = best_child.parent
             self.last_choice = best_child            
         return best_child, best_value
