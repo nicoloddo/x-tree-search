@@ -20,11 +20,13 @@ class If(Explanation):
             If("possession", "backtracing child", "minoptimal")
             If("possession", "backtracing child", "score", value=5)
             If("comparison", "score", "better than", "other_node_score")
+            If("comparison", "better than", "other_node")
 
         :param condition_type: Type of condition, either "possession" or "comparison"
         :type condition_type: str
-        :param args: Arguments for the condition (see usage examples)
-        :type args: str
+        :param args: Arguments for the condition (see usage examples) either two or three arguments
+                    If two argument: comparison_adjective_name, obj2_pointer_adjective_name
+                    If three arguments: obj1_pointer_adjective_name, comparison_adjective_name, obj2_pointer_adjective_name
         :param value: An optional value for possession conditions, against which the adjective is compared, defaults to True
         :type value: Any, optional
         :param explain_further: Whether to explain the condition further, defaults to True
