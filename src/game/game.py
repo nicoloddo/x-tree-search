@@ -40,8 +40,10 @@ class Game:
 
         self.what_question = what_question if what_question else "Insert what [insert 'exit' to exit] [click enter with no input to refresh]: "
         self.where_question = where_question if where_question else "Insert where [insert 'exit' to exit] [click enter with no input to refresh]: "
-        self.parse_what_input = parse_what_input if parse_what_input else lambda what_str: what_str
-        self.parse_where_input = parse_where_input if parse_where_input else lambda where_str: where_str
+        def passthrough(input):
+            return input
+        self.parse_what_input = parse_what_input if parse_what_input else passthrough
+        self.parse_where_input = parse_where_input if parse_where_input else passthrough
 
         self.gm.parse_what_input = self.parse_what_input
         self.gm.parse_where_input = self.parse_where_input
@@ -93,7 +95,7 @@ class Game:
         Return None if you don't want to constrain the expansion.
 
         The constraints are given as a dictionary with keys 'who', 'where', 'what'.
-        The values are lambda or standard functions that take as arguments, respectively:
+        The values are callable objects that take as arguments, respectively:
          - 'who' and the agent,
          - 'where' and the element,
          - 'what' and the element (what we often refer to as 'what_before').
@@ -106,8 +108,11 @@ class Game:
         any rule for the User: use action_is_violation_if() to set rules for both AI and User.
         
         E.g.: 
-        expansion_constraints_self(self, maximizer_id) 
-            return {'who': lambda who, agent: who == maximizer_id}"""
+        def expansion_constraints_self(self, maximizer_id):
+            def check_maximizer(who, agent):
+                return who == maximizer_id
+            return {'who': check_maximizer}
+        """
         pass
     
     @abstractmethod

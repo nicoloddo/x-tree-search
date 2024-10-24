@@ -60,10 +60,15 @@ class GameModel:
         self.agents = self.action_spaces['agent']
 
         ''' Default endgame dynamics'''
-        self.endgame_dynamics = lambda: False # This function is checked after every action, if it returns True, the self.ended is changed to True
+        # By default, the game never ends
+        def never_end(game):
+            return False
+        self.endgame_dynamics = never_end # This function is checked after every action, if it returns True, the self.ended is changed to True
 
         ''' Default rule: '''
-        self.action_is_violation_if(lambda who, where, what, game: game.ended, "general", rule_description="Nothing is allowed if the game is ended.") # Default rule
+        def default_rule(who, where, what, game):
+            return game.ended
+        self.action_is_violation_if(default_rule, "general", rule_description="Nothing is allowed if the game is ended.") # Default rule
 
 
         if self.verbose:
@@ -330,18 +335,24 @@ class GameModel:
             agent[0] refers to the agent's first feature, which we assigned to the status
             
             Rule definition:
-            gm.action_is_violation_if(lambda who, where, what, game: not game.started and who[0] != 'starter', rule_description="This is not the starting player and this is the first turn.") 
+            def rule(who, where, what, game):
+                return not game.started and who[0] != 'starter'
+            gm.action_is_violation_if(rule, rule_description="This is not the starting player and this is the first turn.") 
         
         2.  Rule: You can only put a sign if the space is free:
 
             Rule definition:
-            mgm.action_is_violation_if(lambda who, where, what, game: where != 'free', "environment", rule_description="The space needs to be free to put a sign on it.")
+            def rule(who, where, what, game):
+                return where != 'free'
+            mgm.action_is_violation_if(rule, "environment", rule_description="The space needs to be free to put a sign on it.")
         
         
         3.  Rule: Agents cannot modify their features or the ones of other agents:
 
             Rule definition:
-            mgm.action_is_violation_if(lambda who, where, what, game: where != [None], "agent", rule_description="Agents cannot modify their own features.")
+            def rule(who, where, what, game):
+                return where != [None]
+            mgm.action_is_violation_if(rule, "agent", rule_description="Agents cannot modify their own features.")
         """
         if consequence is None:
             consequence = "violation"
@@ -363,9 +374,11 @@ class GameModel:
                 raise ValueError("Consequence function must accept exactly these arguments: action, game")
 
         if action_space_id == "general":
-            wrapped = lambda who, where, what, game=self: game.__wrapped_rule(rule, who, None, what, None)
+            def wrapped(who, where, what, game=self):
+                return game.__wrapped_rule(rule, who, None, what, None)
         else:
-            wrapped = lambda who, where, what, game=self: game.__wrapped_rule(rule, who, where, what, action_space_id)
+            def wrapped(who, where, what, game=self):
+                return game.__wrapped_rule(rule, who, where, what, action_space_id)
 
         self.rules[action_space_id].append({'description':rule_description, 'trigger':wrapped, 'consequence':consequence})
 
