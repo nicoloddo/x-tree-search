@@ -91,9 +91,23 @@ class Game:
         """Method that provides constraints to expand a node of the tree
         game when is the turn of the self player.
         Return None if you don't want to constrain the expansion.
+
+        The constraints are given as a dictionary with keys 'who', 'where', 'what'.
+        The values are lambda or standard functions that take as arguments, respectively:
+         - 'who' and the agent,
+         - 'where' and the element,
+         - 'what' and the element (what we often refer to as 'what_before').
+        The function should return True if the action should be considered, False otherwise.
+        Expansion constraints should be used as a method to reduce the number of nodes to be expanded,
+        thus reducing computational costs. 
+        Be aware though, that the formal method to constrain the search is to set rules in the game model
+        using the method action_is_violation_if(). 
+        These constraints will only limit the number of nodes to be searched by AI agents, without setting
+        any rule for the User: use action_is_violation_if() to set rules for both AI and User.
+        
         E.g.: 
         expansion_constraints_self(self, maximizer_id) 
-            return {'who': maximizer_id}"""
+            return {'who': lambda who, agent: who == maximizer_id}"""
         pass
     
     @abstractmethod

@@ -107,7 +107,7 @@ class GameModel:
         """
         Attributes:
             dimensions (list of int): The shape of the matrix of the action space.
-            default_label (list of str): The default labels to assign to each column in the environment.
+            default_label (list of str): The default labels to assign to each column in the environment. Provide only one to apply it to all columns.
             additional_labels (list of list of str): For each provided default_label, provide a list of other possible labels that can be assigned to the environment elements.
         """
         try:
@@ -177,17 +177,18 @@ class GameModel:
         available_actions_and_states = []
         for who, agent in enumerate(self.agents):
             if 'who' in constraints:
-                if who != constraints['who']:
+                if not constraints['who'](who, agent):
                     continue
 
             for where, element in np.ndenumerate(action_space):
                 if 'where' in constraints:
-                    if where != constraints['where']:
+                    if not constraints['where'](where, element):
                         continue
+                what_before = element
 
                 for what in action_space.available_labels_flat:
                     if 'what' in constraints:
-                        if what != constraints['what']:
+                        if not constraints['what'](what, what_before):
                             continue
                     
                     break_rules, _, _ = self.__check_rules(who, where, what, action_space, action_space_id, verbose=False)

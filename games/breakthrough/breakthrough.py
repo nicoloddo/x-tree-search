@@ -91,18 +91,25 @@ class Breakthrough(Game):
     def node_string_format(self):
         return "{what_before} in {what}"
     
+    def constrain_action_around_piece(self, what, what_before):
+        what = eval(what)
+        what_before = eval(what_before)
+        return what != what_before and what != (-1, -1) and abs(what[0] - what_before[0]) <= 1 and abs(what[1] - what_before[1]) <= 1
+    
     def expansion_constraints_self(self, agent_id):
         """Get expansion constraints for the current player.
         Expansion constraints limits the search of available moves,
         thus reducing computational costs."""
-        return {'who': agent_id}
+        return {'who': lambda who, agent: who == agent_id,
+                'what': self.constrain_action_around_piece}
     
     def expansion_constraints_other(self, agent_id):
         "Get expansion constraints for the other player"
         not_agent_ids = [key for key in self.players.keys() if key != agent_id]
         if len(not_agent_ids) == 1:
             other_id = not_agent_ids[0]
-            return {'who': other_id}
+            return {'who': lambda who, agent: who == other_id,
+                    'what': self.constrain_action_around_piece}
         else:
             raise ValueError("A Breakthrough game should have a maximum of two players.")
         
@@ -123,12 +130,12 @@ class Breakthrough(Game):
     
     def _game_model_definition(self) -> GameModel:
         gm = GameModel( 
-        agents_number=2, default_agent_features=['not starter', self.idx_to_color[0]], additional_agent_features=[['starter'], self.idx_to_color[1]], 
+        agents_number=2, default_agent_features=['not starter', self.idx_to_color[0]], additional_agent_features=[['starter'], [self.idx_to_color[1]]], 
         agent_features_descriptions="2 players with feature 1 indicating who is starting, and feature 2 indicating their pieces' color.",
         game_name="breakthrough")
         gm.add_action_space("board", dimensions=list(self.board_shape), default_labels=[FREE_LABEL], additional_labels=[['w', 'b']], 
                             dimensions_descriptions="6x6 board.")
-        gm.add_action_space("pieces", dimensions=[12, 2], default_labels=[str((-1, -1)), str((-1, -1))], additional_labels=[[str((x, y)) for x in range(self.board_shape[0]) for y in range(self.board_shape[1])]]*2, 
+        gm.add_action_space("pieces", dimensions=[12, 2], default_labels=[str((-1, -1))], additional_labels=[[str((x, y)) for x in range(self.board_shape[0]) for y in range(self.board_shape[1])]], 
                             dimensions_descriptions="12 pieces x 2 sides (black and white). As values we have the coordinates of the pieces. -1 means that the piece is not on the board.")
 
         # Disable actions on the agent feature space.

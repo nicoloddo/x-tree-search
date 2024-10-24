@@ -65,14 +65,14 @@ class TicTacToe(Game):
         """Get expansion constraints for the current player.
         Expansion constraints limits the search of available moves,
         thus reducing computational costs."""
-        return {'who': agent_id}
+        return {'who': lambda who, agent: who == agent_id}
     
     def expansion_constraints_other(self, agent_id):
         "Get expansion constraints for the other player"
         not_agent_ids = [key for key in self.players.keys() if key != agent_id]
         if len(not_agent_ids) == 1:
             other_id = not_agent_ids[0]
-            return {'who': other_id}
+            return {'who': lambda who, agent: who == other_id}
         else:
             raise ValueError("A TicTacToe game should have a maximum of two players.")
     
