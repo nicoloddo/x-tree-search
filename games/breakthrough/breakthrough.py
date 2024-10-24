@@ -66,6 +66,7 @@ class Breakthrough(Game):
         :type interface_mode: str
         """
         if interface_mode == 'cmd':
+            print("Be aware that the cmd interface is not fully maintained and might not work as expected.")
             self.interface = GameCmdInterface(self)
         elif interface_mode == 'jupyter':
             self.interface = BreakthroughJupyterInterface(self)
