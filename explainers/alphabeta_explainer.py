@@ -2,6 +2,7 @@ from src.explainer.explainer import ArgumentativeExplainer
 from src.explainer.framework import ArgumentationFramework
 
 from src.explainer.adjective import BooleanAdjective, PointerAdjective, QuantitativePointerAdjective, NodesGroupPointerAdjective, ComparisonAdjective, MaxRankAdjective, MinRankAdjective
+from src.explainer.adjective import COMPARISON_AUXILIARY_ADJECTIVE
 from src.explainer.explanation import Possession, RecursivePossession, Assumption, Comparison, If, ConditionalExplanation, CompositeExplanation
 
 from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, CompactSameExplanations
@@ -43,7 +44,7 @@ class AlphaBetaExplainer:
         highlevel_framework = ArgumentationFramework(
             refer_to_nodes_as='move',
             adjectives=adjectives,
-            main_explanation_adjective='the best for me',
+            main_explanation_adjective='the best',
             tactics=tactics,
         )
         
@@ -157,7 +158,7 @@ class AlphaBetaExplainer:
                     explanation_if_true = CompositeExplanation(
                         Assumption("The opponent can choose to do this possible next move, or something even worse for me."),
                         ConditionalExplanation(
-                            condition = If("comparison", "as next possible move", "worse for me than if you did", "upperbound"),
+                            condition = If("comparison", "as next possible move", "worse for me than", "upperbound"),
                             explanation_if_true = Comparison("as next possible move", "already worse for me than the alternative coming after", "upperbound",
                                     forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "upperbound"
                             explanation_if_false = Comparison("as next possible move", "already equal to the alternative coming after", "upperbound",
@@ -169,8 +170,8 @@ class AlphaBetaExplainer:
                         Possession("as next possible move", explain_further=False),
                         Assumption("We could choose to do this move, or something even worse for the opponent."),  
                         ConditionalExplanation(
-                            condition = If("comparison", "as next possible move", "better than", "lowerbound"),
-                            explanation_if_true = Comparison("as next possible move", "already better than the alternative coming after", "lowerbound",
+                            condition = If("comparison", "as next possible move", "better for me than", "lowerbound"),
+                            explanation_if_true = Comparison("as next possible move", "already better for me than the alternative coming after", "lowerbound",
                                     forward_possessions_explanations=False), # Do not forward explanations for "as next possible move" and "lowerbound"  
                             explanation_if_false = Comparison("as next possible move", "already equal to the alternative coming after", "lowerbound",
                                     forward_possessions_explanations=False)
@@ -210,11 +211,14 @@ class AlphaBetaExplainer:
             PointerAdjective("upperbound",
                 definition = "node.parent.alpha"),
 
-            ComparisonAdjective("better than", "score", ">"),
-            ComparisonAdjective("worse for me than if you did", "score", "<"),
+            ComparisonAdjective("better for me than", "score", ">",
+                                explain_with_adj_if=(If("comparison", "equal to", COMPARISON_AUXILIARY_ADJECTIVE), "equal to")),
+            ComparisonAdjective("worse for me than", "score", "<",
+                                explain_with_adj_if=(If("comparison", "equal to", COMPARISON_AUXILIARY_ADJECTIVE), "equal to")),
+            ComparisonAdjective("equal to", "score", "=="),
             ComparisonAdjective("at least equal to", "score", "=="),
 
-            ComparisonAdjective("already better than the alternative coming after", "score", ">"),
+            ComparisonAdjective("already better for me than the alternative coming after", "score", ">"),
             ComparisonAdjective("already worse for me than the alternative coming after", "score", "<"),
             ComparisonAdjective("already equal to the alternative coming after", "score", "=="),
         
@@ -222,7 +226,12 @@ class AlphaBetaExplainer:
                 definition = "node.parent.children",
                 excluding = "node"),
 
-            MaxRankAdjective("the best for me", ["better than", "at least equal to"], "possible alternative moves",
+            MaxRankAdjective("the best", ["better for me than", "at least equal to"], "possible alternative moves",
+                explain_with_adj_if = (If("possession", "opponent player turn"), "the best for me", "the best the opponent can do"),
+            ),
+
+            MaxRankAdjective("the best for me", ["better for me than", "at least equal to"], "possible alternative moves",
+                explain_with_adj_if = (If("possession", "opponent player turn", value=False), "the best the opponent can do"),
                 tactics = [
                     CompactSameExplanations(
                         from_adjectives=["as next move", 
@@ -236,7 +245,8 @@ class AlphaBetaExplainer:
                 ]
             ),
 
-            MaxRankAdjective("the best the opponent can do", ["worse for me than if you did", "at least equal to"], "possible alternative moves",
+            MaxRankAdjective("the best the opponent can do", ["worse for me than", "at least equal to"], "possible alternative moves",
+                explain_with_adj_if = (If("possession", "opponent player turn"), "the best for me"),
                 tactics = [
                     CompactSameExplanations(
                         from_adjectives=["as next move", 

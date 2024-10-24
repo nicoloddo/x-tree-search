@@ -35,7 +35,8 @@ class Adjective(ABC):
         """Initialize the book keeping for all Adjective instances."""
         Adjective.explanations_book = {}
 
-    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, tactics: List['Tactic'], *, definition: str, skip_statement: bool = False):
+    def __init__(self, name: str, adjective_type: AdjectiveType, explanation: Explanation, tactics: List['Tactic'], 
+                 *, definition: str, skip_statement: bool = False, explain_with_adj_if : tuple[If, str, str | None] = None):
         """
         Initialize the Adjective.
         
@@ -51,6 +52,9 @@ class Adjective(ABC):
         :type definition: str
         :param skip_statement: Skip the consequent in the explanation of this adjective.
         :type skip_statement: bool, optional
+        :param explain_with_adj_if: A tuple with an If object, a first adjective name and a second, optional, adjective name. 
+            If the parameter is provided and the If is True, the explanation will be given with the first adjective provided, else with the second.
+        :type explain_with_adj_if: tuple[If, str, str | None] | None, optional
 
         :raises ValueError: If the name is an empty string.
         """
@@ -62,6 +66,17 @@ class Adjective(ABC):
         self.framework = None
         self.definition = definition
         self.skip_statement = skip_statement
+
+        if explain_with_adj_if is not None:
+            if not isinstance(explain_with_adj_if[0], If):
+                raise ValueError("The first element of the explain_with_adj_if parameter should be an If object.")
+            if explain_with_adj_if[1] is None:
+                raise ValueError("The second element of the explain_with_adj_if parameter should be a string.")
+            if len(explain_with_adj_if) < 2 or len(explain_with_adj_if) > 3:
+                raise ValueError("The explain_with_adj_if parameter should be a tuple with either two or three elements.")
+            elif len(explain_with_adj_if) == 2:
+                explain_with_adj_if = explain_with_adj_if + (None,)
+        self.explain_with_adj_if = explain_with_adj_if
 
         self.getter = None
         self.set_getter(definition)
@@ -88,6 +103,8 @@ class Adjective(ABC):
         self.framework = framework
         self.refer_to_nodes_as = self.framework.refer_to_nodes_as
         self.explanation.contextualize(self)
+        if self.explain_with_adj_if is not None:
+            self.explain_with_adj_if[0].contextualize(self)
 
         for tactic in self.explanation_tactics.values():
             tactic.contextualize(self)
@@ -97,6 +114,8 @@ class Adjective(ABC):
         self.framework = None
         self.refer_to_nodes_as = None
         self.explanation.decontextualize()
+        if self.explain_with_adj_if is not None:
+            self.explain_with_adj_if[0].decontextualize()
 
         for tactic in self.explanation_tactics.values():
             tactic.decontextualize()
@@ -196,9 +215,24 @@ class Adjective(ABC):
         Returns:
             An Implies object representing the explanation.
         """
-        if explanation_tactics is None:
+        if self.explain_with_adj_if is not None: # Check if we need to reroute the explanation
+            if self.explain_with_adj_if[0].condition_type == "comparison":
+                self.framework.add_adjective(AuxiliaryAdjective(COMPARISON_AUXILIARY_ADJECTIVE, getter = lambda node: other_nodes))
+            evaluation = self.explain_with_adj_if[0].evaluate(node)
+            args = [node, other_nodes]
+            kwargs = {"explanation_tactics": explanation_tactics, "current_explanation_depth": current_explanation_depth, "explain_further": explain_further}
+            if evaluation:
+                adjective_to_explain = self.framework.get_adjective(self.explain_with_adj_if[1])
+                return adjective_to_explain.explain(*args, **kwargs)
+            else:
+                if self.explain_with_adj_if[2] is not None:
+                    adjective_to_explain = self.framework.get_adjective(self.explain_with_adj_if[2])
+                    return adjective_to_explain.explain(*args, **kwargs)
+        
+        if explanation_tactics is None: # Check the explanation tactics
             explanation_tactics = {**self.explanation_tactics, **self.framework.general_explanation_tactics}
 
+        # Explain
         # Get propositions
         if self.type == AdjectiveType.COMPARISON:
             self.framework.add_adjective(AuxiliaryAdjective(COMPARISON_AUXILIARY_ADJECTIVE, getter = lambda node: other_nodes))
@@ -208,7 +242,6 @@ class Adjective(ABC):
                 antecedent = self.explanation.explain(node, explanation_tactics=explanation_tactics, current_explanation_depth=current_explanation_depth)
             else:
                 antecedent = None
-            #self.framework.del_adjective(COMPARISON_AUXILIARY_ADJECTIVE)
         else:
             evaluation = self.evaluate(node, explanation_tactics=explanation_tactics)
             consequent = self.proposition(evaluation, node, explanation_tactics=explanation_tactics)
@@ -246,7 +279,8 @@ class Adjective(ABC):
 class BooleanAdjective(Adjective):
     """Represents a boolean adjective."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None, *, skip_statement: bool = False):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None, 
+                 *, skip_statement: bool = False, explain_with_adj_if : tuple[If, str, str | None] = None):
         """
         Initialize the BooleanAdjective.
         
@@ -258,9 +292,14 @@ class BooleanAdjective(Adjective):
         :type explanation: Explanation | None, optional
         :param tactics: Tactics to use with the adjective.
         :type tactics: List['Tactic'] | None, optional
+        :param skip_statement: Skip the consequent in the explanation of this adjective.
+        :type skip_statement: bool, optional
+        :param explain_with_adj_if: A tuple with an If object, a first adjective name and a second, optional, adjective name. 
+            If the parameter is provided and the If is True, the explanation will be given with the first adjective provided, else with the second.
+        :type explain_with_adj_if: tuple[If, str, str | None] | None, optional
         """
         explanation = explanation or PossessionAssumption(name, definition)
-        super().__init__(name, AdjectiveType.STATIC, explanation, tactics, definition = definition, skip_statement = skip_statement)
+        super().__init__(name, AdjectiveType.STATIC, explanation, tactics, definition = definition, skip_statement = skip_statement, explain_with_adj_if = explain_with_adj_if)
 
     def _proposition(self, evaluation: bool = True, node: Any = None) -> Proposition:
         """ Returns a proposition reflecting the adjective """
@@ -284,7 +323,8 @@ class BooleanAdjective(Adjective):
 class PointerAdjective(Adjective):
     """Represents a pointer adjective that references a specific attribute or object."""
     
-    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None, *, _custom_getter: Callable[[Any], Any] | None = None, skip_statement: bool = False):
+    def __init__(self, name: str, definition: str = DEFAULT_GETTER, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None, 
+                 *, _custom_getter: Callable[[Any], Any] | None = None, skip_statement: bool = False, explain_with_adj_if : tuple[If, str, str | None] = None):
         """
         Initialize the PointerAdjective.
         
@@ -301,9 +341,12 @@ class PointerAdjective(Adjective):
         :type _custom_getter: Callable[[Any], Any] | None, optional
         :param skip_statement: Skip the consequent in the explanation of this adjective.
         :type skip_statement: bool, optional
+        :param explain_with_adj_if: A tuple with an If object, a first adjective name and a second, optional, adjective name. 
+            If the parameter is provided and the If is True, the explanation will be given with the first adjective provided, else with the second.
+        :type explain_with_adj_if: tuple[If, str, str | None] | None, optional
         """
         explanation = explanation or PossessionAssumption(name, definition)
-        super().__init__(name, AdjectiveType.POINTER, explanation, tactics, definition = definition, skip_statement = skip_statement)
+        super().__init__(name, AdjectiveType.POINTER, explanation, tactics, definition = definition, skip_statement = skip_statement, explain_with_adj_if = explain_with_adj_if)
         if _custom_getter is not None:
             self.getter = _custom_getter
 
@@ -321,7 +364,10 @@ class PointerAdjective(Adjective):
         :return: The value pointed to by the adjective for the given node.
         :rtype: Any
         """
-        return self.getter(node)
+        if type(node) is list:
+            return [self.getter(element) for element in node]
+        else:
+            return self.getter(node)
 
 class QuantitativePointerAdjective(PointerAdjective):
     pass
@@ -360,11 +406,11 @@ class AuxiliaryAdjective(PointerAdjective):
         :type node: Any
         :return: The result of applying the current getter to the node.
         :rtype: Any
-        :raises ValueError: If the getter queue is empty.
+        :raises CannotBeEvaluated: If the getter queue is empty.
         """
         if self.empty:
-            raise ValueError(f"The Auxiliary Adjective {self.name} is empty while evaluating {node}.")
-        current_getter = self.getter.pop()
+            raise CannotBeEvaluated(f"the Auxiliary Adjective {self.name} is empty while evaluating {Proposition.format_node(node)}.")
+        current_getter = self.getter.pop() # The auxiliary adjective can be evaluated only as many times it was declared
         if len(self.getter) == 0:
             self.empty = True
         return current_getter(node)
@@ -424,7 +470,8 @@ class ComparisonAdjective(Adjective):
     While explaining a Comparison Adjective you can refer to an auxiliary adjective called "compared to".
     """
     
-    def __init__(self, name: str, property_pointer_adjective_name: str, operator: str, *, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None):
+    def __init__(self, name: str, property_pointer_adjective_name: str, operator: str, 
+                 *, explanation: Explanation | None = None, tactics: List['Tactic'] | None = None, explain_with_adj_if : tuple[If, str, str | None] = None):
         """
         Initialize the ComparisonAdjective.
         
@@ -438,12 +485,15 @@ class ComparisonAdjective(Adjective):
         :type explanation: Explanation | None, optional
         :param tactics: Tactics for the adjective, refer to the main Adjective class.
         :type tactics: List['Tactic'] | None, optional
+        :param explain_with_adj_if: A tuple with an If object, a first adjective name and a second, optional, adjective name. 
+            If the parameter is provided and the If is True, the explanation will be given with the first adjective provided, else with the second.
+        :type explain_with_adj_if: tuple[If, str, str | None] | None, optional
         """
         if explanation is None:
             explanation = CompositeExplanation(
                 ComparisonAssumption(name, property_pointer_adjective_name, operator),
                 ComparisonNodesPropertyPossession(property_pointer_adjective_name))
-        super().__init__(name, AdjectiveType.COMPARISON, explanation, tactics, definition=DEFAULT_GETTER)
+        super().__init__(name, AdjectiveType.COMPARISON, explanation, tactics, definition=DEFAULT_GETTER, explain_with_adj_if = explain_with_adj_if)
         self.property_pointer_adjective_name = property_pointer_adjective_name
 
         # Validate the operator to ensure it's safe and expected
@@ -484,14 +534,17 @@ class ComparisonAdjective(Adjective):
 
         if not isinstance(property_pointer_adjective, QuantitativePointerAdjective):
             raise SyntaxError(f"ComparisonAdjective has been linked to a non quantitative adjective {property_pointer_adjective.name}.")
-        
+
         value1 = property_pointer_adjective.evaluate(node1)
 
         if type(other_nodes) is not list:
             other_nodes = [other_nodes]
         other_values = [property_pointer_adjective.evaluate(node2) for node2 in other_nodes]
-                        
-        return all([self.comparison_operator(value1, value2) for value2 in other_values])
+        
+        try:
+            return all([self.comparison_operator(value1, value2) for value2 in other_values])
+        except TypeError:
+            raise CannotBeEvaluated(message_override=f"the comparison \"{self.name}\" cannot be evaluated: some of the {self.framework.refer_to_nodes_as}s in the comparison don't have a {self.property_pointer_adjective_name}.")
     
     def get_true_group(self, node1: Any, other_nodes: Any) -> Any:
         """
@@ -520,7 +573,9 @@ class _RankAdjective(BooleanAdjective):
     and the evaluator function. This is parent class of MaxRankAdjective and MinRankAdjective.
     """
     
-    def __init__(self, name: str, comparison_adjective_names: List[str], group_pointer_adjective_name: str, explanation: Explanation, tactics: List['Tactic'], evaluator: Callable[[Any, ComparisonAdjective, PointerAdjective], bool]):
+    def __init__(self, name: str, comparison_adjective_names: List[str], group_pointer_adjective_name: str, explanation: Explanation, 
+                 tactics: List['Tactic'], evaluator: Callable[[Any, ComparisonAdjective, PointerAdjective], bool],
+                 explain_with_adj_if : tuple[If, str, str | None] = None):
         """
         Initialize the _RankAdjective.
         Evaluates to true if any of the comparison adjectives is true for the node when compared to all the other nodes in the group.
@@ -537,9 +592,12 @@ class _RankAdjective(BooleanAdjective):
         :type tactics: List['Tactic'] | None, optional
         :param evaluator: A function to evaluate the rank.
         :type evaluator: Callable[[Any, ComparisonAdjective, PointerAdjective], bool]
+        :param explain_with_adj_if: A tuple with an If object, a first adjective name and a second, optional, adjective name. 
+            If the parameter is provided and the If is True, the explanation will be given with the first adjective provided, else with the second.
+        :type explain_with_adj_if: tuple[If, str, str | None] | None, optional
         """
         explanation = explanation or PossessionAssumption(name)
-        super().__init__(name, explanation=explanation, tactics=tactics)
+        super().__init__(name, explanation=explanation, tactics=tactics, explain_with_adj_if = explain_with_adj_if)
         self.comparison_adjective_names = comparison_adjective_names
         self.group_pointer_adjective_name = group_pointer_adjective_name
         self.evaluator = evaluator
@@ -560,7 +618,8 @@ class _RankAdjective(BooleanAdjective):
         return self.evaluator(node, comparison_adjectives, group)
 
 class MaxRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_names: List[str], nodes_group_pointer_adjective_name: str, tactics: List['Tactic'] | None = None):
+    def __init__(self, name: str, comparison_adjective_names: List[str], nodes_group_pointer_adjective_name: str, tactics: List['Tactic'] | None = None,
+                 *, explain_with_adj_if : tuple[If, str, str | None] = None):
         """
         Initialize the MaxRankAdjective.
         Evaluates to true if any of the comparison adjectives is true for the node when compared to all the other nodes in the group.
@@ -573,15 +632,19 @@ class MaxRankAdjective(_RankAdjective):
         :type nodes_group_pointer_adjective_name: str
         :param tactics: Tactics for the adjective.
         :type tactics: List['Tactic'] | None, optional
+        :param explain_with_adj_if: A tuple with an If object, a first adjective name and a second, optional, adjective name. 
+            If the parameter is provided and the If is True, the explanation will be given with the first adjective provided, else with the second.
+        :type explain_with_adj_if: tuple[If, str, str | None] | None, optional
         """
         explanation = CompositeExplanation(
             RankAssumption('max', name, comparison_adjective_names, nodes_group_pointer_adjective_name),
             GroupComparison(comparison_adjective_names, nodes_group_pointer_adjective_name))
         evaluator = lambda node, comparison_adjectives, group: all(any(comparison.evaluate(node, other_node) for comparison in comparison_adjectives) for other_node in group)
-        super().__init__(name, comparison_adjective_names, nodes_group_pointer_adjective_name, explanation, tactics, evaluator)
+        super().__init__(name, comparison_adjective_names, nodes_group_pointer_adjective_name, explanation, tactics, evaluator, explain_with_adj_if = explain_with_adj_if)
 
 class MinRankAdjective(_RankAdjective):
-    def __init__(self, name: str, comparison_adjective_names: List[str], nodes_group_pointer_adjective_name: str, tactics: List['Tactic'] | None = None):
+    def __init__(self, name: str, comparison_adjective_names: List[str], nodes_group_pointer_adjective_name: str, tactics: List['Tactic'] | None = None,
+                 *, explain_with_adj_if : tuple[If, str, str | None] = None):
         """
         Initialize the MinRankAdjective.
         Evaluates to true if any of the comparison adjectives is true for the node when compared to all the other nodes in the group.
@@ -594,6 +657,9 @@ class MinRankAdjective(_RankAdjective):
         :type nodes_group_pointer_adjective_name: str
         :param tactics: List of tactics to be applied to the adjective, optional.
         :type tactics: List['Tactic'] | None
+        :param explain_with_adj_if: A tuple with an If object, a first adjective name and a second, optional, adjective name. 
+            If the parameter is provided and the If is True, the explanation will be given with the first adjective provided, else with the second.
+        :type explain_with_adj_if: tuple[If, str, str | None] | None, optional
 
         The MinRankAdjective represents the property of having the minimum rank
         within a group based on a given comparison adjective.
@@ -602,4 +668,4 @@ class MinRankAdjective(_RankAdjective):
             RankAssumption('min', name, comparison_adjective_names, nodes_group_pointer_adjective_name),
             GroupComparison(comparison_adjective_names, nodes_group_pointer_adjective_name, positive_implication=False))
         evaluator = lambda node, comparison_adjectives, group: all(any(comparison.evaluate(other_node, node) for comparison in comparison_adjectives) for other_node in group)
-        super().__init__(name, comparison_adjective_names, nodes_group_pointer_adjective_name, explanation, tactics, evaluator)
+        super().__init__(name, comparison_adjective_names, nodes_group_pointer_adjective_name, explanation, tactics, evaluator, explain_with_adj_if = explain_with_adj_if)
