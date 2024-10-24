@@ -18,7 +18,8 @@ class ArgumentationFramework:
     :ivar framework_specific_settings: A boolean indicating if framework-specific settings are used.
     """
     
-    def __init__(self, *, refer_to_nodes_as: str, adjectives: List['Adjective'] = None,
+    def __init__(self, *, refer_to_nodes_as: str, 
+                 adjectives: List['Adjective'] = None, main_explanation_adjective: str = None,
                  tactics: List[Union['Tactic', Tuple['Tactic', str]]] = None,
                  settings: Dict = None):
         """
@@ -26,12 +27,15 @@ class ArgumentationFramework:
         
         :param refer_to_nodes_as: How to refer to nodes when printing explanations, e.g., "node", "move", "position".
         :param adjectives: List of :class:`Adjective` objects for the framework.
+        :param main_explanation_adjective: The name of the adjective which explanations may arise first from. 
+            The main adjective will be used if no adjective is specified in the explanation request.
         :param tactics: List of explanation tactics for the framework. Can be general or adjective-specific.
         :param settings: Dictionary of framework-specific settings.
         """
         self.refer_to_nodes_as = refer_to_nodes_as
         self.adjectives: Dict[str, 'Adjective'] = {}
         self.add_adjectives(adjectives or [])
+        self.set_main_adjective(main_adjective)
         self.general_explanation_tactics = {}
         self.add_explanation_tactics(tactics or [])
         self.framework_specific_settings = False
@@ -63,6 +67,12 @@ class ArgumentationFramework:
         """
         if not self.framework_specific_settings:
             self.settings = settings
+
+    def set_main_adjective(self, adjective_name: str) -> None:
+        """
+        Set the main adjective for the framework.
+        """
+        self.main_adjective = adjective_name
 
     def add_adjective(self, adjective: 'Adjective') -> None:
         """

@@ -71,6 +71,8 @@ class MiniMaxExplainer:
                     MinRankAdjective("worst", "better than", "siblings"),
                 ],
 
+                main_explanation_adjective = "best",
+
                 settings = {
                     'explanation_depth': 3 ,
                     'print_implicit_assumptions': True,
@@ -129,6 +131,8 @@ class MiniMaxExplainer:
                     MinRankAdjective("the best the opponent can do", "better than", "as possible alternative moves"),
                 ],
                 
+                main_explanation_adjective = "the best",
+
                 tactics=[
                     SubstituteQuantitativeExplanations("it leads to a better position")
                 ],

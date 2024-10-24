@@ -15,7 +15,7 @@ if game == 'tic_tac_toe':
     interface_class = TicTacToeGradioInterface
 elif game == 'breakthrough':
     ai_scoring_function = breakthrough_scoring_function
-    max_depth = 1
+    max_depth = 4
     game_class = Breakthrough
     interface_class = BreakthroughGradioInterface
 

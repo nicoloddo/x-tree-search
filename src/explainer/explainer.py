@@ -101,7 +101,7 @@ class ArgumentativeExplainer:
         else:
             return adjective.evaluate(node)
 
-    def explain(self, node: Any, adjective_name: str, comparison_node: Any = None, print_context = True, *, 
+    def explain(self, node: Any, adjective_name: str = None, comparison_node: Any = None, print_context = True, *, 
                 with_framework: str = None, explanation_depth: int = None, print_depth: int = None) -> Any:
         """
         Generate a propositional logic explanation for why a node has a specific adjective.
@@ -145,7 +145,7 @@ class ArgumentativeExplainer:
             if print_depth is not None:
                 self.framework.settings.print_depth = print_depth
 
-            adjective = self.framework.get_adjective(adjective_name)
+            adjective = self.framework.get_adjective(adjective_name or self.framework.main_explanation_adjective)
             if adjective.skip_statement:
                 return "This adjective's explanation is not allowed with this framework because skip_statement is True."
             

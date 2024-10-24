@@ -230,7 +230,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
         ai_explanation = self.ai_explanation_components["explanation_output"].value
         explaining_question = self.ai_explanation_components["explaining_question"].value
 
-        adjective = "the best"
+        adjective = explainer.framework.main_explanation_adjective
         ai_explanation, explaining_question, current_node_id, current_adjective, current_comparison_id = self.explainer_interface.ai_explainer.update_ai_explanation(game, explainer, None, adjective)
 
         return game, board_gallery, showing_state, status, ai_explanation, show_node_id, adjective, explaining_question, current_node_id, current_adjective, current_comparison_id
