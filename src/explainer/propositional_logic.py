@@ -16,7 +16,11 @@ class LogicalExpression(ABC):
         self.evaluation = None
 
         self.record = None
-
+    
+    @classmethod
+    def format_node(cls, node):
+        return f"::node::({node.id})[{node.game_tree_node_string}]" if cls.hyperlink_mode else str(node)
+    
     @classmethod
     def set_hyperlink_mode(cls, value: bool, tree_node_cls = None) -> bool:
         if value == True:
@@ -94,27 +98,25 @@ class Proposition(LogicalExpression):
             to_string += f" ({self.additional_info})"
         return to_string
 
-    def build_str_components(self) -> None:        
-        def format_node(node):
-            return f"::node::({node.id})[{node.game_tree_node_string}]" if self.hyperlink_mode else str(node)
+    def build_str_components(self) -> None:
 
         verb_number = 'singular' if self.subject is None or not isinstance(self.subject, list) else 'plural'
         
         if self.subject is None:
             subject = "::node::(None)[]" if self.hyperlink_mode else '?'
         elif self.tree_node_cls is not None and isinstance(self.subject, self.tree_node_cls):
-            subject = format_node(self.subject)
+            subject = self.format_node(self.subject)
         elif isinstance(self.subject, list):
-            subject = ', '.join(format_node(item) if self.tree_node_cls is not None and isinstance(item, self.tree_node_cls) else str(item) for item in self.subject)
+            subject = ', '.join(self.format_node(item) if self.tree_node_cls is not None and isinstance(item, self.tree_node_cls) else str(item) for item in self.subject)
         else:
             subject = self.subject
 
         if self.object is None:
             object = ""
         elif self.tree_node_cls is not None and isinstance(self.object, self.tree_node_cls):
-            object = " " + format_node(self.object)
+            object = " " + self.format_node(self.object)
         elif isinstance(self.object, list):
-            object = " " + ', '.join(format_node(item) if self.tree_node_cls is not None and  isinstance(item, self.tree_node_cls) else str(item) for item in self.object)
+            object = " " + ', '.join(self.format_node(item) if self.tree_node_cls is not None and  isinstance(item, self.tree_node_cls) else str(item) for item in self.object)
         else:
             object = " " + self.object
 
@@ -126,9 +128,9 @@ class Proposition(LogicalExpression):
         if self.evaluation is None:
             evaluation = '?'
         elif self.tree_node_cls is not None and isinstance(self.evaluation, self.tree_node_cls):
-            evaluation = format_node(self.evaluation)
+            evaluation = self.format_node(self.evaluation)
         elif isinstance(self.evaluation, list):
-            evaluation = ', '.join(format_node(item) if self.tree_node_cls is not None and isinstance(item, self.tree_node_cls) else str(item) for item in self.evaluation)
+            evaluation = ', '.join(self.format_node(item) if self.tree_node_cls is not None and isinstance(item, self.tree_node_cls) else str(item) for item in self.evaluation)
         else:
             evaluation = self.evaluation
 
