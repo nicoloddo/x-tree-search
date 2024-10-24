@@ -167,8 +167,8 @@ class ArgumentativeExplainer:
             return explanation
 
         except CannotBeEvaluated as e:
-            to_return = f"The adjective \"{adjective_name}\" cannot be evaluated on the {self.framework.refer_to_nodes_as} {node}."
-            if adjective_name != e.adjective_name:
+            to_return = f"The adjective \"{adjective_name}\" cannot be evaluated on the {self.framework.refer_to_nodes_as} {Proposition.format_node(node)}."
+            if e.adjective_name is None or adjective_name != e.adjective_name:
                 to_return += f" That is because {e.message}"
             return to_return
         except Exception as e:
