@@ -110,7 +110,7 @@ class GameJupyterInterface(GameInterface):
         # def handle_click(b):
         #     try:
         #         current_player = self.game.get_current_player()
-        #         sign = self.game.model.agents[current_player.id, 1]
+        #         sign = self.game.model.agents[current_player.id, 0]
         #         inputs = {'what': sign, 'where': (row, col), 'on': "board"}
         #         asyncio.create_task(current_player.play(self.game, inputs))
 
@@ -163,7 +163,7 @@ class GameJupyterInterface(GameInterface):
         if winner is None:
             self.status_label.value = "Game Over! It's a draw!"
         else:
-            self.status_label.value = f"Game Over! Player {self.game.model.agents[winner, 1]} wins!"
+            self.status_label.value = f"Game Over! Player {self.game.model.agents[winner, 0]} wins!"
 
     def update_next_player_status(self) -> None:
         """
@@ -172,7 +172,7 @@ class GameJupyterInterface(GameInterface):
         Changes the status label to indicate which player should make
         the next move.
         """
-        next_player = self.game.model.agents[self.game.get_current_player().id, 1]
+        next_player = self.game.model.agents[self.game.get_current_player().id, 0]
         self.status_label.value = f"Player {next_player}'s turn"
 
     def clear_board_output(self) -> None:

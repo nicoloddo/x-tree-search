@@ -149,9 +149,11 @@ class GameTree(Tree):
             if self.action is None:
                 return "(No action recorded)"
             node_string_format = self.belonging_tree.node_string_format
+            game = self.belonging_tree.game
 
             composed_string = node_string_format.format(
                 who=str(self.action['who']),
+                who_game_identifier=game.agents[self.action['who']][0],
                 what=str(self.action['what']),
                 where=str(self.action['where']),
                 on=str(self.action['on']),

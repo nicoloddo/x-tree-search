@@ -89,7 +89,7 @@ class Breakthrough(Game):
     
     @property
     def node_string_format(self):
-        return "{what_before} in {what}"
+        return "{who_game_identifier}{what_before} in {what}"
     
     def constrain_action_around_piece(self, what, what_before):
         what = eval(what)
@@ -130,7 +130,7 @@ class Breakthrough(Game):
     
     def _game_model_definition(self) -> GameModel:
         gm = GameModel( 
-        agents_number=2, default_agent_features=['not starter', self.idx_to_color[0]], additional_agent_features=[['starter'], [self.idx_to_color[1]]], 
+        agents_number=2, default_agent_features=[self.idx_to_color[0], 'not starter'], additional_agent_features=[[self.idx_to_color[1]], ['starter']], 
         agent_features_descriptions="2 players with feature 1 indicating who is starting, and feature 2 indicating their pieces' color.",
         game_name="breakthrough")
         gm.add_action_space("board", dimensions=list(self.board_shape), default_labels=[FREE_LABEL], additional_labels=[['w', 'b']], 
@@ -141,8 +141,8 @@ class Breakthrough(Game):
         # Disable actions on the agent feature space.
         gm.disable_actions(on="agent")
         gm.disable_actions(on="board")
-        gm.agents[1, 0] = 'starter'
-        gm.agents[1, 1] = self.idx_to_color[1]
+        gm.agents[1, 0] = self.idx_to_color[1]
+        gm.agents[1, 1] = 'starter'
 
         # Initialize the board and pieces
         first_two_rows_color = self.color_side[0]
@@ -191,15 +191,15 @@ class Breakthrough(Game):
         # Both are already parsed into a tuple of coordinates
 
         # Set rules
-        gm.action_is_violation_if(lambda who, where, what, game: not game.started and game.agents[who][0] != 'starter', rule_description="This is not the starting player and this is the first turn.")
+        gm.action_is_violation_if(lambda who, where, what, game: not game.started and game.agents[who][1] != 'starter', rule_description="This is not the starting player and this is the first turn.")
         gm.action_is_violation_if(lambda who, where, what, game: game.started and who == game.actions[-1]['who'], rule_description="Players cannot play two times consecutively.")
-        gm.action_is_violation_if(lambda who, where, what, game: game.agents[who][1] != game.action_spaces["board"][where], "pieces", rule_description="Players cannot move pieces of the other player.")
+        gm.action_is_violation_if(lambda who, where, what, game: game.agents[who][0] != game.action_spaces["board"][where], "pieces", rule_description="Players cannot move pieces of the other player.")
         gm.action_is_violation_if(
-            lambda who, where, what, game: game.action_spaces["board"][what] == game.agents[who][1],
+            lambda who, where, what, game: game.action_spaces["board"][what] == game.agents[who][0],
             rule_description="Players cannot move to a space occupied by their own piece."
         )
         gm.action_is_violation_if(
-            lambda who, where, what, game: False if abs(what[0] - where[0]) == abs(what[1] - where[1]) else game.action_spaces["board"][what] != game.agents[who][1] and game.action_spaces["board"][what] != self.free_label,
+            lambda who, where, what, game: False if abs(what[0] - where[0]) == abs(what[1] - where[1]) else game.action_spaces["board"][what] != game.agents[who][0] and game.action_spaces["board"][what] != self.free_label,
             "pieces",
             rule_description="Players cannot move to a space occupied by an enemy piece, unless it's a diagonal movement."
         )
@@ -230,7 +230,7 @@ class Breakthrough(Game):
             eaten_piece_index = self._get_piece_index(game, board_coordinates, eaten_color)
             game.action_spaces["pieces"][eaten_piece_index] = str((-1, -1))
         gm.action_trigger_consequence_if(
-            lambda who, where, what, game: game.action_spaces["board"][what] != FREE_LABEL and game.agents[who][1] != game.action_spaces["board"][what],
+            lambda who, where, what, game: game.action_spaces["board"][what] != FREE_LABEL and game.agents[who][0] != game.action_spaces["board"][what],
             consequence=piece_eating, 
             rule_description="If the destination space is occupied by an enemy piece, the enemy piece is eaten.")
         
@@ -291,7 +291,7 @@ class Breakthrough(Game):
         :rtype: Player class
         """
         if not self.started:
-            return next(player for id, player in self.players.items() if self.model.agents[id, 0] == 'starter')
+            return next(player for id, player in self.players.items() if self.model.agents[id, 1] == 'starter')
         else:
             last_player = self.model.actions[-1]['who']
             return next(player for player in self.players.values() if player.id != last_player) 

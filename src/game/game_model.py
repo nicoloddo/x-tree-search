@@ -22,7 +22,9 @@ class GameModel:
         Args:
             
             agents_number(int): Amount of agents that play the game.
-            default_agent_features (list of str)): The default features of each agent. Be aware that this will fix the type of the features. 
+            default_agent_features (list of str)): The default features of each agent. Be aware that this will fix the type of the features.
+                The first agent features should be an identifier contextualized to the game, such as the color of the pieces in a board game.
+                This is because it will be used for display purposes.
                 If you use a single char, a single char will be expected als in the additional_agent_features.      
 
             additional_agent_features (list of list of strings): For each agent feature, specify other possible labels that can be assigned to each.
