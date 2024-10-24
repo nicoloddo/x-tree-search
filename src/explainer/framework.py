@@ -35,7 +35,7 @@ class ArgumentationFramework:
         self.refer_to_nodes_as = refer_to_nodes_as
         self.adjectives: Dict[str, 'Adjective'] = {}
         self.add_adjectives(adjectives or [])
-        self.set_main_adjective(main_adjective)
+        self.set_main_explanation_adjective(main_explanation_adjective)
         self.general_explanation_tactics = {}
         self.add_explanation_tactics(tactics or [])
         self.framework_specific_settings = False
@@ -68,11 +68,11 @@ class ArgumentationFramework:
         if not self.framework_specific_settings:
             self.settings = settings
 
-    def set_main_adjective(self, adjective_name: str) -> None:
+    def set_main_explanation_adjective(self, adjective_name: str) -> None:
         """
         Set the main adjective for the framework.
         """
-        self.main_adjective = adjective_name
+        self.main_explanation_adjective = adjective_name
 
     def add_adjective(self, adjective: 'Adjective') -> None:
         """
