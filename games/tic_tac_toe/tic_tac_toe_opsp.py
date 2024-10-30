@@ -1,6 +1,8 @@
 import pyspiel
 import numpy as np
 
+from src.game.game import Game
+
 FREE_LABEL = ' '
 class TicTacToe(Game):
     def __init__(self, players):
@@ -24,7 +26,7 @@ class TicTacToe(Game):
     
     @property
     def started(self):
-        return self.state == self.gm.new_initial_state()
+        return self.state.serialize() == self.gm.new_initial_state().serialize()
     
     @property
     def ended(self):
