@@ -17,8 +17,8 @@ class TicTacToeOpSp(TicTacToe):
     def _game_model_definition(self):
         game = pyspiel.load_game("tic_tac_toe")
         self.state = game.new_initial_state()
-        self._agents = np.array([[self.players[0].id, 'X'],
-                                 [self.players[1].id, 'O']])
+        self._agents = np.array([['X'],
+                                 ['O']])
         self._action_spaces = AutoCallDict({
             "board": lambda: self.opsp_state_to_action_space(self.state)
         })
@@ -43,33 +43,22 @@ class TicTacToeOpSp(TicTacToe):
             board.append(current_row)
         
         return np.array(board)
-    
-    @property
-    def started(self):
-        return self.state.serialize() == self.gm.new_initial_state().serialize()
-    
-    @property
-    def ended(self):
-        return self.state.is_terminal()
 
-    @property
-    def model(self):
-        return self.gm
-    
-    @property
-    def action_spaces(self):
-        return self._action_spaces
-    
-    @property
-    def agents(self):
-        return self._agents
+    def act(self, action=None, *, opsp_action=None, player=None) -> None:
 
-    def act(self, action, manual_insert = False) -> None:
+        if opsp_action is not None:
+            if player is None:
+                raise SyntaxError("When providing an opsp action you need to provide the player id as well.")
+            self.last_player = player
+            self.state.apply_action(opsp_action)
+            return
+        else:
+            if action is None:
+                raise ValueError("No action to perform was given.")
+        
         player = action['who']
+        self.last_player = player
         coordinates = action['where']
-
-        if not isinstance(self.players[player], User) and not manual_insert:
-            raise ValueError("Only users can utilize the act method in TicTacToeOpSp.")
 
         if player == 0:
             sign = 'x'
@@ -93,6 +82,27 @@ class TicTacToeOpSp(TicTacToe):
         else:
             raise ValueError(f"The action {action_str} is not legal. Available actions are: {[self.state.action_to_string(player, action) for action in legal_actions]}")
     
+    # Overrides for OpSp game classes:
+    @property
+    def started(self):
+        return self.state.serialize() == self.gm.new_initial_state().serialize()
+    
+    @property
+    def ended(self):
+        return self.state.current_player() == pyspiel.PlayerId.TERMINAL
+
+    @property
+    def model(self):
+        return self.gm
+    
+    @property
+    def action_spaces(self):
+        return self._action_spaces
+    
+    @property
+    def agents(self):
+        return self._agents
+    
     def get_current_player(self):
         return self.players[self.state.current_player()]
     
@@ -100,4 +110,4 @@ class TicTacToeOpSp(TicTacToe):
         if np.all(self.action_spaces["board"] != FREE_LABEL):
             return None
         else:
-            return self.model.actions[-1]['who']
+            return self.last_player

@@ -65,7 +65,7 @@ class AIAgentOpSp(GameAgent):
             return
         
         _, action = self.core.run(game.model, game.state, self.id)
-        game.state.apply_action(action)
+        game.act(opsp_action=action, player=self.id)
 
     @property
     def choice(self):
