@@ -36,7 +36,7 @@ class TicTacToeJupyterInterface(GameJupyterInterface):
         def handle_click(b):
             try:
                 current_player = self.game.get_current_player()
-                sign = self.game.model.agents[current_player.id, 0]
+                sign = self.game.agents[current_player.id, 0]
                 inputs = {'what': sign, 'where': (row, col), 'on': "board"}
                 asyncio.create_task(current_player.play(self.game, inputs))
 

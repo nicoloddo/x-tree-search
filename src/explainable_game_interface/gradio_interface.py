@@ -330,9 +330,9 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             if winner is None:
                 return "Game Over! It's a draw!"
             else:
-                return f"Game Over! Player {game.model.agents[winner, 0]} wins!"
+                return f"Game Over! Player {game.agents[winner, 0]} wins!"
         else:
-            next_player = game.model.agents[game.get_current_player().id, 0]
+            next_player = game.agents[game.get_current_player().id, 0]
             return f"Player {next_player}'s turn"
     
     def restart_game(self, game, explainer):

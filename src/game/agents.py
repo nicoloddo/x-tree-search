@@ -54,18 +54,22 @@ class AIAgent(GameAgent):
     def choice(self):
         return self.core.last_choice
     
-class OpSpAIAgent(GameAgent):
+class AIAgentOpSp(GameAgent):
     def __init__(self, *, agent_id, core):
         super().__init__(agent_id=agent_id)
         self.core = core
 
-    async def play(self, game, state, inputs=None):
+    async def play(self, game, inputs=None):
         #await asyncio.sleep(0.1)
         if game.ended:
             return
         
-        _, action = self.core.run(game, state, self.id)
-        game.apply_action(action)
+        _, action = self.core.run(game.model, game.state, self.id)
+        game.state.apply_action(action)
+
+    @property
+    def choice(self):
+        return self.core.last_choice
 
 
 class User(GameAgent):

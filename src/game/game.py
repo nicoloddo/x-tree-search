@@ -25,7 +25,6 @@ class Game:
         self.main_action_space_id = main_action_space_id
         self.tree_action_space_id = tree_action_space_id or main_action_space_id
 
-        self.gm = self._game_model_definition()
         self.players = {} # Dictionary that holds the players as 'id': player
         self._set_players(players)
 
@@ -44,8 +43,10 @@ class Game:
         self.parse_what_input = parse_what_input if parse_what_input else lambda what_str: what_str
         self.parse_where_input = parse_where_input if parse_where_input else lambda where_str: where_str
 
-        self.gm.parse_what_input = self.parse_what_input
-        self.gm.parse_where_input = self.parse_where_input
+        self.gm = self._game_model_definition()
+        if isinstance(self.gm, GameModel):
+            self.gm.parse_what_input = self.parse_what_input
+            self.gm.parse_where_input = self.parse_where_input
 
     def restart(self):
         """
