@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, List
+import numpy as np
 
 from src.explainer.common.exceptions import CannotBeEvaluated
 
@@ -316,9 +317,9 @@ class BooleanAdjective(Adjective):
         :rtype: bool
         :raises ValueError: If the getter doesn't return a boolean value.
         """
-        if not isinstance(self.getter(node), bool):
+        if not isinstance(self.getter(node), bool) and not isinstance(self.getter(node), np.bool_):
             raise ValueError("Boolean adjectives should evaluate as a bool.")
-        return self.getter(node)
+        return bool(self.getter(node))
 
 class PointerAdjective(Adjective):
     """Represents a pointer adjective that references a specific attribute or object."""
