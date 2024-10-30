@@ -1,5 +1,7 @@
 MAX_ENVIRONMENT_SIZE_TO_PRINT = 30
 
+from typing import Callable
+
 from src.game.utils import join_arrays_respective_elements, flatten_list
 
 import numpy as np
@@ -60,7 +62,7 @@ class GameModel:
         self.agents = self.action_spaces['agent']
 
         ''' Default endgame dynamics'''
-        self.endgame_dynamics = lambda: False # This function is checked after every action, if it returns True, the self.ended is changed to True
+        self.endgame_dynamics = lambda game: False # This function is checked after every action, if it returns True, the self.ended is changed to True
 
         ''' Default rule: '''
         self.action_is_violation_if(lambda who, where, what, game: game.ended, "general", rule_description="Nothing is allowed if the game is ended.") # Default rule
@@ -279,7 +281,7 @@ class GameModel:
         return previous_action_spaces
 
     ''' Rules definition'''
-    def action_trigger_consequence_if(self, rule, action_space_id = "general", consequence: callable = None, *, rule_description):
+    def action_trigger_consequence_if(self, rule, action_space_id = "general", consequence: Callable | str | None = None, *, rule_description):
         """
         Adds a new rule to the game model after validating the rule's signature and a test run to ensure it returns a boolean.
         Rules are checked in the order they were added. Consequences are executed in the order they were added.
@@ -528,7 +530,7 @@ class GameModel:
         return to_return
 
 class ActionSpace(np.ndarray):
-    def __new__(cls, *, dimensions=None, default_labels=None, numpy_matrix=None, trust_matrix_input=False, available_labels, dimensions_descriptions, enable_actions = True):
+    def __new__(cls, *, dimensions=None, default_labels=None, numpy_matrix=None, trust_matrix_input=False, available_labels, dimensions_descriptions, enable_actions = None):
         """
         Create a numpy array with the given dimensions and default values for each row.
         
@@ -572,7 +574,7 @@ class ActionSpace(np.ndarray):
         obj.available_labels = available_labels
         obj.available_labels_flat = available_labels_flat
         obj.dimensions_descriptions = dimensions_descriptions
-        obj.actions_enabled = enable_actions     
+        obj.actions_enabled = enable_actions or True   
 
         return obj
 
