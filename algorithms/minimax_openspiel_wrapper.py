@@ -66,8 +66,8 @@ def track_state_actions(tracker: StateActionTracker):
 from open_spiel.python.algorithms import minimax
 class MiniMax:
     def __init__(self, score_function=None, *, max_depth=3, start_with_maximizing=True):
-        t = StateActionTracker()
-        minimax._alpha_beta = t.track(minimax._alpha_beta)
+        self.t = StateActionTracker()
+        minimax._alpha_beta = self.t.track(minimax._alpha_beta)
 
         self.score_function = score_function
         self.max_depth = max_depth
