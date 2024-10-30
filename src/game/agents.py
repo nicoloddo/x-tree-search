@@ -64,7 +64,7 @@ class OpSpAIAgent(GameAgent):
         if game.ended:
             return
         
-        _, action = self.core.run(game, state)
+        _, action = self.core.run(game, state, self.id)
         game.apply_action(action)
 
 
