@@ -75,6 +75,14 @@ class Game:
         return self.gm
     
     @property
+    def action_spaces(self):
+        return self.gm.action_spaces
+    
+    @property
+    def agents(self):
+        return self.gm.agents
+    
+    @property
     def tree(self):
         return GameTree(self.gm, self.tree_action_space_id, self.node_string_format)
     

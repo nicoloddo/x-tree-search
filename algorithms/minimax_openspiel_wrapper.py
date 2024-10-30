@@ -62,3 +62,30 @@ def track_state_actions(tracker: StateActionTracker):
             return func(state, depth, *args, **kwargs)
         return wrapper
     return decorator
+
+from open_spiel.python.algorithms import minimax
+class MiniMax:
+    def __init__(self, score_function=None, *, max_depth=3, start_with_maximizing=True):
+        t = StateActionTracker()
+        minimax._alpha_beta = t.track(minimax._alpha_beta)
+
+        self.score_function = score_function
+        self.max_depth = max_depth
+        self.start_with_maximizing = start_with_maximizing
+
+    def run(self, game, state, running_player_id, max_depth=None):
+        """
+        :param game: The game to run the algorithm on.
+        :param state: The state to start the search from.
+        :param running_player_id: The id of the player that is running the algorithm.
+        :param max_depth: The maximum depth to search to.
+        """
+        if max_depth is None:
+            max_depth = self.max_depth
+        
+        if self.start_with_maximizing:
+            maximizing_player_id = running_player_id
+        else:
+            maximizing_player_id = abs(running_player_id - 1) # 0 if player 1, 1 if player 0: the other player
+
+        return minimax.alpha_beta_search(game, state, self.score_function, maximum_depth=max_depth, maximizing_player_id=maximizing_player_id)

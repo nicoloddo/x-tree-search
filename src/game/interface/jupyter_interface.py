@@ -61,7 +61,7 @@ class GameJupyterInterface(GameInterface):
         :return: A vertical box containing the game board, status label, and output area
         :rtype: widgets.VBox
         """
-        main_action_space_shape = self.game.model.action_spaces[self.game.main_action_space_id].shape
+        main_action_space_shape = self.game.action_spaces[self.game.main_action_space_id].shape
         for i in range(main_action_space_shape[0]):
             for j in range(main_action_space_shape[1]):
                 button = widgets.Button(
@@ -142,7 +142,7 @@ class GameJupyterInterface(GameInterface):
         whether the game has ended or it's the next player's turn.
         """
         # Update board buttons
-        board_state = self.game.model.action_spaces[self.game.main_action_space_id]
+        board_state = self.game.action_spaces[self.game.main_action_space_id]
         for (i, j), button in self.buttons.items():
             button.description = board_state[i, j]
 
@@ -163,7 +163,7 @@ class GameJupyterInterface(GameInterface):
         if winner is None:
             self.status_label.value = "Game Over! It's a draw!"
         else:
-            self.status_label.value = f"Game Over! Player {self.game.model.agents[winner, 0]} wins!"
+            self.status_label.value = f"Game Over! Player {self.game.agents[winner, 0]} wins!"
 
     def update_next_player_status(self) -> None:
         """
@@ -172,7 +172,7 @@ class GameJupyterInterface(GameInterface):
         Changes the status label to indicate which player should make
         the next move.
         """
-        next_player = self.game.model.agents[self.game.get_current_player().id, 0]
+        next_player = self.game.agents[self.game.get_current_player().id, 0]
         self.status_label.value = f"Player {next_player}'s turn"
 
     def clear_board_output(self) -> None:

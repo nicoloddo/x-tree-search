@@ -27,7 +27,7 @@ class GameCmdInterface(GameInterface):
 
         self.output(self.game.tree.get_current_state().state)
 
-        while not self.game.model.ended and not self.game.stop:
+        while not self.game.ended and not self.game.stop:
             await asyncio.gather(*(player.play(self.game) for player in self.game.players.values()))
             await asyncio.sleep(0.1)  # Reduced sleep time for more responsive updates
 
@@ -38,14 +38,14 @@ class GameCmdInterface(GameInterface):
         self.output("")
         if self.game.stop:
             self.output("Game paused.")
-        elif self.game.model.ended:
+        elif self.game.ended:
             self.output("Game finished.")
         self.output("")
         self.output(self.game.tree.get_current_state().state)
 
     async def _monitor_game_state(self):
         """Periodically checks the game's current state and prints it if it has changed."""
-        while not self.game.model.ended and not self.game.stop:
+        while not self.game.ended and not self.game.stop:
             current_state = self.game.tree.get_current_state().state
 
             if not np.array_equal(current_state, self._previous_state):

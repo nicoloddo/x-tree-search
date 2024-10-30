@@ -29,7 +29,7 @@ class AIAgent(GameAgent):
             raise SyntaxError("The core of a GameAgent must have a 'nodes' attribute reflecting the nodes of the agent.")
 
     async def play(self, game, inputs=None):
-        await asyncio.sleep(0.1)
+        #await asyncio.sleep(0.1)
         if game.gm.ended:
             return
     
@@ -53,6 +53,20 @@ class AIAgent(GameAgent):
     @property
     def choice(self):
         return self.core.last_choice
+    
+class OpSpAIAgent(GameAgent):
+    def __init__(self, *, agent_id, core):
+        super().__init__(agent_id=agent_id)
+        self.core = core
+
+    async def play(self, game, state, inputs=None):
+        #await asyncio.sleep(0.1)
+        if game.ended:
+            return
+        
+        _, action = self.core.run(game, state)
+        game.apply_action(action)
+
 
 class User(GameAgent):
     def __init__(self, *, agent_id, ask_what=True, ask_where=True, pause_first_turn=False):
