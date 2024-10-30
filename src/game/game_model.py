@@ -198,7 +198,7 @@ class GameModel:
                         if not constraints['what'](what, what_before):
                             continue
                     
-                    break_rules, _, _ = self.__check_rules(who, where, what, action_space, action_space_id, verbose=False)
+                    break_rules, broken_rule_string, _ = self.__check_rules(who, where, what, action_space, action_space_id, verbose=False)
                     if not break_rules:
                         # found available action
                         theoretical_game_model = copy.deepcopy(self)
@@ -374,11 +374,13 @@ class GameModel:
                 raise ValueError("Consequence function must accept exactly these arguments: action, game")
 
         if action_space_id == "general":
-            def wrapped(who, where, what, game=self):
+            def wrapped_general(who, where, what, game):
                 return game.__wrapped_rule(rule, who, None, what, None)
+            wrapped = wrapped_general
         else:
-            def wrapped(who, where, what, game=self):
+            def wrapped_specific(who, where, what, game):
                 return game.__wrapped_rule(rule, who, where, what, action_space_id)
+            wrapped = wrapped_specific
 
         self.rules[action_space_id].append({'description':rule_description, 'trigger':wrapped, 'consequence':consequence})
 
