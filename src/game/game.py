@@ -18,8 +18,9 @@ nest_asyncio.apply()
 class Game:
     GameModel.verbose = False
 
-    def __init__(self, child_init_params, *, players, main_action_space_id, tree_action_space_id=None,
+    def __init__(self, child_init_params, *, players, main_action_space_id, tree_action_space_id=None, fast_check_rules=True,
                  ask_what=None, ask_where=None, what_question=None, where_question=None, parse_what_input=None, parse_where_input=None):
+        GameModel.fast_check_rules = fast_check_rules
         self.child_init_params = child_init_params
         self.main_action_space_id = main_action_space_id
         self.tree_action_space_id = tree_action_space_id or main_action_space_id

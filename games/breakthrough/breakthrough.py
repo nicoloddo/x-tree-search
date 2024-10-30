@@ -34,7 +34,7 @@ class Breakthrough(Game):
 
         return board_state
 
-    def __init__(self, *, players=None, interface_mode='gradio', interface_hyperlink_mode=True):
+    def __init__(self, *, players=None, interface_mode='gradio', interface_hyperlink_mode=True, fast_check_rules=True):
         """
         Initialize the Breakthrough game.
 
@@ -42,14 +42,15 @@ class Breakthrough(Game):
         :type interface_mode: str
         :param players: The players to use for the game.
         :type players: list
+        :param fast_check_rules: Whether to use fast check rules for the Game Model. This will stop the check of rules as soon as a rule is violated.
+        :type fast_check_rules: bool
         """
-        
         _child_init_params = {
             'players': players,
             'interface_mode': interface_mode,
             'interface_hyperlink_mode': interface_hyperlink_mode
         }
-        super().__init__(_child_init_params, players=players, main_action_space_id="board", tree_action_space_id="pieces",
+        super().__init__(_child_init_params, players=players, main_action_space_id="board", tree_action_space_id="pieces", fast_check_rules=fast_check_rules,
                          where_question="Insert the coordinates of the piece you want to move [insert 'exit' to exit] [click enter with no input to refresh]: ",
                          what_question="Insert the coordinates of the destination space [insert 'exit' to exit] [click enter with no input to refresh]: ",
                          parse_where_input=ut_parse_where_input,

@@ -7,14 +7,16 @@ from src.game.interface.cmd_interface import GameCmdInterface
 
 FREE_LABEL = ' '
 class TicTacToe(Game):
-    def __init__(self, *, players=None, interface_mode='gradio', interface_hyperlink_mode=True):
+    def __init__(self, *, players=None, interface_mode='gradio', interface_hyperlink_mode=True, fast_check_rules=True):
         """
         Initialize the TicTacToe game.
 
         :param interface_mode: The interface mode to use for the game.
         :type interface_mode: str
         :param players: The players to use for the game.
-        :type players: list
+        :type players: list  
+        :param fast_check_rules: Whether to use fast check rules for the Game Model. This will stop the check of rules as soon as a rule is violated.
+        :type fast_check_rules: bool
         """
         
         _child_init_params = {
@@ -22,7 +24,7 @@ class TicTacToe(Game):
             'interface_mode': interface_mode,
             'interface_hyperlink_mode': interface_hyperlink_mode
         }
-        super().__init__(_child_init_params, players=players, main_action_space_id="board", ask_what=False)
+        super().__init__(_child_init_params, players=players, main_action_space_id="board", fast_check_rules=fast_check_rules, ask_what=False)
         self.interface_mode = interface_mode
         self.select_interface(interface_mode, interface_hyperlink_mode)
 

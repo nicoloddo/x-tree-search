@@ -11,6 +11,8 @@ import warnings
 
 class GameModel:
     verbose = True
+    fast_check_rules = True
+
     def __init__(self, agents_number, default_agent_features, additional_agent_features, agent_features_descriptions="No description was given.", game_name=""):
         """
         Initializes the GameModel. You need to define the agent features only.
@@ -418,6 +420,8 @@ class GameModel:
                             broken_rules_strings.append("Broke general rule " + str(i+1) + ': ' + rule['description'])
                         else:
                             broken_rules_strings.append("")
+                        if GameModel.fast_check_rules:
+                            break
                     else:
                         consequences.append(rule['consequence'])
                     
@@ -431,6 +435,8 @@ class GameModel:
                             broken_rules_strings.append("Broke rule " + str(i+1) + ': ' + rule['description'])
                         else:
                             broken_rules_strings.append("")
+                        if GameModel.fast_check_rules:
+                            break
                     else:
                         consequences.append(rule['consequence'])
         
