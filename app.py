@@ -6,31 +6,43 @@ from games.tic_tac_toe.interface.gradio_interface import TicTacToeGradioInterfac
 from games.breakthrough.interface.gradio_interface import BreakthroughGradioInterface
 from explainers.alphabeta_explainer import AlphaBetaExplainer
 
-game = 'breakthrough'
+import cProfile
+import pstats
+from pstats import SortKey
 
-if game == 'tic_tac_toe':
-    ai_scoring_function = tic_tac_toe_scoring_function
-    max_depth = 6
-    game_class = TicTacToe
-    interface_class = TicTacToeGradioInterface
-elif game == 'breakthrough':
-    ai_scoring_function = breakthrough_scoring_function
-    max_depth = 4
-    game_class = Breakthrough
-    interface_class = BreakthroughGradioInterface
+if __name__ == '__main__':
+    profiler = cProfile.Profile()
+    profiler.enable()
 
-use_ai_opponent = False
+    game = 'breakthrough'
 
-opponent = AIAgent(agent_id=0, core=MiniMax(ai_scoring_function, max_depth=max_depth, use_alpha_beta=True))
+    if game == 'tic_tac_toe':
+        ai_scoring_function = tic_tac_toe_scoring_function
+        max_depth = 6
+        game_class = TicTacToe
+        interface_class = TicTacToeGradioInterface
+    elif game == 'breakthrough':
+        ai_scoring_function = breakthrough_scoring_function
+        max_depth = 4
+        game_class = Breakthrough
+        interface_class = BreakthroughGradioInterface
 
-game = game_class(players=[opponent, User(agent_id=1)],
-                interface_mode='gradio', 
-                interface_hyperlink_mode=True)
-game.explaining_agent = opponent
+    use_ai_opponent = False
 
-explainer = AlphaBetaExplainer()
+    opponent = AIAgent(agent_id=0, core=MiniMax(ai_scoring_function, max_depth=max_depth, use_alpha_beta=True))
 
-# game and explainer are utilized as States in the interface,
-# thus they are not shared across users.
-interface = interface_class(game, explainer, interface_hyperlink_mode=True)
-interface.start()
+    game = game_class(players=[opponent, User(agent_id=1)],
+                    interface_mode='gradio', 
+                    interface_hyperlink_mode=True)
+    game.explaining_agent = opponent
+
+    explainer = AlphaBetaExplainer()
+
+    # game and explainer are utilized as States in the interface,
+    # thus they are not shared across users.
+    interface = interface_class(game, explainer, interface_hyperlink_mode=True)
+    interface.start()
+    
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats(SortKey.CUMULATIVE)
+    stats.print_stats()

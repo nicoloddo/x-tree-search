@@ -4,6 +4,8 @@ import copy
 import graphviz
 import tempfile
 
+from pathos.pools import ProcessPool as Pool
+
 class MiniMaxNode:
     """
     A wrapper for nodes in the game tree for use with the MiniMax algorithm.
@@ -95,6 +97,8 @@ class MiniMax:
         scoring_function (callable): A function that takes a node state and returns a numerical score.
         use_alpha_beta (bool): Whether to use alpha-beta pruning.
     """
+    multiprocessing_enabled = False
+
     def __init__(self, scoring_function, *, max_depth=3, start_with_maximizing=True, use_alpha_beta=True):
         # Mandatory attributes:
         self.nodes = {} # Holds the nodes with as key their node.node.id
@@ -107,6 +111,7 @@ class MiniMax:
         self.search_root_final = None        
         self.start_with_maximizing = start_with_maximizing
 
+        self.use_alpha_beta = use_alpha_beta
         if use_alpha_beta:
             self.algorithm = self.alphabeta
         else:
@@ -115,11 +120,55 @@ class MiniMax:
     def run(self, state_node, *, max_depth = None, expansion_constraints_self : Dict = None, expansion_constraints_other : Dict = None):
         if max_depth is None:
             max_depth = self.max_depth
+        current_depth = 0
 
         self.search_root = MiniMaxNode(state_node)
         self.nodes = self.search_root.nodes_holder
 
-        best_child, best_value = self.algorithm(self.search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
+        # Expand the root node
+        preprocessing = self.preprocess_node_alphabeta if self.use_alpha_beta else self.preprocess_node_minimax
+        preprocessing(self.search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other, score_function=self.score)
+        is_maximizing_turn = not self.start_with_maximizing
+
+        if self.multiprocessing_enabled:
+            # Use a ProcessPool to parallelize the algorithm calls
+            with Pool() as pool:
+                results = pool.map(
+                    lambda node: self.algorithm(
+                        node, 
+                        is_maximizing_turn,
+                        max_depth=max_depth, 
+                        constraints_maximizer=expansion_constraints_self, 
+                        constraints_minimizer=expansion_constraints_other,
+                        score_function=copy.deepcopy(self.score)
+                    ),
+                    self.search_root.children
+                )
+        else:
+            # Run the algorithm sequentially
+            results = [
+                self.algorithm(
+                    node, 
+                    is_maximizing_turn,
+                    max_depth=max_depth, 
+                    constraints_maximizer=expansion_constraints_self, 
+                    constraints_minimizer=expansion_constraints_other,
+                    score_function=self.score
+                )
+                for node in self.search_root.children
+            ]
+
+        if self.use_alpha_beta and all(self.search_root.children, key=lambda x: x.has_score):
+            # If all children have a score, the node is fully searched
+            self.search_root.fully_searched = True
+
+        # Assign the best_child and best_value back to each node
+        for node, (best_child, best_value) in zip(self.search_root.children, results):
+            node.score_child = best_child
+            node.score = best_value
+
+        best_child = max(self.search_root.children, key=lambda x: x.score)
+        best_value = best_child.score
 
         if best_child is not None:
             #best_child.parent_state = copy.deepcopy(best_child.parent.node.state)
@@ -127,26 +176,56 @@ class MiniMax:
             self.last_choice = best_child            
         return best_child, best_value
     
-    def minimax(self, node, is_maximizing, current_depth = 0, *, max_depth, constraints_maximizer=None, constraints_minimizer=None):
+    def preprocess_node_minimax(self, node, is_maximizing, current_depth = 0, *, max_depth, constraints_maximizer=None, constraints_minimizer=None, score_function=None):
+        """Processes the node and returns whether the processing should continue."""
         node.maximizing_player_turn = is_maximizing
+
         if current_depth >= max_depth:
-            node.score = self.score(node.node, current_depth)
-            return None, None
+            node.score = score_function(node.node, current_depth)
+            return False
         else:
             with_constraints = constraints_maximizer if is_maximizing else constraints_minimizer
             node.expand(with_constraints)
 
         # If the node is a leaf, or if we reached the max search depth, return its score
         if node.is_leaf:
-            node.score = self.score(node.node, current_depth)
-            return None, None
+            node.score = score_function(node.node, current_depth)
+            return False
         
+        return True
+    
+    def preprocess_node_alphabeta(self, node, is_maximizing, current_depth = 0, alpha = None, beta = None, *, max_depth, constraints_maximizer = None, constraints_minimizer = None, score_function=None):
+        """Processes the node and returns whether the processing should continue."""
+        node.maximizing_player_turn = is_maximizing
+
+        node.alpha = alpha
+        node.beta = beta
+
+        with_constraints = constraints_maximizer if is_maximizing else constraints_minimizer
+        node.expand(with_constraints)
+        
+        # If the node is a leaf, or if we reached the max search depth, return its score
+        if node.is_leaf:
+            node.score = score_function(node.node, current_depth)
+            node.fully_searched = True
+            return False
+        elif current_depth >= max_depth:
+            node.score = score_function(node.node, current_depth)
+            node.max_search_depth_reached = True
+            return False
+        
+        return True
+        
+    def minimax(self, node, is_maximizing, current_depth = 0, *, max_depth, constraints_maximizer=None, constraints_minimizer=None, score_function=None):
+        continue_processing = self.preprocess_node_minimax(node, is_maximizing, current_depth, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer, score_function=score_function)
+        if not continue_processing:
+            return None, None
+
         # Initialize best value
         if is_maximizing:
             best_value = float('-inf')
         else:
             best_value = float('inf')
-        
         best_child = None
 
         for child in node.children:
@@ -168,48 +247,33 @@ class MiniMax:
         node.score_child = best_child
         node.score = best_value
         return best_child, best_value
+        
+    def alphabeta(self, node, is_maximizing, current_depth = 0, alpha = None, beta = None, *, max_depth, constraints_maximizer=None, constraints_minimizer=None, score_function=None):
+        continue_processing = self.preprocess_node_alphabeta(node, is_maximizing, current_depth, alpha, beta, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer, score_function=score_function)
+        if not continue_processing:
+            return None, None
 
-    def alphabeta(self, node, is_maximizing, current_depth = 0, alpha = None, beta = None, *, max_depth, constraints_maximizer=None, constraints_minimizer=None):
-        node.maximizing_player_turn = is_maximizing
-
-        if alpha is None:
-            node.alpha = None
+        if node.alpha is None:
             alpha = float('-inf')
         else:
-            node.alpha = alpha
-            alpha = alpha.score
+            alpha = node.alpha.score
 
-        if beta is None:
-            node.beta = None
+        if node.beta is None:
             beta = float('inf')
         else:
-            node.beta = beta
-            beta = beta.score
+            beta = node.beta.score
 
-        with_constraints = constraints_maximizer if is_maximizing else constraints_minimizer
-        node.expand(with_constraints)
-        
-        # If the node is a leaf, or if we reached the max search depth, return its score
-        if node.is_leaf:
-            node.score = self.score(node.node, current_depth)
-            node.fully_searched = True
-            return None, None
-        elif current_depth >= max_depth:
-            node.score = self.score(node.node, current_depth)
-            node.max_search_depth_reached = True
-            return None, None
-        
         # Initialize best value
         if is_maximizing:
             best_value = float('-inf')
         else:
             best_value = float('inf')
-        
         best_child = None
+
         for i, child in enumerate(node.children):
             # If child does not have a score, recursively call minimax on the child
             if not child.has_score:
-                _, _ = self.alphabeta(child, not is_maximizing, current_depth + 1, node.alpha, node.beta, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer)
+                _, _ = self.alphabeta(child, not is_maximizing, current_depth + 1, node.alpha, node.beta, max_depth=max_depth, constraints_maximizer=constraints_maximizer, constraints_minimizer=constraints_minimizer, score_function=score_function)
 
             # Update the best value and best move depending on the player
             if is_maximizing: # Maximizing player turn

@@ -100,7 +100,9 @@ class Breakthrough(Game):
         """Get expansion constraints for the current player.
         Expansion constraints limits the search of available moves,
         thus reducing computational costs."""
-        return {'who': lambda who, agent: who == agent_id,
+        def check_agent(who, agent):
+            return who == agent_id
+        return {'who': check_agent,
                 'what': self.constrain_action_around_piece}
     
     def expansion_constraints_other(self, agent_id):
@@ -108,7 +110,9 @@ class Breakthrough(Game):
         not_agent_ids = [key for key in self.players.keys() if key != agent_id]
         if len(not_agent_ids) == 1:
             other_id = not_agent_ids[0]
-            return {'who': lambda who, agent: who == other_id,
+            def check_agent(who, agent):
+                return who == other_id
+            return {'who': check_agent,
                     'what': self.constrain_action_around_piece}
         else:
             raise ValueError("A Breakthrough game should have a maximum of two players.")
@@ -191,35 +195,67 @@ class Breakthrough(Game):
         # Both are already parsed into a tuple of coordinates
 
         # Set rules
-        gm.action_is_violation_if(lambda who, where, what, game: not game.started and game.agents[who][1] != 'starter', rule_description="This is not the starting player and this is the first turn.")
-        gm.action_is_violation_if(lambda who, where, what, game: game.started and who == game.actions[-1]['who'], rule_description="Players cannot play two times consecutively.")
-        gm.action_is_violation_if(lambda who, where, what, game: game.agents[who][0] != game.action_spaces["board"][where], "pieces", rule_description="Players cannot move pieces of the other player.")
+        def rule_not_starting_player(who, where, what, game):
+            return not game.started and game.agents[who][1] != 'starter'
         gm.action_is_violation_if(
-            lambda who, where, what, game: game.action_spaces["board"][what] == game.agents[who][0],
+            rule_not_starting_player, 
+            rule_description="This is not the starting player and this is the first turn.")
+        
+        def rule_two_consecutive_plays(who, where, what, game):
+            return game.started and who == game.actions[-1]['who']
+        gm.action_is_violation_if(
+            rule_two_consecutive_plays, 
+            rule_description="Players cannot play two times consecutively.")
+        
+        def rule_piece_other_player(who, where, what, game):
+            return game.agents[who][0] != game.action_spaces["board"][where]
+        gm.action_is_violation_if(
+            rule_piece_other_player, "pieces", 
+            rule_description="Players cannot move pieces of the other player.")
+        
+        def rule_piece_same_player(who, where, what, game):
+            return game.action_spaces["board"][what] == game.agents[who][0]
+        gm.action_is_violation_if(
+            rule_piece_same_player,
             rule_description="Players cannot move to a space occupied by their own piece."
         )
+
+        def rule_piece_enemy_or_free(who, where, what, game):
+            return False if abs(what[0] - where[0]) == abs(what[1] - where[1]) else game.action_spaces["board"][what] != game.agents[who][0] and game.action_spaces["board"][what] != self.free_label
         gm.action_is_violation_if(
-            lambda who, where, what, game: False if abs(what[0] - where[0]) == abs(what[1] - where[1]) else game.action_spaces["board"][what] != game.agents[who][0] and game.action_spaces["board"][what] != self.free_label,
+            rule_piece_enemy_or_free,
             "pieces",
             rule_description="Players cannot move to a space occupied by an enemy piece, unless it's a diagonal movement."
         )
+
+        def rule_piece_one_space_at_a_time(who, where, what, game):
+            return abs(what[0] - where[0]) > 1 or abs(what[1] - where[1]) > 1
         gm.action_is_violation_if(
-            lambda who, where, what, game: abs(what[0] - where[0]) > 1 or abs(what[1] - where[1]) > 1,
+            rule_piece_one_space_at_a_time,
             "pieces",
             rule_description="A piece cannot move more than one space at a time."
         )
+
+        def rule_piece_behind(who, where, what, game):
+            return (what[0] - where[0]) < 0 if who == 0 else (what[0] - where[0]) > 0
         gm.action_is_violation_if(
-            lambda who, where, what, game: (what[0] - where[0]) < 0 if who == 0 else (what[0] - where[0]) > 0,
+            rule_piece_behind,
             "pieces",
             rule_description="Pieces cannot move to a space behind it."
         )
+
+        def rule_piece_horizontal_movement(who, where, what, game):
+            return abs(what[0] - where[0]) == 0 and abs(what[1] - where[1]) > 0
         gm.action_is_violation_if(
-            lambda who, where, what, game: abs(what[0] - where[0]) == 0 and abs(what[1] - where[1]) > 0,
+            rule_piece_horizontal_movement,
             "pieces",
             rule_description="A piece cannot move horizontally."
         )
+
+        def rule_piece_stay_in_place(who, where, what, game):
+            return (abs(what[1] - where[1]) + abs(what[0] - where[0])) == 0
         gm.action_is_violation_if(
-            lambda who, where, what, game: (abs(what[1] - where[1]) + abs(what[0] - where[0])) == 0,
+            rule_piece_stay_in_place,
             "pieces",
             rule_description="Making a piece stay in place is not a valid move."
         )
@@ -229,8 +265,10 @@ class Breakthrough(Game):
             board_coordinates = self.parse_what_input(action['what'])
             eaten_piece_index = self._get_piece_index(game, board_coordinates, eaten_color)
             game.action_spaces["pieces"][eaten_piece_index] = str((-1, -1))
+        def trigger_piece_eating(who, where, what, game):
+            return game.action_spaces["board"][what] != FREE_LABEL and game.agents[who][0] != game.action_spaces["board"][what]
         gm.action_trigger_consequence_if(
-            lambda who, where, what, game: game.action_spaces["board"][what] != FREE_LABEL and game.agents[who][0] != game.action_spaces["board"][what],
+            trigger_piece_eating,
             consequence=piece_eating, 
             rule_description="If the destination space is occupied by an enemy piece, the enemy piece is eaten.")
         
@@ -241,8 +279,10 @@ class Breakthrough(Game):
             piece = game.action_spaces["board"][prev_board_coordinates]
             game.action_spaces["board"][prev_board_coordinates] = FREE_LABEL
             game.action_spaces["board"][new_board_coordinates] = piece
+        def trigger_piece_movement_board_sync(who, where, what, game):
+            return what != where
         gm.action_trigger_consequence_if(
-            lambda who, where, what, game: what != where,
+            trigger_piece_movement_board_sync,
             action_space_id="pieces",
             consequence=piece_movement_board_sync, 
             rule_description="Sync the change in coordinates of the piece with the board.")
