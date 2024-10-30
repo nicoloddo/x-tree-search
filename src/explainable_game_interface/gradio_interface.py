@@ -57,18 +57,6 @@ class ExplainableGameGradioInterface(GameGradioInterface):
         """
         pass
 
-    @abstractmethod
-    def get_updated_status(self, game):
-        """
-        Get the updated status based on the current game state.
-
-        :param game: The game state
-        :type game: Game
-        :return: The updated status text
-        :rtype: str
-        """
-        pass
-
     def create_interface(self):
         """
         Create the interface for the explainable game.
