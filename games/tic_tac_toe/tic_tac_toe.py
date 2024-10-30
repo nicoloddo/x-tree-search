@@ -65,14 +65,18 @@ class TicTacToe(Game):
         """Get expansion constraints for the current player.
         Expansion constraints limits the search of available moves,
         thus reducing computational costs."""
-        return {'who': lambda who, agent: who == agent_id}
+        def check_agent(who, agent):
+            return who == agent_id
+        return {'who': check_agent}
     
     def expansion_constraints_other(self, agent_id):
         "Get expansion constraints for the other player"
         not_agent_ids = [key for key in self.players.keys() if key != agent_id]
         if len(not_agent_ids) == 1:
             other_id = not_agent_ids[0]
-            return {'who': lambda who, agent: who == other_id}
+            def check_agent(who, agent):
+                return who == other_id
+            return {'who': check_agent}
         else:
             raise ValueError("A TicTacToe game should have a maximum of two players.")
     
@@ -117,10 +121,18 @@ class TicTacToe(Game):
         gm.set_endgame(tic_tac_toe_endgame)
 
         # Set rules
-        gm.action_is_violation_if(lambda who, where, what, game: not game.started and game.agents[who][1] != 'starter', rule_description="This is not the starting player and this is the first turn.")
-        gm.action_is_violation_if(lambda who, where, what, game: game.started and who == game.actions[-1]['who'], rule_description="Players cannot play two times consecutively")
-        gm.action_is_violation_if(lambda who, where, what, game: where != FREE_LABEL, "board", rule_description="The space needs to be free to put a sign on it.")
-        gm.action_is_violation_if(lambda who, where, what, game: game.agents[who][0] != what, rule_description="Agents can only put their own sign.")
+        gm.action_is_violation_if(
+            lambda who, where, what, game: not game.started and game.agents[who][1] != 'starter', 
+            rule_description="This is not the starting player and this is the first turn.")
+        gm.action_is_violation_if(
+            lambda who, where, what, game: game.started and who == game.actions[-1]['who'], 
+            rule_description="Players cannot play two times consecutively")
+        gm.action_is_violation_if(
+            lambda who, where, what, game: where != FREE_LABEL, "board", 
+            rule_description="The space needs to be free to put a sign on it.")
+        gm.action_is_violation_if(
+            lambda who, where, what, game: game.agents[who][0] != what, 
+            rule_description="Agents can only put their own sign.")
 
         return gm
     
