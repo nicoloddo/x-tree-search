@@ -22,7 +22,24 @@ class TicTacToe(Game):
         return pyspiel.load_game("tic_tac_toe")
     
     def opsp_state_to_action_space(self, opsp_state):
-        return 0
+        # Convert the state string into a 2D list
+        board_str = str(opsp_state)
+        rows = board_str.split('\n')
+        
+        # Create the board representation
+        board = []
+        for row in rows:
+            current_row = []
+            for cell in row:
+                if cell == '.':
+                    current_row.append(FREE_LABEL)
+                elif cell == 'x':
+                    current_row.append('X')
+                elif cell == 'o':
+                    current_row.append('O')
+            board.append(current_row)
+        
+        return board
     
     @property
     def started(self):
