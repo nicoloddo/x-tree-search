@@ -17,7 +17,8 @@ if game == 'tic_tac_toe':
     interface_class = TicTacToeGradioInterface
 elif game == 'tic_tac_toe_opsp':
     from games.tic_tac_toe import TicTacToeOpSp
-    from algorithms.minimax_openspiel_wrapper import MiniMax
+    from algorithms.minimax_openspiel_wrapper import MiniMax, TreeNode
+    TreeNode.game_state_translator = lambda cls, opsp_state: TicTacToeOpSp.opsp_state_to_action_space(opsp_state)
     AIAgent = AIAgentOpSp
     ai_scoring_function = tic_tac_toe_scoring_function
     max_depth = 30
