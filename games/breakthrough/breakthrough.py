@@ -11,7 +11,7 @@ from games.breakthrough.interface.jupyter_interface import BreakthroughJupyterIn
 FREE_LABEL = ' '
 class Breakthrough(Game):
     free_label = FREE_LABEL
-    idx_to_color = {0: 'b', 1: 'w'}
+    idx_to_color = {0: 'w', 1: 'b'}
     color_to_idx = {value: key for key, value in idx_to_color.items()}
     color_side = {0: idx_to_color[0], -1: idx_to_color[1]} # 0 has the pieces on the top, -1 has the pieces on the bottom
     board_shape = (6, 6)
@@ -131,7 +131,7 @@ class Breakthrough(Game):
     
     def _game_model_definition(self) -> GameModel:
         gm = GameModel( 
-        agents_number=2, default_agent_features=[self.idx_to_color[0], 'not starter'], additional_agent_features=[[self.idx_to_color[1]], ['starter']], 
+        agents_number=2, default_agent_features=[self.idx_to_color[0], 'starter'], additional_agent_features=[[self.idx_to_color[1]], ['not starter']], 
         agent_features_descriptions="2 players with feature 1 indicating who is starting, and feature 2 indicating their pieces' color.",
         game_name="breakthrough")
         gm.add_action_space("board", dimensions=list(self.board_shape), default_labels=[FREE_LABEL], additional_labels=[['w', 'b']], 
@@ -143,7 +143,7 @@ class Breakthrough(Game):
         gm.disable_actions(on="agent")
         gm.disable_actions(on="board")
         gm.agents[1, 0] = self.idx_to_color[1]
-        gm.agents[1, 1] = 'starter'
+        gm.agents[1, 1] = 'not starter'
 
         # Initialize the board and pieces
         first_two_rows_color = self.color_side[0]
