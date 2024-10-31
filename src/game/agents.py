@@ -30,7 +30,7 @@ class AIAgent(GameAgent):
 
     async def play(self, game, inputs=None):
         #await asyncio.sleep(0.1)
-        if game.gm.ended:
+        if game.ended:
             return
     
         # Use the search algorithm to determine the best move        
@@ -98,7 +98,7 @@ class User(GameAgent):
                 return
 
             await asyncio.sleep(1)
-            if game.gm.ended:
+            if game.ended:
                 return
         
             who = self.id

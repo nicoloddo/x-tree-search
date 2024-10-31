@@ -63,7 +63,7 @@ class GameGradioInterface(GameInterface):
                 "show_label": False,
                 "elem_id": action_space_id  # Use the action space id as the element id
             }
-            for action_space_id, action_space in game.gm.action_spaces.items() if action_space_id in action_spaces_to_visualize
+            for action_space_id, action_space in game.action_spaces.items() if action_space_id in action_spaces_to_visualize
         }
 
         self.help_md = help_md
