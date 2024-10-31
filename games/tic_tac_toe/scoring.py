@@ -1,8 +1,8 @@
 import numpy as np
 
-def simple_scoring_function(node, depth):
+def simple_scoring_function(node):
     """ Evaluate the Tic Tac Toe board state for the 'X' player's perspective """
-    state = node.state
+    state = node.game_state
     score = 0
     
     # Possible lines to check (3 rows, 3 columns, 2 diagonals)
@@ -25,11 +25,12 @@ def simple_scoring_function(node, depth):
         elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
             score -= 10  # 'O' is one move away from winning
 
-    return score
+    return score/1000
 
-def simple_depth_dependant_scoring_function(node, depth):
+def simple_depth_dependant_scoring_function(node):
     """ Evaluate the Tic Tac Toe board state for the 'X' player's perspective """
-    state = node.state
+    state = node.game_state
+    depth = node.depth
     score = 0
     
     # Possible lines to check (3 rows, 3 columns, 2 diagonals)
@@ -52,4 +53,4 @@ def simple_depth_dependant_scoring_function(node, depth):
         elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
             score -= 100 - depth  # 'O' is one move away from winning
 
-    return score
+    return score/1000
