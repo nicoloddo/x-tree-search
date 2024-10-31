@@ -15,6 +15,8 @@ class StateActionTracker:
         return track_state_actions(self)(func)
 
 class TreeNode:
+    score_readability_multiplier = 1000
+
     @classmethod
     def game_state_translator(cls, opsp_state):
         return opsp_state
@@ -46,6 +48,10 @@ class TreeNode:
         if self.depth is None:
             return False
         return self.depth == 0
+
+    @property
+    def readable_score(self):
+        return self.score*TreeNode.score_readability_multiplier
 
     @property
     def has_score(self):
@@ -130,9 +136,6 @@ def track_state_actions(tracker: StateActionTracker):
                 node.id = node.parent.id + '_' + str(node.history()[-1])
             
             tracker.nodes[node.id] = node
-
-            if depth == 0:
-                node.max_search_depth_reached = True
             
             value, best_action = func(node, depth, alpha, beta, value_function, maximizing_player_id)
             node.score = value
@@ -145,7 +148,6 @@ def track_state_actions(tracker: StateActionTracker):
         return wrapper
     return decorator
 
-from open_spiel.python.algorithms import minimax
 class MiniMax:
     def __init__(self, score_function=None, *, max_depth=3, start_with_maximizing=True):
         self.score_function = score_function
@@ -153,8 +155,10 @@ class MiniMax:
         self.start_with_maximizing = start_with_maximizing
         self.last_choice = None
 
+        from open_spiel.python.algorithms import minimax
+        self.minimax = minimax
         self.t = StateActionTracker(self.start_with_maximizing)
-        minimax._alpha_beta = self.t.track(minimax._alpha_beta)
+        self.minimax._alpha_beta = self.t.track(self.minimax._alpha_beta)
     
     @property
     def nodes(self):
@@ -177,7 +181,7 @@ class MiniMax:
         else:
             maximizing_player_id = abs(running_player_id - 1) # 0 if player 1, 1 if player 0: the other player
 
-        game_score, action = minimax.alpha_beta_search(game, state, self.score_function, maximum_depth=max_depth, maximizing_player_id=maximizing_player_id)
+        game_score, action = self.minimax.alpha_beta_search(game, state, self.score_function, maximum_depth=max_depth, maximizing_player_id=maximizing_player_id)
 
         self.last_choice = self.nodes[self.t.root.id + '_' + str(action)]
         return game_score, action

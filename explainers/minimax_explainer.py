@@ -32,7 +32,7 @@ class MiniMaxExplainer:
 
 
                     QuantitativePointerAdjective("score",
-                        definition = "node.score",
+                        definition = "node.readable_score",
 
                         explanation = ConditionalExplanation(
                             condition = If("leaf"),

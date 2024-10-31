@@ -77,7 +77,7 @@ class AlphaBetaExplainer:
 
 
             QuantitativePointerAdjective("score",
-                definition = "node.score",
+                definition = "node.readable_score",
                 skip_statement = True, # Don't say the score, pass directly to the explanation.
                 # This framework is for users, and talking directly about scores is not understandable.
                 # Let's instead put it in terms of next moves and win/loss/draw possibilities!

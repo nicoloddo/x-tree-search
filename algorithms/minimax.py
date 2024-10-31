@@ -13,6 +13,8 @@ class MiniMaxNode:
         score (float): The score assigned to the node by the MiniMax algorithm.
         nodes_holder (list): Pointer to the structure that holds all the nodes in the tree.
     """
+    score_readability_multiplier = 1000
+
     def __init__(self, node, parent=None, nodes_holder=None):
         self.node = node
         self.parent = parent
@@ -76,6 +78,10 @@ class MiniMaxNode:
         return self.node.action
 
     @property
+    def readable_score(self):
+        return self.score*MiniMaxNode.score_readability_multiplier
+
+    @property
     def has_score(self):
         return self.score is not None
     
@@ -125,8 +131,9 @@ class MiniMax:
     
     def minimax(self, node, is_maximizing, current_depth = 0, *, max_depth, constraints_maximizer=None, constraints_minimizer=None):
         node.maximizing_player_turn = is_maximizing
+        node.depth = current_depth
         if current_depth >= max_depth:
-            node.score = self.score(node.node, current_depth)
+            node.score = self.score(node)
             return None, None
         else:
             with_constraints = constraints_maximizer if is_maximizing else constraints_minimizer
@@ -134,7 +141,7 @@ class MiniMax:
 
         # If the node is a leaf, or if we reached the max search depth, return its score
         if node.is_leaf:
-            node.score = self.score(node.node, current_depth)
+            node.score = self.score(node)
             return None, None
         
         # Initialize best value
@@ -167,6 +174,7 @@ class MiniMax:
 
     def alphabeta(self, node, is_maximizing, current_depth = 0, alpha = None, beta = None, *, max_depth, constraints_maximizer=None, constraints_minimizer=None):
         node.maximizing_player_turn = is_maximizing
+        node.depth = current_depth
 
         if alpha is None:
             node.alpha = None
@@ -187,11 +195,11 @@ class MiniMax:
         
         # If the node is a leaf, or if we reached the max search depth, return its score
         if node.is_leaf:
-            node.score = self.score(node.node, current_depth)
+            node.score = self.score(node)
             node.fully_searched = True
             return None, None
         elif current_depth >= max_depth:
-            node.score = self.score(node.node, current_depth)
+            node.score = self.score(node)
             node.max_search_depth_reached = True
             return None, None
         
