@@ -158,24 +158,11 @@ class MiniMax:
         self.max_depth = max_depth
         self.start_with_maximizing = start_with_maximizing
         self.last_choice = None
-
-        self.t = StateActionTracker(self.start_with_maximizing)
-
-        # If already wrapped, get the original function
-        if hasattr(minimax._alpha_beta, '_original_func'):
-            original_func = minimax._alpha_beta._original_func
-        else:
-            original_func = minimax._alpha_beta
-            
-        # Apply new wrapper
-        minimax._alpha_beta = self.t.track(original_func)
-        print("Minimax has been wrapped.")
-        # Store reference to original function
-        minimax._alpha_beta._original_func = original_func
+        self.tracker = None
     
     @property
     def nodes(self):
-        return self.t.nodes
+        return self.tracker.nodes if self.tracker is not None else []
 
     def run(self, game, state, running_player_id, max_depth=None):
         """
@@ -184,7 +171,19 @@ class MiniMax:
         :param running_player_id: The id of the player that is running the algorithm.
         :param max_depth: The maximum depth to search to.
         """
-        self.t.__init__(self.start_with_maximizing)
+        self.tracker = StateActionTracker(self.start_with_maximizing)
+
+        # If already wrapped, get the original function
+        if hasattr(minimax._alpha_beta, '_original_func'):
+            original_func = minimax._alpha_beta._original_func
+        else:
+            original_func = minimax._alpha_beta
+            
+        # Apply new wrapper
+        minimax._alpha_beta = self.tracker.track(original_func)
+        print("Minimax has been wrapped.")
+        # Store reference to original function
+        minimax._alpha_beta._original_func = original_func
         
         if max_depth is None:
             max_depth = self.max_depth
@@ -196,7 +195,7 @@ class MiniMax:
 
         game_score, action = minimax.alpha_beta_search(game, state, self.score_function, maximum_depth=max_depth, maximizing_player_id=maximizing_player_id)
 
-        self.last_choice = self.nodes[self.t.root.id + '_' + str(action)]
+        self.last_choice = self.nodes[self.tracker.root.id + '_' + str(action)]
         return game_score, action
 
     def visualize_decision_tree(self, root_node):
