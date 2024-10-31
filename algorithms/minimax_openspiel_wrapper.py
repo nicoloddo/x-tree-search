@@ -181,7 +181,6 @@ class MiniMax:
             
         # Apply new wrapper
         minimax._alpha_beta = self.tracker.track(original_func)
-        print("Minimax has been wrapped.")
         # Store reference to original function
         minimax._alpha_beta._original_func = original_func
         
