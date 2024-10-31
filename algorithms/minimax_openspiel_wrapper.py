@@ -148,6 +148,10 @@ def track_state_actions(tracker: StateActionTracker):
         return wrapper
     return decorator
 
+
+import graphviz
+import tempfile
+from open_spiel.python.algorithms import minimax
 class MiniMax:
     def __init__(self, score_function=None, *, max_depth=3, start_with_maximizing=True):
         self.score_function = score_function
@@ -155,10 +159,19 @@ class MiniMax:
         self.start_with_maximizing = start_with_maximizing
         self.last_choice = None
 
-        from open_spiel.python.algorithms import minimax
-        self.minimax = minimax
         self.t = StateActionTracker(self.start_with_maximizing)
-        self.minimax._alpha_beta = self.t.track(self.minimax._alpha_beta)
+
+        # If already wrapped, get the original function
+        if hasattr(minimax._alpha_beta, '_original_func'):
+            original_func = minimax._alpha_beta._original_func
+        else:
+            original_func = minimax._alpha_beta
+            
+        # Apply new wrapper
+        minimax._alpha_beta = self.t.track(original_func)
+        print("Minimax has been wrapped.")
+        # Store reference to original function
+        minimax._alpha_beta._original_func = original_func
     
     @property
     def nodes(self):
@@ -181,7 +194,91 @@ class MiniMax:
         else:
             maximizing_player_id = abs(running_player_id - 1) # 0 if player 1, 1 if player 0: the other player
 
-        game_score, action = self.minimax.alpha_beta_search(game, state, self.score_function, maximum_depth=max_depth, maximizing_player_id=maximizing_player_id)
+        game_score, action = minimax.alpha_beta_search(game, state, self.score_function, maximum_depth=max_depth, maximizing_player_id=maximizing_player_id)
 
         self.last_choice = self.nodes[self.t.root.id + '_' + str(action)]
         return game_score, action
+
+    def visualize_decision_tree(self, root_node):
+        dot = graphviz.Digraph(comment='Visualize Decision Tree')
+        dot.attr('node', shape='rectangle', style='filled', fontname='Arial', fontsize='10')
+
+        def add_node_to_graph(node, parent_id=None, count_nodes = 0):
+            if not node.has_score:
+                return count_nodes
+            
+            count_nodes += 1
+            
+            node_id = str(node.id)
+            label = node_id
+            
+            # Color coding
+            if node.is_leaf:
+                fillcolor = 'lightblue'
+            elif node.maximizing_player_turn:
+                fillcolor = 'green' if node.fully_searched else 'lightgreen'
+            else:
+                fillcolor = 'deeppink' if node.fully_searched else 'pink'
+            
+            # Node label
+            label += f"\nScore: {node.score}"
+            
+            dot.node(node_id, label, fillcolor=fillcolor)
+            
+            if parent_id:
+                dot.edge(parent_id, node_id)
+            
+            for child in node.children:
+                count_nodes = add_node_to_graph(child, node_id, count_nodes)
+            
+            # Add red X for pruned nodes
+            if not node.fully_searched:
+                prune_id = f"{node_id}_prune"
+                pruned_label = "max depth reached" if node.max_search_depth_reached else "pruned"
+                dot.node(prune_id, pruned_label, color='white', fontcolor='red', shape='plaintext')
+                dot.edge(node_id, prune_id, color='red')
+            
+            return count_nodes
+
+        count_nodes = add_node_to_graph(root_node)
+        if count_nodes > 1000:
+            raise Exception(f"Too many nodes ({count_nodes}) to visualize.")
+        elif count_nodes > 50: # More than 50 nodes but less than 1000
+            dot.attr(layout="twopi")
+            dot.attr(overlap='scale') # Don't overlap nodes
+        else: # Less than 50 nodes
+            dot.attr(rankdir='TB')  # Left to Right or Top to Bottom layout
+            dot.attr(dpi='300')  # Set high resolution
+        
+        dot.attr(root=str(root_node.id))
+
+        # Render the graph
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+            tmp_filename = tmp_file.name
+
+        dot.render(tmp_filename, format='png', cleanup=True, )
+        
+        return tmp_filename + '.png'
+
+    def visualize_legend_move_tree(self):
+        dot = graphviz.Digraph(comment='Legend')
+        dot.attr(dpi='200')  # Set high resolution
+        dot.attr('node', shape='rectangle', style='filled', fontname='Arial', fontsize='10')
+
+        dot.attr(label='Legend')
+        dot.attr(labelloc='t')  # 't' for top, 'b' for bottom (default)
+        
+        dot.attr(fontsize='12', fontweight='bold')
+        dot.node('legend_maximizer', 'Maximizer turn', fillcolor='green', style='filled')
+        dot.node('legend_maximizer_pruned', 'Maximizer turn\n(pruned)', fillcolor='lightgreen', style='filled')
+        dot.node('legend_minimizer', 'Minimizer turn', fillcolor='deeppink', style='filled')
+        dot.node('legend_minimizer_pruned', 'Minimizer turn\n(pruned)', fillcolor='pink', style='filled')
+        dot.node('legend_leaf', 'Leaf Node', fillcolor='lightblue', style='filled')
+
+        # Render the graph
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+            tmp_filename = tmp_file.name
+
+        dot.render(tmp_filename, format='png', cleanup=True)
+        
+        return tmp_filename + '.png'
