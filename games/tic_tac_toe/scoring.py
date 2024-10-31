@@ -16,13 +16,13 @@ def simple_scoring_function(node, depth):
     lines.append(np.array([state[i, 2 - i] for i in range(3)]))  # Anti-diagonal
 
     for line in lines:
-        if np.all(line == "X"):
+        if np.all(line == "O"):
             score += 100  # 'X' wins
-        elif np.all(line == "O"):
+        elif np.all(line == "X"):
             score -= 100  # 'O' wins
-        elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
-            score += 10  # 'X' is one move away from winning
         elif np.count_nonzero(line == "O") == 2 and np.count_nonzero(line == "free") == 1:
+            score += 10  # 'X' is one move away from winning
+        elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
             score -= 10  # 'O' is one move away from winning
 
     return score
@@ -43,13 +43,13 @@ def simple_depth_dependant_scoring_function(node, depth):
     lines.append(np.array([state[i, 2 - i] for i in range(3)]))  # Anti-diagonal
 
     for line in lines:
-        if np.all(line == "X"):
+        if np.all(line == "O"):
             score += 1000 - depth # 'X' wins
-        elif np.all(line == "O"):
+        elif np.all(line == "X"):
             score -= 1000 - depth # 'O' wins
-        elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
-            score += 100 - depth # 'X' is one move away from winning
         elif np.count_nonzero(line == "O") == 2 and np.count_nonzero(line == "free") == 1:
+            score += 100 - depth # 'X' is one move away from winning
+        elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
             score -= 100 - depth  # 'O' is one move away from winning
 
     return score

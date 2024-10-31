@@ -80,14 +80,14 @@ class TicTacToe(Game):
     
     def _game_model_definition(self) -> GameModel:
         gm = GameModel( 
-        agents_number=2, default_agent_features=['X', 'not starter'], additional_agent_features=[['O'], ['starter']], 
+        agents_number=2, default_agent_features=['O', 'not starter'], additional_agent_features=[['X'], ['starter']], 
         agent_features_descriptions="2 players with feature 1 indicating who is starting, and feature 2 indicating their symbol.",
         game_name="tic-tac-toe")
         gm.add_action_space("board", dimensions=[3, 3], default_labels=[FREE_LABEL], additional_labels=[['X', 'O']], dimensions_descriptions="3x3 board.")
 
         # Disable actions on the agent feature space.
         gm.disable_actions(on="agent")
-        gm.agents[1, 0] = 'O'
+        gm.agents[1, 0] = 'X'
         gm.agents[1, 1] = 'starter'
 
         # Set Endgame
@@ -131,9 +131,9 @@ class TicTacToe(Game):
         coordinates = action['where']
 
         if player == 0:
-            sign = 'X'
-        elif player == 1:
             sign = 'O'
+        elif player == 1:
+            sign = 'X'
         else:
             raise ValueError("Player variable has to be 0 or 1")
 
