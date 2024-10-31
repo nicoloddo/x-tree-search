@@ -6,7 +6,7 @@ from games.tic_tac_toe.interface.gradio_interface import TicTacToeGradioInterfac
 from games.breakthrough.interface.gradio_interface import BreakthroughGradioInterface
 from explainers.alphabeta_explainer import AlphaBetaExplainer
 
-game = 'tic_tac_toe_opsp'
+game = 'breakthrough'
 
 if game == 'tic_tac_toe':
     from games.tic_tac_toe import TicTacToe
@@ -18,10 +18,10 @@ if game == 'tic_tac_toe':
 elif game == 'tic_tac_toe_opsp':
     from games.tic_tac_toe import TicTacToeOpSp
     from algorithms.minimax_openspiel_wrapper import MiniMax, TreeNode
-    TreeNode.game_state_translator = lambda cls, opsp_state: TicTacToeOpSp.opsp_state_to_action_space(opsp_state)
+    TreeNode.game_state_translator = lambda cls, opsp_state: TicTacToeOpSp.game_state_translator(opsp_state)
     AIAgent = AIAgentOpSp
     ai_scoring_function = tic_tac_toe_scoring_function
-    max_depth = 30
+    max_depth = 6
     game_class = TicTacToeOpSp
     interface_class = TicTacToeGradioInterface
 elif game == 'breakthrough':
