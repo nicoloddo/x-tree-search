@@ -14,9 +14,6 @@ class MiniMaxNode:
         nodes_holder (list): Pointer to the structure that holds all the nodes in the tree.
     """
     def __init__(self, node, parent=None, nodes_holder=None):
-        if nodes_holder is None:
-            nodes_holder = {}
-
         self.node = node
         self.parent = parent
         if self.parent is not None:
@@ -25,18 +22,17 @@ class MiniMaxNode:
             self.parent_state = None
         self.children = []
 
+        if nodes_holder is None:
+            nodes_holder = {}
         self.nodes_holder = nodes_holder
         self.nodes_holder[self.id] = self
 
         self.score = None
         self.fully_searched = None
-
         self.alpha = None
         self.beta = None
-
         self.maximizing_player_turn = None
         self.score_child = None
-
         self.max_search_depth_reached = False
     
     @property
@@ -69,11 +65,11 @@ class MiniMaxNode:
     
     @property
     def id_length(self):
-        return len(self.node.id)
+        return len(self.id)
     
     @property
     def last_move_id(self):
-        return self.node.id[-1]
+        return self.id[-1]
     
     @property
     def action(self):
