@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Union, Dict, Any
 import textwrap
+import inspect
 
 class LogicalExpression(ABC):
     """Abstract base class for all logical expressions."""
@@ -27,15 +28,28 @@ class LogicalExpression(ABC):
             if not tree_node_cls:
                 raise SyntaxError("To set the hyperlink_mode to True, you need to pass a tree_node_cls for validation purposes.")
             
-            if not hasattr(tree_node_cls, "id"):
-                print("To use hyperlink mode, the nodes of your search algorithm must have an 'id' attribute.")
-                return False # not activated
-            if not hasattr(tree_node_cls, "game_state"):
-                print("To use hyperlink mode, the nodes of your search algorithm must have a 'game_state' attribute.")
-                return False # not activated
-            if not hasattr(tree_node_cls, "game_tree_node_string"):
-                print("To use hyperlink mode, the nodes of your search algorithm must have a 'game_tree_node_string' attribute.")
-                return False # not activated
+            # Get all attributes and methods, including properties
+            class_attrs = set(dir(tree_node_cls))
+
+            # Get attributes defined in __init__
+            try:
+                init_source = inspect.getsource(tree_node_cls.__init__)
+                init_attrs = {line.split('self.')[1].split('=')[0].strip() 
+                            for line in init_source.split('\n') 
+                            if 'self.' in line and '=' in line}
+            except:
+                init_attrs = set()
+
+            # Combine both sets of attributes
+            all_attrs = class_attrs | init_attrs
+            
+            required_attrs = {'id', 'game_state', 'game_tree_node_string'}
+            missing_attrs = required_attrs - all_attrs
+            
+            if missing_attrs:
+                for attr in missing_attrs:
+                    print(f"To use hyperlink mode, the nodes of your search algorithm must have a '{attr}' attribute. The class {tree_node_cls} does not have it. It has:\n{class_attrs}")
+                return False
             else:
                 cls.hyperlink_mode = True
                 cls.tree_node_cls = tree_node_cls
