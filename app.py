@@ -6,7 +6,7 @@ from games.tic_tac_toe.interface.gradio_interface import TicTacToeGradioInterfac
 from games.breakthrough.interface.gradio_interface import BreakthroughGradioInterface
 from explainers.alphabeta_explainer import AlphaBetaExplainer
 
-game = 'breakthrough'
+game = 'tic_tac_toe_opsp'
 
 if game == 'tic_tac_toe':
     from games.tic_tac_toe import TicTacToe
@@ -33,9 +33,9 @@ elif game == 'breakthrough':
 
 use_ai_opponent = False
 
-opponent = AIAgent(agent_id=0, core=MiniMax(ai_scoring_function, max_depth=max_depth))
+opponent = AIAgent(agent_id=1, core=MiniMax(ai_scoring_function, max_depth=max_depth))
 
-game = game_class(players=[opponent, User(agent_id=1)],
+game = game_class(players=[opponent, User(agent_id=0)],
                 interface_mode='gradio', 
                 interface_hyperlink_mode=True)
 game.explaining_agent = opponent
