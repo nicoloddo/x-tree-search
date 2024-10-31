@@ -1,116 +1,147 @@
 from functools import wraps
 from typing import List, Tuple, Any, Dict
 
-class TreeNode:
-    def __init__(self, state, action, parent=None, node_id="0", nodes_holder=None):
-        self.state = state.clone() if state else None
-        self.action = action
-        self.parent = parent
-        self.children = []
-        self.id = node_id
-
-        self.nodes_holder = nodes_holder or {node_id: self}
-
-    def add_child(self, state, action):
-        # Clone the current state and apply the action to get the immediate next state
-        child_id = f"{self.id}_{action}"
-        if child_id in self.nodes_holder:
-            return self.nodes_holder[child_id]
-
-        next_state = state.clone()
-        next_state.apply_action(action)
-        
-        child = TreeNode(next_state, action, self, child_id, self.nodes_holder)
-        self.children.append(child)
-        self.nodes_holder[child_id] = child
-
-        return child
-
 class StateActionTracker:
-    def __init__(self):
+    def __init__(self, start_with_maximizing):
         self.root = None
-    
-    @property
-    def nodes(self):
-        return self.root.nodes_holder
+        self.nodes = {}
+        self.start_with_maximizing = start_with_maximizing
 
-    def set_root(self, state):
-        self.root = TreeNode(state, None)
+    def set_root(self, node):
+        self.root = node
 
     def track(self, func):
         """Convenience method to apply the tracking decorator"""
         return track_state_actions(self)(func)
 
-class StateWrapper:
-    def __init__(self, state, alpha=None, beta=None):
+class TreeNode:
+    @classmethod
+    def game_state_translator(cls, opsp_state):
+        return opsp_state
+
+    def __init__(self, state, parent_node, maximizing_player_turn):
+        self.id = ""
         self.state = state
+        self.parent = parent_node
         self.children = []
-        self.alpha = alpha
-        self.beta = beta
+
+        self.score = None
+        self.depth = None
+        self.alpha = None
+        self.beta = None
+
+        self.maximizing_player_turn = maximizing_player_turn
+        self.parent_state = self.game_state_translator(self.parent.state) if self.parent is not None else None
+
+    @property
+    def is_leaf(self):
+        return self.is_terminal() or self.max_search_depth_reached
+
+    @property
+    def final_node(self):
+        return self.is_terminal()
+
+    @property
+    def max_search_depth_reached(self):
+        if self.depth is None:
+            return False
+        return self.depth == 0
+
+    @property
+    def has_score(self):
+        return self.score is not None
+
+    @property 
+    def fully_searched(self):
+        return all([child.has_score for child in self.children])
+
+    @property
+    def score_child(self):
+        if len(self.children) == 0:
+            return None
+        scored_children = [child for child in self.children if child.has_score]
+        if not scored_children:
+            return None
+        if self.maximizing_player_turn:
+            return max(scored_children, key=lambda child: child.score)
+        else:
+            return min(scored_children, key=lambda child: child.score)
+
+    @property
+    def id_length(self):
+        return len(self.id)
+    
+    @property
+    def last_move_id(self):
+        return self.id[-1]
+    
+    @property
+    def game_state(self):
+        return self.game_state_translator(self.state)
+    
+    @property
+    def game_tree_node_string(self):
+        if self.parent is None:
+            return "this is the root"
+        return self.action_to_string(self.parent.current_player(), self.history()[-1])
+
+    def __str__(self) -> str:
+        return '\n' + f"{str(self.game_state)} {str(self.game_tree_node_string)}, id={self.id}" + ''
     
     def __getattr__(self, name):
         return getattr(self.state, name)
     
     def clone(self):
         # Wrap the cloned state in a new StateWrapper
-        new_state = StateWrapper(self.state.clone())
+        new_state = TreeNode(self.state.clone(), parent_node=self, maximizing_player_turn=not self.maximizing_player_turn)
         self.children.append(new_state)
         return new_state
     
     def __call__(self, *args, **kwargs):
         return self.state(*args, **kwargs)
     
-        # Add representation methods
+    # Add representation methods
     def __repr__(self):
         return repr(self.state)
     
-    def __str__(self):
-        return str(self.state)
-    
     # Add comparison methods
     def __eq__(self, other):
-        if isinstance(other, StateWrapper):
+        if isinstance(other, TreeNode):
             return self.state == other.state
         return self.state == other
     
     def __hash__(self):
         return hash(self.state)
-    
-    # Add iterator support if the state is iterable
-    def __iter__(self):
-        return iter(self.state)
-    
-    # Add length support if the state supports len()
-    def __len__(self):
-        return len(self.state)
 
 def track_state_actions(tracker: StateActionTracker):
     """
     Decorator that tracks state-action pairs during alpha-beta search in a tree structure.
-    
-    Usage:
-        tracker = StateActionTracker()
-        
-        @track_state_actions(tracker)
-        def _alpha_beta(state, depth, alpha, beta, value_function, maximizing_player_id):
-            ...
     """
     def decorator(func):
         @wraps(func)
         def wrapper(state, depth, alpha, beta, value_function, maximizing_player_id):
-            state = StateWrapper(state, alpha, beta)
             if tracker.root is None:
-                tracker.set_root(state)
+                # The other TreeNodes are instantiated when state.clone is called
+                node = TreeNode(state, None, tracker.start_with_maximizing)
+                node.id = '0'
+                tracker.set_root(node)
+            else:
+                node = state
+                node.id = node.parent.id + '_' + str(node.history()[-1])
             
-            """
-            if state.is_terminal() or depth == 0:
-                current_node = tracker.root
-                history = state.history()[len(tracker.root.state.history()):]
-                for action in history:
-                    current_node = current_node.add_child(current_node.state, action)
-            """
+            tracker.nodes[node.id] = node
+
+            if depth == 0:
+                node.max_search_depth_reached = True
             
-            return func(state, depth, alpha, beta, value_function, maximizing_player_id)
+            value, best_action = func(node, depth, alpha, beta, value_function, maximizing_player_id)
+            node.score = value
+            node.depth = depth
+            node.alpha = alpha
+            node.beta = beta
+            
+            return value, best_action
+
         return wrapper
     return decorator
 
@@ -121,6 +152,9 @@ class MiniMax:
         self.max_depth = max_depth
         self.start_with_maximizing = start_with_maximizing
         self.last_choice = None
+
+        self.t = StateActionTracker(self.start_with_maximizing)
+        minimax._alpha_beta = self.t.track(minimax._alpha_beta)
     
     @property
     def nodes(self):
@@ -133,9 +167,8 @@ class MiniMax:
         :param running_player_id: The id of the player that is running the algorithm.
         :param max_depth: The maximum depth to search to.
         """
-        self.t = StateActionTracker()
-        minimax._alpha_beta = self.t.track(minimax._alpha_beta)
-
+        self.t.__init__(self.start_with_maximizing)
+        
         if max_depth is None:
             max_depth = self.max_depth
         
