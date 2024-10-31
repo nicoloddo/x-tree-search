@@ -73,6 +73,12 @@ class TicTacToeOpSp(TicTacToe):
         else:
             raise ValueError(f"The action {action_str} is not legal. Available actions are: {[self.state.action_to_string(player, action) for action in legal_actions]}")
     
+    def winner(self):
+        if np.all(self.action_spaces["board"] != FREE_LABEL):
+            return None
+        else:
+            return self.last_player
+            
     """General overrides for OpSp game classes:"""
     @property
     def started(self):
@@ -94,9 +100,3 @@ class TicTacToeOpSp(TicTacToe):
     
     def get_current_player(self):
         return self.players[self.state.current_player()]
-    
-    def winner(self):
-        if np.all(self.action_spaces["board"] != FREE_LABEL):
-            return None
-        else:
-            return self.last_player
