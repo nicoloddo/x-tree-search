@@ -10,6 +10,12 @@ class AutoCallDict(dict):
         if callable(value):
             return value()
         return value
+        
+    def items(self):
+        return [(key, self[key]) for key in self]
+    
+    def values(self):
+        return [self[key] for key in self]
 
 FREE_LABEL = ' '
 class TicTacToeOpSp(TicTacToe):
