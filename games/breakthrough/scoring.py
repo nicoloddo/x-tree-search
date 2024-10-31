@@ -3,7 +3,7 @@ from games.breakthrough.breakthrough import Breakthrough
 
 def simple_depth_dependant_scoring_function(node):
     """Evaluate the Breakthrough board state from the perspective of the 'b' (black) player"""
-    state = Breakthrough.pieces_state_to_board_state(node.game_state)
+    state = node.game_state
     depth = node.depth
     score = 0
     
@@ -32,4 +32,4 @@ def simple_depth_dependant_scoring_function(node):
     # Adjust score based on depth
     score -= depth
 
-    return score
+    return score/1000

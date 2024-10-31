@@ -17,10 +17,13 @@ class Breakthrough(Game):
     board_shape = (6, 6)
 
     @classmethod
-    def pieces_state_to_board_state(cls, pieces_state):
+    def game_state_translator(cls, pieces_state): # pieces state to board state
         """
         Convert the pieces state to the board state.
         """
+        if not pieces_state.shape == (12, 2):
+            raise ValueError("The state we are trying to translate is not in the shape of a pieces state.")
+
         board_state = np.ndarray((cls.board_shape), dtype=object)
         board_state.fill(FREE_LABEL)
 
@@ -210,7 +213,7 @@ class Breakthrough(Game):
             rule_description="A piece cannot move more than one space at a time."
         )
         gm.action_is_violation_if(
-            lambda who, where, what, game: (what[0] - where[0]) < 0 if who == 0 else (what[0] - where[0]) > 0,
+            lambda who, where, what, game: (what[0] - where[0]) > 0 if who == 0 else (what[0] - where[0]) < 0,
             "pieces",
             rule_description="Pieces cannot move to a space behind it."
         )

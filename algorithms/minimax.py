@@ -15,11 +15,15 @@ class MiniMaxNode:
     """
     score_readability_multiplier = 1000
 
+    @classmethod
+    def game_state_translator(cls, state):
+        return state
+
     def __init__(self, node, parent=None, nodes_holder=None):
         self.node = node
         self.parent = parent
         if self.parent is not None:
-            self.parent_state = copy.deepcopy(parent.node.state)
+            self.parent_state = self.game_state_translator(copy.deepcopy(parent.node.state))
         else:
             self.parent_state = None
         self.children = []
@@ -43,7 +47,7 @@ class MiniMaxNode:
     
     @property
     def game_state(self):
-        return self.node.state
+        return self.game_state_translator(self.node.state)
     
     @property
     def game_tree_node_string(self):
@@ -97,6 +101,8 @@ class MiniMax:
         scoring_function (callable): A function that takes a node state and returns a numerical score.
         use_alpha_beta (bool): Whether to use alpha-beta pruning.
     """
+    tree_node_class = MiniMaxNode
+    
     def __init__(self, scoring_function, *, max_depth=3, start_with_maximizing=True, use_alpha_beta=True):
         # Mandatory attributes:
         self.nodes = {} # Holds the nodes with as key their node.node.id
@@ -124,7 +130,6 @@ class MiniMax:
         best_child, best_value = self.algorithm(self.search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
 
         if best_child is not None:
-            #best_child.parent_state = copy.deepcopy(best_child.parent.node.state)
             self.search_root_final = best_child.parent
             self.last_choice = best_child            
         return best_child, best_value

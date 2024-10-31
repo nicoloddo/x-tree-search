@@ -93,14 +93,6 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
                          game_explanation_ratio="3:4",
                          help_md=help_md)
         self.where = {}
-
-    def preprocess_board_state(self, game, board_state):
-        """
-        Preprocess the board state.
-        """
-        if board_state.shape == (12, 2):
-            return game.pieces_state_to_board_state(board_state)
-        return board_state
         
     async def process_move(self, game, explainer, evt: gr.SelectData):
         """

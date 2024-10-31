@@ -38,6 +38,9 @@ class ExplainableGameGradioInterface(GameGradioInterface):
                          game_title_md=game_title_md, 
                          action_spaces_to_visualize=action_spaces_to_visualize,
                          help_md=help_md)
+        
+        algorithm_class = game.explaining_agent.core.__class__
+        algorithm_class.tree_node_class.game_state_translator = game.game_state_translator
 
         self.ai_explanation_components = None
         self.explainer = explainer
@@ -223,12 +226,6 @@ class ExplainableGameGradioInterface(GameGradioInterface):
 
         return game, board_gallery, showing_state, status, ai_explanation, show_node_id, adjective, explaining_question, current_node_id, current_adjective, current_comparison_id
 
-    def preprocess_board_state(self, game, board_state):
-        """
-        Preprocess the board state. Override this method in the child classes if needed.
-        """
-        return board_state
-
     def update_board_gallery(self, game, node_id=None):
         """
         Get the updated game state images based on the current game state.
@@ -279,9 +276,6 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             board_state = game.action_spaces[self.main_action_space_id]
             showing_state = f"Current State ({node_id})" if node_id else "Current State"
 
-        board_state = self.preprocess_board_state(game, board_state)
-        if parent_state is not None:
-            parent_state = self.preprocess_board_state(game, parent_state)
         updated_images = []
         for i in range(board_state.shape[0]):
             for j in range(board_state.shape[1]):

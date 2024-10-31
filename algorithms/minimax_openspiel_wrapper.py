@@ -153,6 +153,8 @@ import graphviz
 import tempfile
 from open_spiel.python.algorithms import minimax
 class MiniMax:
+    tree_node_class = TreeNode
+    
     def __init__(self, score_function=None, *, max_depth=3, start_with_maximizing=True):
         self.score_function = score_function
         self.max_depth = max_depth
