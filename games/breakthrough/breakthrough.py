@@ -13,7 +13,7 @@ class Breakthrough(Game):
     free_label = FREE_LABEL
     idx_to_color = {0: 'w', 1: 'b'}
     color_to_idx = {value: key for key, value in idx_to_color.items()}
-    color_side = {0: idx_to_color[0], -1: idx_to_color[1]} # 0 has the pieces on the top, -1 has the pieces on the bottom
+    color_side = {0: idx_to_color[1], -1: idx_to_color[0]} # 0 has the pieces on the top, -1 has the pieces on the bottom
     board_shape = (6, 6)
 
     @classmethod
