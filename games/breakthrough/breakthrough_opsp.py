@@ -74,6 +74,7 @@ class BreakthroughOpSp(Breakthrough):
             raise ValueError(f"The action {action_str} is not legal. Available actions are: {[self.state.action_to_string(player, action) for action in legal_actions]}")
     
     def winner(self):
+    # TODO: Base the winner inference on state.player_return
         if not self.ended:
             return None
         return self.last_player
