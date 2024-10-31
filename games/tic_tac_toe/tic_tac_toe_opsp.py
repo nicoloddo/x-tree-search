@@ -13,18 +13,8 @@ class AutoCallDict(dict):
 
 FREE_LABEL = ' '
 class TicTacToeOpSp(TicTacToe):
-        
-    def _game_model_definition(self):
-        game = pyspiel.load_game("tic_tac_toe")
-        self.state = game.new_initial_state()
-        self._agents = np.array([['X'],
-                                 ['O']])
-        self._action_spaces = AutoCallDict({
-            "board": lambda: self.opsp_state_to_action_space(self.state)
-        })
-        return game
-    
-    def opsp_state_to_action_space(self, opsp_state):
+    @classmethod
+    def opsp_state_to_action_space(cls, opsp_state):
         # Convert the state string into a 2D list
         board_str = str(opsp_state)
         rows = board_str.split('\n')
@@ -43,6 +33,16 @@ class TicTacToeOpSp(TicTacToe):
             board.append(current_row)
         
         return np.array(board)
+        
+    def _game_model_definition(self):
+        game = pyspiel.load_game("tic_tac_toe")
+        self.state = game.new_initial_state()
+        self._agents = np.array([['X'],
+                                 ['O']])
+        self._action_spaces = AutoCallDict({
+            "board": lambda: self.opsp_state_to_action_space(self.state)
+        })
+        return game
 
     def act(self, action=None, *, opsp_action=None, player=None) -> None:
 
