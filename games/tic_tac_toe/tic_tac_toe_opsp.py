@@ -8,7 +8,7 @@ from games.common.utils import AutoCallDict
 FREE_LABEL = ' '
 class TicTacToeOpSp(TicTacToe):
     @classmethod
-    def opsp_state_to_action_space(cls, opsp_state):
+    def game_state_translator(cls, opsp_state):
         # Convert the state string into a 2D list
         board_str = str(opsp_state)
         rows = board_str.split('\n')
@@ -73,23 +73,19 @@ class TicTacToeOpSp(TicTacToe):
         else:
             raise ValueError(f"The action {action_str} is not legal. Available actions are: {[self.state.action_to_string(player, action) for action in legal_actions]}")
     
-    # Overrides for OpSp game classes:
+    """General overrides for OpSp game classes:"""
     @property
     def started(self):
-        return self.state.serialize() == self.gm.new_initial_state().serialize()
+        return self.state.serialize() == self.model.new_initial_state().serialize()
     
     @property
     def ended(self):
         return self.state.current_player() == pyspiel.PlayerId.TERMINAL
-
-    @property
-    def model(self):
-        return self.gm
     
     @property
     def action_spaces(self):
         return AutoCallDict({
-            "board": lambda: self.opsp_state_to_action_space(self.state)
+            "board": lambda: self.game_state_translator(self.state)
         })
     
     @property
