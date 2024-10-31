@@ -45,9 +45,6 @@ class TicTacToeOpSp(TicTacToe):
         self.state = game.new_initial_state()
         self._agents = np.array([['X'],
                                  ['O']])
-        self._action_spaces = AutoCallDict({
-            "board": lambda: self.opsp_state_to_action_space(self.state)
-        })
         return game
 
     def act(self, action=None, *, opsp_action=None, player=None) -> None:
@@ -103,7 +100,9 @@ class TicTacToeOpSp(TicTacToe):
     
     @property
     def action_spaces(self):
-        return self._action_spaces
+        return AutoCallDict({
+            "board": lambda: self.opsp_state_to_action_space(self.state)
+        })
     
     @property
     def agents(self):
