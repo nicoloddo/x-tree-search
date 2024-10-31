@@ -40,7 +40,7 @@ class BreakthroughJupyterInterface(GameJupyterInterface):
                 current_player = self.game.get_current_player()
 
                 if current_player.id not in self.where: # first click
-                    if self.game.model.action_spaces["board"][(row, col)] != self.game.free_label:
+                    if self.game.action_spaces["board"][(row, col)] != self.game.free_label:
                         self.where[current_player.id] = (row, col)
                 else: # second click
                     what = (row, col)

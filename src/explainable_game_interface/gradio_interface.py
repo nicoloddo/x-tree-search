@@ -262,7 +262,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
 
                 # Determine if the requested node is the current state or a different node
                 if current_id == node_id:
-                    board_state = game.model.action_spaces[self.main_action_space_id]
+                    board_state = game.action_spaces[self.main_action_space_id]
                     showing_state = f"Current State ({node_id})"
                 else:
                     board_state = node.game_state
@@ -276,7 +276,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             else:
                 node_id = None
                 parent_state = None
-            board_state = game.model.action_spaces[self.main_action_space_id]
+            board_state = game.action_spaces[self.main_action_space_id]
             showing_state = f"Current State ({node_id})" if node_id else "Current State"
 
         board_state = self.preprocess_board_state(game, board_state)

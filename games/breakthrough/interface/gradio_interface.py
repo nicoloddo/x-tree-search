@@ -116,12 +116,12 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         """
         try:
             index = evt.index
-            row, col = index // game.model.action_spaces[self.main_action_space_id].shape[1], index % game.model.action_spaces[self.main_action_space_id].shape[1]
+            row, col = index // game.action_spaces[self.main_action_space_id].shape[1], index % game.action_spaces[self.main_action_space_id].shape[1]
 
             current_player = game.get_current_player()
 
             if current_player.id not in self.where: # first click
-                if game.model.action_spaces["board"][(row, col)] != game.free_label:
+                if game.action_spaces["board"][(row, col)] != game.free_label:
                     self.where[current_player.id] = (row, col)
             else: # second click
                 what = (row, col)

@@ -100,7 +100,7 @@ class TicTacToeGradioInterface(ExplainableGameGradioInterface):
         """
         try:
             index = evt.index
-            row, col = index // game.model.action_spaces[self.main_action_space_id].shape[1], index % game.model.action_spaces[self.main_action_space_id].shape[1]
+            row, col = index // game.action_spaces[self.main_action_space_id].shape[1], index % game.action_spaces[self.main_action_space_id].shape[1]
             current_player = game.get_current_player()
             action = game.agents[current_player.id, 0]
             inputs = {'what': action, 'where': (row, col), 'on': self.main_action_space_id}
