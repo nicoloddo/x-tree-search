@@ -41,6 +41,49 @@ class StateActionTracker:
         """Convenience method to apply the tracking decorator"""
         return track_state_actions(self)(func)
 
+class StateWrapper:
+    def __init__(self, state, alpha=None, beta=None):
+        self.state = state
+        self.children = []
+        self.alpha = alpha
+        self.beta = beta
+    
+    def __getattr__(self, name):
+        return getattr(self.state, name)
+    
+    def clone(self):
+        # Wrap the cloned state in a new StateWrapper
+        new_state = StateWrapper(self.state.clone())
+        self.children.append(new_state)
+        return new_state
+    
+    def __call__(self, *args, **kwargs):
+        return self.state(*args, **kwargs)
+    
+        # Add representation methods
+    def __repr__(self):
+        return repr(self.state)
+    
+    def __str__(self):
+        return str(self.state)
+    
+    # Add comparison methods
+    def __eq__(self, other):
+        if isinstance(other, StateWrapper):
+            return self.state == other.state
+        return self.state == other
+    
+    def __hash__(self):
+        return hash(self.state)
+    
+    # Add iterator support if the state is iterable
+    def __iter__(self):
+        return iter(self.state)
+    
+    # Add length support if the state supports len()
+    def __len__(self):
+        return len(self.state)
+
 def track_state_actions(tracker: StateActionTracker):
     """
     Decorator that tracks state-action pairs during alpha-beta search in a tree structure.
@@ -54,17 +97,20 @@ def track_state_actions(tracker: StateActionTracker):
     """
     def decorator(func):
         @wraps(func)
-        def wrapper(state, depth, *args, **kwargs):
+        def wrapper(state, depth, alpha, beta, value_function, maximizing_player_id):
+            state = StateWrapper(state, alpha, beta)
             if tracker.root is None:
                 tracker.set_root(state)
             
+            """
             if state.is_terminal() or depth == 0:
                 current_node = tracker.root
                 history = state.history()[len(tracker.root.state.history()):]
                 for action in history:
                     current_node = current_node.add_child(current_node.state, action)
+            """
             
-            return func(state, depth, *args, **kwargs)
+            return func(state, depth, alpha, beta, value_function, maximizing_player_id)
         return wrapper
     return decorator
 
