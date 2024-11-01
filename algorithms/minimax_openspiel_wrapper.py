@@ -170,7 +170,7 @@ class MiniMax:
     
     @property
     def nodes(self):
-        return self.tracker.nodes if self.tracker is not None else []
+        return self.tracker.nodes if self.tracker is not None else {}
 
     def run(self, game, state, running_player_id, max_depth=None):
         """
