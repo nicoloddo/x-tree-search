@@ -85,12 +85,20 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         If the piece you want to select is in a cell with the orange border (previously selected cell), you won't be able to click on it. 
         Click on an empty space so that the orange border goes to the empty cell before clicking on the piece.
         """
+        game_board_side_size =  game.action_spaces["board"].shape[0]
+        if game_board_side_size == 6:
+            game_explanation_interface_ratio = "3:4"
+        elif game_board_side_size == 8:
+            game_explanation_interface_ratio = "1:1"
+        else:
+            game_explanation_interface_ratio = "1:1"
+
         super().__init__(game, 
                          game_title_md=game_title_md, 
                          action_spaces_to_visualize=[self.main_action_space_id, "agents"],
                          explainer=explainer,
                          interface_hyperlink_mode=interface_hyperlink_mode,
-                         game_explanation_ratio="3:4",
+                         game_explanation_ratio=game_explanation_interface_ratio,
                          help_md=help_md)
         self.where = {}
         
