@@ -75,13 +75,13 @@ class BreakthroughOpSp(Breakthrough):
         legal_actions = self.state.legal_actions(player)
         action_found = False
         for action in legal_actions:
-            available_action_str = self.state.action_to_string(player, action)
+            available_action_str = self.state.action_to_string(player, action)[:4] # Cut extra characters identifying captures for example
             if available_action_str == action_str:
                 action_found = True
                 break
         
         if action_found:
-            self.state.apply_action(action)
+            self.state.apply_action(action) # The last action of the iteration is the one where the for was broken
         else:
             raise ValueError(f"The action {action_str} is not legal. Available actions are: {[self.state.action_to_string(player, action) for action in legal_actions]}")
     
