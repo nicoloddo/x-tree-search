@@ -31,6 +31,14 @@ class BreakthroughOpSp(Breakthrough):
             board.append(current_row)
         
         return np.array(board)
+    
+    def coordinates_to_breakthrough_string(self, coordinates):
+        row, col = coordinates
+        # Convert column number to letter (0 -> a, 1 -> b, etc.)
+        col_letter = string.ascii_lowercase[col]
+        # Invert row number (0 -> 8, 1 -> 7, etc. for 8x8 board)
+        row_number = self.board_side_size - row
+        return f"{col_letter}{row_number}"
         
     def _game_model_definition(self):
         game = pyspiel.load_game("breakthrough")
@@ -38,6 +46,9 @@ class BreakthroughOpSp(Breakthrough):
         self._agents = np.array([['b'],
                                  ['w']])
         self.board_side_size = self.state_translator(self.state).shape[0]
+
+        from games.breakthrough.interface.gradio_interface import BreakthroughGradioInterface
+        BreakthroughGradioInterface.coordinates_to_string = self.coordinates_to_breakthrough_string
         return game
 
     def act(self, action=None, *, opsp_action=None, player=None) -> None:
@@ -56,16 +67,10 @@ class BreakthroughOpSp(Breakthrough):
         self.last_player = player
         old_coordinates = action['where']
         new_coordinates = action['what']
-        
-        def coords_to_breakthrough(coordinates):
-            row, col = coordinates
-            # Convert column number to letter (0 -> a, 1 -> b, etc.)
-            col_letter = string.ascii_lowercase[col]
-            # Invert row number (0 -> 8, 1 -> 7, etc. for 8x8 board)
-            row_number = self.board_side_size - row
-            return f"{col_letter}{row_number}"
 
-        action_str = f"{coords_to_breakthrough(old_coordinates)}{coords_to_breakthrough(new_coordinates)}"
+        breakthrough_old_coords = self.coordinates_to_breakthrough_string(old_coordinates)
+        breakthrough_new_coords = self.coordinates_to_breakthrough_string(new_coordinates)
+        action_str = f"{breakthrough_old_coords}{breakthrough_new_coords}"
 
         legal_actions = self.state.legal_actions(player)
         action_found = False

@@ -19,6 +19,11 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
     def main_action_space_id(self):
         return "board"
     
+    @classmethod
+    def coordinates_to_string(cls, coordinates):
+        i, j = coordinates
+        return f"{i},{j}"
+    
     def create_board_cell_images(self):
         """
         Create and store all possible cell images for Breakthrough.
@@ -59,7 +64,7 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         # Add index to the image
         draw = ImageDraw.Draw(img)
         font = ImageFont.load_default().font_variant(size=15)
-        draw.text((5, 3), f"{i},{j}", font=font, fill='blue')
+        draw.text((5, 3), self.coordinates_to_string((i, j)), font=font, fill='blue')
         
         return img
 
@@ -78,11 +83,12 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         :raises AttributeError: If the game instance doesn't have a 'get_current_player' or 'explaining_agent' attributes
         """
         help_md = """
-        Click on a piece to select it.
-        Click on a cell to move the selected piece to that cell.
-        If you want to change the piece to move, make an invalid move to deselect the piece.
+        Click on a piece to select it.<br>
+        Click on a cell to move the selected piece to that cell.<br>
+        If you want to change the piece to move, make an invalid move to deselect the piece.<br>
 
-        If the piece you want to select is in a cell with the orange border (previously selected cell), you won't be able to click on it. 
+        If the piece you want to select is in a cell with the orange border (previously selected cell), you won't be able to click on it.
+        This is due to Gradio's Gallery interface, nothing we can change, but there is a workaround:<br> 
         Click on an empty space so that the orange border goes to the empty cell before clicking on the piece.
         """
         game_board_side_size =  game.action_spaces["board"].shape[0]
