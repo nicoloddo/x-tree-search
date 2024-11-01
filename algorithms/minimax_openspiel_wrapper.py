@@ -62,7 +62,7 @@ class TreeNode:
 
     @property 
     def fully_searched(self):
-        return all([child.has_score for child in self.children])
+        return len(self.children) == len(self.legal_actions())
 
     @property
     def score_child(self):
@@ -116,8 +116,8 @@ class TreeNode:
     # Add comparison methods
     def __eq__(self, other):
         if isinstance(other, TreeNode):
-            return self.state == other.state
-        return self.state == other
+            return self.state.serialize() == other.state.serialize()
+        return self.state.serialize() == other.serialize()
     
     def __hash__(self):
         return hash(self.state)
@@ -141,10 +141,25 @@ def track_state_actions(tracker: StateActionTracker):
             tracker.nodes[node.id] = node
             
             node.depth = depth
-            node.alpha = alpha
-            node.beta = beta
             value, best_action = func(node, depth, alpha, beta, value_function, maximizing_player_id)
             node.score = value
+
+            if not node.is_terminal() and not depth == 0: # bottom of search
+                if node.maximizing_player_turn:
+                    node.alpha = node.score_child 
+                    node.beta = None
+                else:
+                    node.alpha = None
+                    node.beta = node.score_child
+            
+            """ Adding this increases way too much the computation time
+            for action in node.legal_actions()[len(node.children):]:
+                missing_child = node.clone()
+                missing_child.apply_action(action)
+                missing_child.depth = depth + 1
+                missing_child.alpha = alpha
+                missing_child.beta = beta
+                tracker.nodes[node.id + '_' + str(action)] = missing_child"""
             
             return value, best_action
 
