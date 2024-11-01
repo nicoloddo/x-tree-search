@@ -102,7 +102,10 @@ class MiniMax:
         use_alpha_beta (bool): Whether to use alpha-beta pruning.
     """
     tree_node_class = MiniMaxNode
-    
+    @classmethod
+    def set_game_state_translator(cls, game_state_translator):
+        cls.tree_node_class.game_state_translator = game_state_translator
+
     def __init__(self, scoring_function, *, max_depth=3, start_with_maximizing=True, use_alpha_beta=True):
         # Mandatory attributes:
         self.nodes = {} # Holds the nodes with as key their node.node.id
@@ -121,18 +124,21 @@ class MiniMax:
             self.algorithm = self.minimax
     
     def run(self, state_node, *, max_depth = None, expansion_constraints_self : Dict = None, expansion_constraints_other : Dict = None):
-        if max_depth is None:
-            max_depth = self.max_depth
+        try:
+            if max_depth is None:
+                max_depth = self.max_depth
 
-        self.search_root = MiniMaxNode(state_node)
-        self.nodes = self.search_root.nodes_holder
+            self.search_root = MiniMaxNode(state_node)
+            self.nodes = self.search_root.nodes_holder
 
-        best_child, best_value = self.algorithm(self.search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
+            best_child, best_value = self.algorithm(self.search_root, self.start_with_maximizing, max_depth=max_depth, constraints_maximizer=expansion_constraints_self, constraints_minimizer=expansion_constraints_other)
 
-        if best_child is not None:
-            self.search_root_final = best_child.parent
-            self.last_choice = best_child            
-        return best_child, best_value
+            if best_child is not None:
+                self.search_root_final = best_child.parent
+                self.last_choice = best_child            
+            return best_child, best_value
+        except Exception as e:
+            raise ValueError("You may have forgotten to set the translate game state for the algorithm.") from e
     
     def minimax(self, node, is_maximizing, current_depth = 0, *, max_depth, constraints_maximizer=None, constraints_minimizer=None):
         node.maximizing_player_turn = is_maximizing

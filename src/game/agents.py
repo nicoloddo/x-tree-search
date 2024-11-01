@@ -11,6 +11,8 @@ class GameAgent(ABC):
         pass
 
 class AIAgent(GameAgent):
+    player_type = 'AI'
+    
     def __init__(self, *, agent_id, core):
         """
         GameAgent initialization.
@@ -55,6 +57,8 @@ class AIAgent(GameAgent):
         return self.core.last_choice
     
 class AIAgentOpSp(GameAgent):
+    player_type = 'AI'
+
     def __init__(self, *, agent_id, core):
         super().__init__(agent_id=agent_id)
         self.core = core
@@ -73,6 +77,8 @@ class AIAgentOpSp(GameAgent):
 
 
 class User(GameAgent):
+    player_type = 'human'
+
     def __init__(self, *, agent_id, ask_what=True, ask_where=True, pause_first_turn=False):
         super().__init__(agent_id=agent_id)
         self.ask_what = ask_what

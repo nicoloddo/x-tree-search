@@ -38,9 +38,6 @@ class ExplainableGameGradioInterface(GameGradioInterface):
                          game_title_md=game_title_md, 
                          action_spaces_to_visualize=action_spaces_to_visualize,
                          help_md=help_md)
-        
-        algorithm_class = game.explaining_agent.core.__class__
-        algorithm_class.tree_node_class.game_state_translator = game.game_state_translator
 
         self.ai_explanation_components = None
         self.explainer = explainer

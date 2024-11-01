@@ -33,7 +33,10 @@ class TreeNode:
         self.beta = None
 
         self.maximizing_player_turn = maximizing_player_turn
-        self.parent_state = self.game_state_translator(self.parent.state) if self.parent is not None else None
+        if self.parent is not None:
+            self.parent_state = self.game_state_translator(self.parent.state)
+        else:
+            self.parent_state = None
 
     @property
     def is_leaf(self):
@@ -137,11 +140,11 @@ def track_state_actions(tracker: StateActionTracker):
             
             tracker.nodes[node.id] = node
             
-            value, best_action = func(node, depth, alpha, beta, value_function, maximizing_player_id)
-            node.score = value
             node.depth = depth
             node.alpha = alpha
             node.beta = beta
+            value, best_action = func(node, depth, alpha, beta, value_function, maximizing_player_id)
+            node.score = value
             
             return value, best_action
 
@@ -154,6 +157,9 @@ import tempfile
 from open_spiel.python.algorithms import minimax
 class MiniMax:
     tree_node_class = TreeNode
+    @classmethod
+    def set_game_state_translator(cls, game_state_translator):
+        cls.tree_node_class.game_state_translator = game_state_translator
     
     def __init__(self, score_function=None, *, max_depth=3, start_with_maximizing=True):
         self.score_function = score_function
@@ -173,31 +179,34 @@ class MiniMax:
         :param running_player_id: The id of the player that is running the algorithm.
         :param max_depth: The maximum depth to search to.
         """
-        self.tracker = StateActionTracker(self.start_with_maximizing)
+        try:
+            self.tracker = StateActionTracker(self.start_with_maximizing)
 
-        # If already wrapped, get the original function
-        if hasattr(minimax._alpha_beta, '_original_func'):
-            original_func = minimax._alpha_beta._original_func
-        else:
-            original_func = minimax._alpha_beta
+            # If already wrapped, get the original function
+            if hasattr(minimax._alpha_beta, '_original_func'):
+                original_func = minimax._alpha_beta._original_func
+            else:
+                original_func = minimax._alpha_beta
+                
+            # Apply new wrapper
+            minimax._alpha_beta = self.tracker.track(original_func)
+            # Store reference to original function
+            minimax._alpha_beta._original_func = original_func
             
-        # Apply new wrapper
-        minimax._alpha_beta = self.tracker.track(original_func)
-        # Store reference to original function
-        minimax._alpha_beta._original_func = original_func
-        
-        if max_depth is None:
-            max_depth = self.max_depth
-        
-        if self.start_with_maximizing:
-            maximizing_player_id = running_player_id
-        else:
-            maximizing_player_id = abs(running_player_id - 1) # 0 if player 1, 1 if player 0: the other player
+            if max_depth is None:
+                max_depth = self.max_depth
+            
+            if self.start_with_maximizing:
+                maximizing_player_id = running_player_id
+            else:
+                maximizing_player_id = abs(running_player_id - 1) # 0 if player 1, 1 if player 0: the other player
 
-        game_score, action = minimax.alpha_beta_search(game, state, self.score_function, maximum_depth=max_depth, maximizing_player_id=maximizing_player_id)
+            game_score, action = minimax.alpha_beta_search(game, state, self.score_function, maximum_depth=max_depth, maximizing_player_id=maximizing_player_id)
 
-        self.last_choice = self.nodes[self.tracker.root.id + '_' + str(action)]
-        return game_score, action
+            self.last_choice = self.nodes[self.tracker.root.id + '_' + str(action)]
+            return game_score, action
+        except Exception as e:
+            raise ValueError("You may have forgotten to set the translate game state for the algorithm.") from e
 
     def visualize_decision_tree(self, root_node):
         dot = graphviz.Digraph(comment='Visualize Decision Tree')

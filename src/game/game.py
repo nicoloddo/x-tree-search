@@ -18,6 +18,10 @@ nest_asyncio.apply()
 class Game:
     GameModel.verbose = False
 
+    @classmethod
+    def state_translator(cls, state):
+        return state
+
     def __init__(self, child_init_params, *, players, main_action_space_id, tree_action_space_id=None, fast_check_rules=True,
                  ask_what=None, ask_where=None, what_question=None, where_question=None, parse_what_input=None, parse_where_input=None):
         GameModel.fast_check_rules = fast_check_rules
@@ -47,6 +51,15 @@ class Game:
         if isinstance(self.gm, GameModel):
             self.gm.parse_what_input = self.parse_what_input
             self.gm.parse_where_input = self.parse_where_input
+    
+    def _set_players(self, players):
+        for player in players:
+            if player.player_type == 'AI':
+                player.core.set_game_state_translator(self.state_translator)
+            self.players[player.id] = player
+
+    def check_start(self):
+        pass
 
     def restart(self):
         """
@@ -136,10 +149,6 @@ class Game:
     @abstractmethod
     def act(self, action) -> None:
         pass
-    
-    def _set_players(self, players):
-        for player in players:
-            self.players[player.id] = player
     
     def winner(self):
         """Method to determine the winner of the game.

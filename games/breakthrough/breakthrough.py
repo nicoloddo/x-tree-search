@@ -17,7 +17,7 @@ class Breakthrough(Game):
     board_shape = (6, 6)
 
     @classmethod
-    def game_state_translator(cls, pieces_state): # pieces state to board state
+    def state_translator(cls, pieces_state): # pieces state to board state
         """
         Convert the pieces state to the board state.
         """
@@ -80,6 +80,7 @@ class Breakthrough(Game):
             raise ValueError(f"Unsupported interface mode: {interface_mode}")
 
     async def start_game(self, share_gradio=False):
+        super().check_start()
         await self.process_turn()  
 
         if self.interface_mode == 'cmd':

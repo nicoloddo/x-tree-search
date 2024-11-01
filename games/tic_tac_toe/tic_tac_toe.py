@@ -48,6 +48,7 @@ class TicTacToe(Game):
             raise ValueError(f"Unsupported interface mode: {interface_mode}")
         
     async def start_game(self, share_gradio=False):
+        super().check_start()
         await self.process_turn()  
 
         if self.interface_mode == 'cmd':

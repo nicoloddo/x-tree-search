@@ -8,7 +8,7 @@ from games.common.utils import AutoCallDict
 FREE_LABEL = ' '
 class TicTacToeOpSp(TicTacToe):
     @classmethod
-    def game_state_translator(cls, opsp_state):
+    def state_translator(cls, opsp_state):
         # Convert the state string into a 2D list
         board_str = str(opsp_state)
         rows = board_str.split('\n')
@@ -93,7 +93,7 @@ class TicTacToeOpSp(TicTacToe):
     @property
     def action_spaces(self):
         return AutoCallDict({
-            "board": lambda: self.game_state_translator(self.state)
+            "board": lambda: self.state_translator(self.state)
         })
     
     @property
