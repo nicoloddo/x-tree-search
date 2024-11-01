@@ -1,5 +1,6 @@
 import pyspiel
 import numpy as np
+import string
 
 from games.breakthrough import Breakthrough
 from src.game.agents import User
@@ -8,11 +9,14 @@ from games.common.utils import AutoCallDict
 FREE_LABEL = ' '
 class BreakthroughOpSp(Breakthrough):
     @classmethod
-    def game_state_translator(cls, opsp_state):
+    def state_translator(cls, opsp_state):
         # Convert the state string into a 2D list
         board_str = str(opsp_state)
-        rows = board_str.split('\n')
-        
+        # Split into rows, remove the last 2 lines (column labels + last \n)
+        rows = board_str.split('\n')[:-2]
+        # Remove the row numbers from each line
+        rows = [row[1:] for row in rows]
+
         # Create the board representation
         board = []
         for row in rows:
@@ -20,10 +24,10 @@ class BreakthroughOpSp(Breakthrough):
             for cell in row:
                 if cell == '.':
                     current_row.append(FREE_LABEL)
-                elif cell == 'x':
-                    current_row.append('X')
-                elif cell == 'o':
-                    current_row.append('O')
+                elif cell == 'w':
+                    current_row.append('w')
+                elif cell == 'b':
+                    current_row.append('b')
             board.append(current_row)
         
         return np.array(board)
@@ -31,8 +35,9 @@ class BreakthroughOpSp(Breakthrough):
     def _game_model_definition(self):
         game = pyspiel.load_game("breakthrough")
         self.state = game.new_initial_state()
-        self._agents = np.array([['w'],
-                                 ['b']])
+        self._agents = np.array([['b'],
+                                 ['w']])
+        self.board_side_size = self.state_translator(self.state).shape[0]
         return game
 
     def act(self, action=None, *, opsp_action=None, player=None) -> None:
@@ -49,16 +54,18 @@ class BreakthroughOpSp(Breakthrough):
         
         player = action['who']
         self.last_player = player
-        coordinates = action['where']
-
-        if player == 0:
-            sign = 'x'
-        elif player == 1:
-            sign = 'o'
-        else:
-            raise ValueError("Player variable has to be 0 or 1")
+        old_coordinates = action['where']
+        new_coordinates = action['what']
         
-        action_str = f"{sign}({coordinates[0]},{coordinates[1]})"
+        def coords_to_breakthrough(coordinates):
+            row, col = coordinates
+            # Convert column number to letter (0 -> a, 1 -> b, etc.)
+            col_letter = string.ascii_lowercase[col]
+            # Invert row number (0 -> 8, 1 -> 7, etc. for 8x8 board)
+            row_number = self.board_side_size - row
+            return f"{col_letter}{row_number}"
+
+        action_str = f"{coords_to_breakthrough(old_coordinates)}{coords_to_breakthrough(new_coordinates)}"
 
         legal_actions = self.state.legal_actions(player)
         action_found = False
@@ -91,7 +98,7 @@ class BreakthroughOpSp(Breakthrough):
     @property
     def action_spaces(self):
         return AutoCallDict({
-            "board": lambda: self.game_state_translator(self.state)
+            "board": lambda: self.state_translator(self.state)
         })
     
     @property
