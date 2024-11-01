@@ -279,6 +279,7 @@ class OnlyRelevantComparisons(SpecificTactic):
         return proposition
 
     def apply_on_evaluation(self, group):
+        # TODO: refactor after recent changes on RankAdjectives
         comparison_adjective_name = self.tactic_of_adjective.comparison_adjective_name
         comparison_adjective = self.framework.get_adjective(comparison_adjective_name)
         value_for_comparison_adjective = self.framework.get_adjective(comparison_adjective.property_pointer_adjective_name)
