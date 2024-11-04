@@ -41,7 +41,7 @@ class BreakthroughOpSp(Breakthrough):
         return f"{col_letter}{row_number}"
         
     def _game_model_definition(self):
-        game = pyspiel.load_game("breakthrough")
+        game = pyspiel.load_game("breakthrough", {"rows": 6, "columns": 6})
         self.state = game.new_initial_state()
         self._agents = np.array([['b'],
                                  ['w']])
