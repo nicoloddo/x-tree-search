@@ -53,6 +53,8 @@ if pre_moves:
 
 minimax._alpha_beta = minimax._alpha_beta._original_func
 
+start_time = time.time()
+
 # Profile the original implementation
 original_profiler = cProfile.Profile()
 original_profiler.enable()

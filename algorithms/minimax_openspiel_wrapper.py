@@ -26,15 +26,12 @@ class TreeNode:
         self.state = state
         self.parent = parent_node
         self.children = []
-
         self.score = None
         self.depth = None
+        self._translated_state = None  # Cache for translated game state
 
         self.maximizing_player_turn = maximizing_player_turn
-        if self.parent is not None:
-            self.parent_state = self.game_state_translator(self.parent.state)
-        else:
-            self.parent_state = None
+        self.parent_state = None if parent_node is None else parent_node.game_state
 
     @property
     def is_leaf(self):
@@ -98,7 +95,9 @@ class TreeNode:
     
     @property
     def game_state(self):
-        return self.game_state_translator(self.state)
+        if self._translated_state is None:
+            self._translated_state = self.game_state_translator(self.state)
+        return self._translated_state
     
     @property
     def game_tree_node_string(self):
