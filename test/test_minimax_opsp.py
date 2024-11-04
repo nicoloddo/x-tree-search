@@ -4,6 +4,9 @@ from games.breakthrough import BreakthroughOpSp as Game
 import time
 import pyspiel
 from open_spiel.python.algorithms import minimax
+import cProfile
+import pstats
+from pstats import SortKey
 
 game = pyspiel.load_game("breakthrough")
 max_depth = 6
@@ -30,10 +33,16 @@ minimax._alpha_beta = tracker.track(original_func)
 minimax._alpha_beta._original_func = original_func
 
 start_time = time.time()
+
+# Profile the wrapped explainable implementation
+explainable_profiler = cProfile.Profile()
+explainable_profiler.enable()
 game_score, x_action = minimax.alpha_beta_search(
     game, xstate, value_function, 
     maximum_depth=max_depth, 
     maximizing_player_id=0)
+explainable_profiler.disable()
+
 x_time = time.time() - start_time
 
 # Time the original minimax implementation
@@ -44,13 +53,16 @@ if pre_moves:
 
 minimax._alpha_beta = minimax._alpha_beta._original_func
 
-# Time original minimax
-start_time = time.time()
+# Profile the original implementation
+original_profiler = cProfile.Profile()
+original_profiler.enable()
 original_score, original_action = minimax.alpha_beta_search(
     game, og_state, value_function,
     maximum_depth=max_depth,
     maximizing_player_id=0
 )
+original_profiler.disable()
+
 original_time = time.time() - start_time
 
 # Print comparison
@@ -59,3 +71,12 @@ print(f"Original MiniMax time: {original_time:.3f} seconds")
 print(f"Explainable action: {x_action}")
 print(f"Original action: {original_action}")
 print(f"Time ratio (explainable/original): {(x_time/original_time*100):.2f}%")
+
+# Print detailed profiling information
+print("\nExplainable Implementation Profile:")
+explainable_stats = pstats.Stats(explainable_profiler).sort_stats(SortKey.CUMULATIVE)
+explainable_stats.print_stats(20)  # Show top 20 time-consuming functions
+
+print("\nOriginal Implementation Profile:")
+original_stats = pstats.Stats(original_profiler).sort_stats(SortKey.CUMULATIVE)
+original_stats.print_stats(20)
