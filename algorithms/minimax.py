@@ -61,6 +61,16 @@ class MiniMaxNode:
     def populate_children(self):
         return [MiniMaxNode(child, self, self.nodes_holder) for child in self.node.children]
     
+    def get_deep_score_child(self):
+        if self.score_child is not None:
+            return self.score_child.get_deep_score_child()
+        else:
+            return self
+
+    @property
+    def deep_score_child(self):
+        return self.get_deep_score_child()
+    
     @property
     def is_leaf(self):
         return self.node.is_leaf

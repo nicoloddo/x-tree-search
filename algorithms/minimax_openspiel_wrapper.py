@@ -40,6 +40,12 @@ class TreeNode:
         return self._parent_state
 
     @property
+    def game_state(self):
+        if self._translated_state is None:
+            self._translated_state = self.game_state_translator(self.state)
+        return self._translated_state
+
+    @property
     def is_leaf(self):
         return self.is_terminal() or self.max_search_depth_reached
 
@@ -76,6 +82,16 @@ class TreeNode:
             return max(scored_children, key=lambda child: child.score)
         else:
             return min(scored_children, key=lambda child: child.score)
+    
+    def get_deep_score_child(self):
+        if self.score_child is not None:
+            return self.score_child.get_deep_score_child()
+        else:
+            return self
+
+    @property
+    def deep_score_child(self):
+        return self.get_deep_score_child()
         
     @property
     def alpha(self):
@@ -98,12 +114,6 @@ class TreeNode:
     @property
     def last_move_id(self):
         return self.id[-1]
-    
-    @property
-    def game_state(self):
-        if self._translated_state is None:
-            self._translated_state = self.game_state_translator(self.state)
-        return self._translated_state
     
     @property
     def game_tree_node_string(self):

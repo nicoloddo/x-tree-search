@@ -110,12 +110,7 @@ class AlphaBetaExplainer:
                             condition=If("possession", "not worth exploring after checking the first possible next move"),
                             
                             # The node has not been pruned, we have the full next future consequences list (until final moves or max search depth are reached)
-                            explanation_if_false = CompositeExplanation(
-                                Assumption("We assume the opponent will do their best move and us our best move.", necessary=True),
-                                RecursivePossession("as next move", any_stop_conditions = [If("possession", "as next move", "a win"), # final move
-                                                                                            If("possession", "as next move", "a loss"), # final move
-                                                                                            If("possession", "as next move", "a draw"), # final move
-                                                                                            If("possession", "as next move", "the most forward in the future I looked")])), # max search depth
+                            explanation_if_false = Possession("as future position after few moves"),
 
                             # The node has been pruned, we only have one children future consequence
                             explanation_if_true = ConditionalExplanation(
@@ -200,6 +195,17 @@ class AlphaBetaExplainer:
                     explanation_if_true = Assumption("The move is legal.", implicit=True)
                     )
                 ),
+            
+            PointerAdjective("as future position after few moves",
+                definition = "node.deep_score_child",
+                explanation = CompositeExplanation(
+                    Assumption("We assume the opponent will do their best move and us our best move.", necessary=True),
+                    RecursivePossession("as next move", any_stop_conditions = [If("possession", "as next move", "a win"), # final move
+                                                                                If("possession", "as next move", "a loss"), # final move
+                                                                                If("possession", "as next move", "a draw"), # final move
+                                                                                If("possession", "as next move", "the most forward in the future I looked")]) # max search depth
+                    )
+            ),
             
             PointerAdjective("as next possible move",
                 definition = "node.score_child",

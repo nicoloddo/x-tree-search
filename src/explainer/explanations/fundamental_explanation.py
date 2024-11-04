@@ -279,10 +279,8 @@ class RecursivePossession(Explanation):
     recursively continuing until a condition is met.
 
     e.g. RecursivePossession("next move", any_stop_conditions = [If("final move"), If("fully searched")])
-    """
-    max_recursion_depth = 5
-    
-    def __init__(self, *args, any_stop_conditions: list['If'], explain_further=False, forward_possessions_explanations=True): #(pointer_adjective_name: str = None, adjective_name: str = None):
+    """    
+    def __init__(self, *args, any_stop_conditions: list['If'], explain_further=False, forward_possessions_explanations=True, max_recursion_depth=5, explicit_max_recursion_stopping=False):
         """
         Initialize the RecursivePossession explanation.
 
@@ -320,6 +318,8 @@ class RecursivePossession(Explanation):
         self.any_stop_conditions = any_stop_conditions
         self.explain_further = explain_further
         self.forward_possessions_explanations = forward_possessions_explanations
+        self.max_recursion_depth = max_recursion_depth
+        self.explicit_max_recursion_stopping = explicit_max_recursion_stopping
 
         for condition in any_stop_conditions:
             condition.forward_possessions_explanations = False
@@ -391,9 +391,11 @@ class RecursivePossession(Explanation):
                     explain_further = True # The stop condition is explained further regardless
                 )
             if recursion_depth > self.max_recursion_depth:
-                additional_conditions_explanations.append(Postulate("Max recursion limit hitted in Recursive Possession explanation."))
-                
-            recursion_explanations.extend(additional_conditions_explanations)
+                if self.explicit_max_recursion_stopping:
+                    additional_conditions_explanations.append(Postulate("Max recursion limit hitted in Recursive Possession explanation."))
+            
+            if len(additional_conditions_explanations) > 0:
+                recursion_explanations.extend(additional_conditions_explanations)
             explanation = And(*recursion_explanations)
             return explanation
         else:
