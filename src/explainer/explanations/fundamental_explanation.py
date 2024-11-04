@@ -280,7 +280,7 @@ class RecursivePossession(Explanation):
 
     e.g. RecursivePossession("next move", any_stop_conditions = [If("final move"), If("fully searched")])
     """    
-    def __init__(self, *args, any_stop_conditions: list['If'], explain_further=False, forward_possessions_explanations=True, max_recursion_depth=5, explicit_max_recursion_stopping=False):
+    def __init__(self, *args, any_stop_conditions: list['If'], explain_further=False, forward_possessions_explanations=True, max_recursion_depth=5, explicit_max_recursion_stopping=True):
         """
         Initialize the RecursivePossession explanation.
 
@@ -298,6 +298,10 @@ class RecursivePossession(Explanation):
         :type explain_further: bool
         :param forward_possessions_explanations: Whether it is necessary to explain why the node has the given pointer adjectives attached, optional.
         :type forward_possessions_explanations: bool
+        :param max_recursion_depth: The maximum depth of the recursion.
+        :type max_recursion_depth: int
+        :param explicit_max_recursion_stopping: Whether to explicitly state that the maximum recursion depth has been reached.
+        :type explicit_max_recursion_stopping: bool
         :raises ValueError: If more than 2 non-keyword arguments are provided.
 
         start_pointer_adjective_name: The name of the pointer adjective that selects the object from which to start.
