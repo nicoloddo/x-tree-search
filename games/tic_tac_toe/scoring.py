@@ -25,7 +25,7 @@ def simple_scoring_function(node):
         elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
             score -= 10  # 'O' is one move away from winning
 
-    return score/1000
+    return float(score)/1000.0
 
 def simple_depth_dependant_scoring_function(node):
     """ Evaluate the Tic Tac Toe board state for the 'X' player's perspective """
@@ -53,4 +53,4 @@ def simple_depth_dependant_scoring_function(node):
         elif np.count_nonzero(line == "X") == 2 and np.count_nonzero(line == "free") == 1:
             score -= 100 - depth  # 'O' is one move away from winning
 
-    return score/1000
+    return float(score)/1000.0

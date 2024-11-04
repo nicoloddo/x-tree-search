@@ -16,7 +16,7 @@ def simple_depth_dependant_scoring_function(node):
         game_ended = True
     
     if game_ended:
-        return score/1000
+        return float(score)/1000.0
 
     # Count pieces for each player
     black_pieces = np.sum(state == 'b')
@@ -37,7 +37,7 @@ def simple_depth_dependant_scoring_function(node):
     # Adjust score based on depth
     score -= depth
 
-    return score/1000
+    return float(score)/1000.0
 
 def simple_depth_dependant_scoring_function_opsp(node):
     """
@@ -65,7 +65,7 @@ def simple_depth_dependant_scoring_function_opsp(node):
             score = 1000 - depth  # Prefer quicker wins
         elif state.returns()[0] < 0:  # White wins (player 1)
             score = -1000 - depth  # Prefer longer losses
-        return score/1000  # Draw (shouldn't happen in Breakthrough)
+        return float(score)/1000.0  # Draw (shouldn't happen in Breakthrough)
 
     # Convert state to string and count pieces
     board_str = str(state)
@@ -92,4 +92,4 @@ def simple_depth_dependant_scoring_function_opsp(node):
     # Combine scores with weights
     final_score = (material_score * 10) + position_score
 
-    return final_score/1000
+    return float(final_score)/1000.0
