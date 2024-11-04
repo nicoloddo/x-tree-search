@@ -29,8 +29,6 @@ class TreeNode:
 
         self.score = None
         self.depth = None
-        self.alpha = None
-        self.beta = None
 
         self.maximizing_player_turn = maximizing_player_turn
         if self.parent is not None:
@@ -75,6 +73,20 @@ class TreeNode:
             return max(scored_children, key=lambda child: child.score)
         else:
             return min(scored_children, key=lambda child: child.score)
+        
+    @property
+    def alpha(self):
+        if self.maximizing_player_turn:
+            return self.score_child
+        else:
+            return None
+    
+    @property
+    def beta(self):
+        if self.maximizing_player_turn:
+            return None
+        else:
+            return self.score_child
 
     @property
     def id_length(self):
@@ -143,14 +155,6 @@ def track_state_actions(tracker: StateActionTracker):
             node.depth = depth
             value, best_action = func(node, depth, alpha, beta, value_function, maximizing_player_id)
             node.score = value
-
-            if not node.is_terminal() and not depth == 0: # bottom of search
-                if node.maximizing_player_turn:
-                    node.alpha = node.score_child 
-                    node.beta = None
-                else:
-                    node.alpha = None
-                    node.beta = node.score_child
             
             """ Adding this increases way too much the computation time
             for action in node.legal_actions()[len(node.children):]:

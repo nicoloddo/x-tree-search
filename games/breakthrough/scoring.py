@@ -1,10 +1,18 @@
 import numpy as np
-from games.breakthrough.breakthrough import Breakthrough
+from games.breakthrough import BreakthroughOpSp
+from pyspiel import State
+
+def preprocess_state(state):
+    return BreakthroughOpSp.state_translator(state)
 
 def simple_depth_dependant_scoring_function(node):
     """Evaluate the Breakthrough board state from the perspective of the 'b' (black) player"""
-    state = node.game_state
-    depth = node.depth
+    if isinstance(node, State):
+        state = preprocess_state(node)
+    else:
+        state = node.game_state
+        #depth = node.depth
+    depth = 0
     score = 0
     
     # Count pieces for each player
