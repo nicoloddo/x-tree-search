@@ -1,18 +1,9 @@
 import numpy as np
-from games.breakthrough import BreakthroughOpSp
-from pyspiel import State
-
-def preprocess_state(state):
-    return BreakthroughOpSp.state_translator(state)
 
 def simple_depth_dependant_scoring_function(node):
     """Evaluate the Breakthrough board state from the perspective of the 'b' (black) player"""
-    if isinstance(node, State):
-        state = preprocess_state(node)
-    else:
-        state = node.game_state
-        #depth = node.depth
-    depth = 0
+    state = node.game_state
+    depth = node.depth
     score = 0
     
     # Count pieces for each player
@@ -41,3 +32,58 @@ def simple_depth_dependant_scoring_function(node):
     score -= depth
 
     return score/1000
+
+def simple_depth_dependant_scoring_function_opsp(node):
+    """
+    Evaluate the Breakthrough board state from black's perspective.
+    A positive score means black is winning, negative means white is winning.
+    
+    Args:
+        state: A pyspiel.State object for Breakthrough
+        depth: Current depth in the game tree
+    
+    Returns:
+        float: The evaluation score where:
+            - Positive scores indicate black advantage
+            - Negative scores indicate white advantage
+            - For terminal states:
+                * Wins are preferred sooner (1000 - depth)
+                * Losses are preferred later (-1000 - depth)
+    """
+    state = node.state
+    depth = node.depth
+
+    # Check for terminal states first
+    if state.is_terminal():
+        if state.returns()[0] > 0:  # Black wins (player 0)
+            return 1000 - depth  # Prefer quicker wins
+        elif state.returns()[0] < 0:  # White wins (player 1)
+            return -1000 - depth  # Prefer longer losses
+        return 0  # Draw (shouldn't happen in Breakthrough)
+
+    # Convert state to string and count pieces
+    board_str = str(state)
+    black_pieces = board_str.count('b')
+    white_pieces = board_str.count('w')
+
+    # Basic material score (piece difference)
+    material_score = black_pieces - white_pieces
+
+    # Position scoring: reward advancement
+    rows = board_str.split('\n')[:-2]  # Remove last two lines (column labels)
+    position_score = 0
+    board_size = len(rows)
+    
+    for row_idx, row in enumerate(rows):
+        # Black pieces are worth more as they advance (multiply by row number from bottom)
+        black_in_row = row.count('b')
+        position_score += black_in_row * (row_idx + 1)
+        
+        # White pieces are worth more as they advance (multiply by row number from top)
+        white_in_row = row.count('w')
+        position_score -= white_in_row * (board_size - row_idx)
+
+    # Combine scores with weights
+    final_score = (material_score * 10) + position_score
+
+    return final_score

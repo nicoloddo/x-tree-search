@@ -4,4 +4,4 @@ try:
 except ImportError:
     pass
 
-from .scoring import simple_depth_dependant_scoring_function
+from .scoring import simple_depth_dependant_scoring_function, simple_depth_dependant_scoring_function_opsp

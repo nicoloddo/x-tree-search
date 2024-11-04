@@ -31,7 +31,7 @@ elif game == 'breakthrough_opsp':
     from games.breakthrough import BreakthroughOpSp as Game
     from games.breakthrough.interface.gradio_interface import BreakthroughGradioInterface as Interface
     from algorithms.minimax_openspiel_wrapper import MiniMax
-    from games.breakthrough import simple_depth_dependant_scoring_function as ai_scoring_function
+    from games.breakthrough import simple_depth_dependant_scoring_function_opsp as ai_scoring_function
     AIAgent = AIAgentOpSp
     max_depth = 6
     players_order = ['AI', 'human'] # For some reason in OpenSpiel's Breakthrough the blacks go first
