@@ -46,8 +46,7 @@ def simple_depth_dependant_scoring_function_opsp(node):
     
     Args:
         state: A pyspiel.State object for Breakthrough
-        depth: Current depth in the game tree 
-        (shallow depth has higher number, 0 is when max depth is hitted)
+        depth: Current depth in the game tree
     
     Returns:
         float: The evaluation score where:
@@ -63,9 +62,9 @@ def simple_depth_dependant_scoring_function_opsp(node):
     # Check for terminal states first
     if state.is_terminal():
         if state.returns()[0] > 0:  # Black wins (player 0)
-            score = 1000 + depth  # Prefer quicker wins (depth is higher for quicker wins)
+            score = 1000 - depth  # Prefer quicker wins
         elif state.returns()[0] < 0:  # White wins (player 1)
-            score = -1000 + depth  # Prefer longer losses (depth is lower for longer losses)
+            score = -1000 - depth  # Prefer longer losses
         return float(score)/1000.0
 
     # Convert state to string and count pieces
@@ -91,6 +90,6 @@ def simple_depth_dependant_scoring_function_opsp(node):
         position_score -= white_in_row * (board_size - row_idx)
 
     # Combine scores with weights
-    final_score = (material_score * 10) + position_score + depth
+    final_score = (material_score * 10) + position_score - depth
 
     return float(final_score)/1000.0

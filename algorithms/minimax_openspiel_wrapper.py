@@ -15,7 +15,7 @@ class StateActionTracker:
         return track_state_actions(self)(func)
 
 class TreeNode:
-    score_readability_multiplier = 1000
+    score_readability_multiplier = 1000 # scores are from 0 to 1
 
     @classmethod
     def game_state_translator(cls, opsp_state):
@@ -29,7 +29,8 @@ class TreeNode:
 
         self.children = []
         self.score = None
-        self.depth = None
+        self._history = None
+        self._depth = None
         self._translated_state = None  # Cache for translated game state
         self._parent_state = None
 
@@ -45,9 +46,20 @@ class TreeNode:
             self._translated_state = self.game_state_translator(self.state)
         return self._translated_state
 
+    def history(self):
+        if self._history is None:
+            self._history = self.state.history()
+        return self._history
+    
+    @property
+    def depth(self):
+        if self._depth is None:
+            self._depth = len(self.history())
+        return self._depth
+
     @property
     def is_leaf(self):
-        return self.is_terminal() or self.max_search_depth_reached
+        return len(self.children) == 0
 
     @property
     def final_node(self):
@@ -55,9 +67,7 @@ class TreeNode:
 
     @property
     def max_search_depth_reached(self):
-        if self.depth is None:
-            return False
-        return self.depth == 0
+        return self.is_leaf and not self.final_node
 
     @property
     def readable_score(self):
@@ -167,7 +177,6 @@ def track_state_actions(tracker: StateActionTracker):
             
             tracker.nodes[node.id] = node
             
-            node.depth = depth
             value, best_action = func(node, depth, alpha, beta, value_function, maximizing_player_id)
             node.score = value
             
@@ -175,7 +184,6 @@ def track_state_actions(tracker: StateActionTracker):
             for action in node.legal_actions()[len(node.children):]:
                 missing_child = node.clone()
                 missing_child.apply_action(action)
-                missing_child.depth = depth - 1
                 tracker.nodes[node.id + '_' + str(action)] = missing_child"""
             
             return value, best_action
