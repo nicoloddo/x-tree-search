@@ -1,11 +1,15 @@
 from algorithms.minimax_openspiel_wrapper import MiniMax, StateActionTracker
 from games.breakthrough import BreakthroughOpSp as Game
+import numpy as np
 import time
 import pyspiel
 from open_spiel.python.algorithms import minimax
 import cProfile
 import pstats
 from pstats import SortKey
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 def value_function(node):
     """
@@ -61,77 +65,168 @@ def value_function(node):
 
     return float(final_score)/1000.0
 
-game = pyspiel.load_game("breakthrough")
-max_depth = 6
-pre_moves = True
+# ... existing imports ...
 
-# Time the wrapped explainable implementation
-xstate = game.new_initial_state()
-if pre_moves:
-    xstate.apply_action(98)
-    xstate.apply_action(584)
+def run_comparison(max_depth, pre_moves_count=0, value_multiplier=1):
+    """
+    Run comparison with different parameters to test overhead.
+    
+    Args:
+        max_depth: Maximum depth for minimax search
+        pre_moves_count: Number of pre-moves to apply (increases branching)
+        value_multiplier: Multiplier for value_function computation (simulates more complex evaluation)
+    """
+    def modified_value_function(node):
+        # Run the original value function multiple times to simulate more computation
+        base_value = value_function(node)
+        for _ in range(value_multiplier - 1):
+            _ = value_function(node)
+        return base_value
 
-tracker = StateActionTracker(start_with_maximizing=True)
-MiniMax.set_game_state_translator(Game.state_translator)
+    game = pyspiel.load_game("breakthrough")
+    
+    # Setup states
+    xstate = game.new_initial_state()
+    og_state = game.new_initial_state()
+    
+    # Apply pre-moves if specified
+    for _ in range(pre_moves_count):
+        if not xstate.is_terminal():
+            action = xstate.legal_actions()[0]
+            xstate.apply_action(action)
+            og_state.apply_action(action)
 
-# If already wrapped, get the original function
-if hasattr(minimax._alpha_beta, '_original_func'):
-    original_func = minimax._alpha_beta._original_func
-    print("Already wrapped!")
-else:
-    original_func = minimax._alpha_beta
-# Apply new wrapper
-minimax._alpha_beta = tracker.track(original_func)
-# Store reference to original function
-minimax._alpha_beta._original_func = original_func
+    # Setup explainable version
+    tracker = StateActionTracker(start_with_maximizing=True)
+    if hasattr(minimax._alpha_beta, '_original_func'):
+        original_func = minimax._alpha_beta._original_func
+    else:
+        original_func = minimax._alpha_beta
+    minimax._alpha_beta = tracker.track(original_func)
+    minimax._alpha_beta._original_func = original_func
 
-start_time = time.time()
+    # Time explainable version
+    start_time = time.time()
+    game_score, x_action = minimax.alpha_beta_search(
+        game, xstate, modified_value_function, 
+        maximum_depth=max_depth, 
+        maximizing_player_id=0)
+    x_time = time.time() - start_time
 
-# Profile the wrapped explainable implementation
-explainable_profiler = cProfile.Profile()
-explainable_profiler.enable()
-game_score, x_action = minimax.alpha_beta_search(
-    game, xstate, value_function, 
-    maximum_depth=max_depth, 
-    maximizing_player_id=0)
-explainable_profiler.disable()
+    # Reset to original version
+    minimax._alpha_beta = minimax._alpha_beta._original_func
 
-x_time = time.time() - start_time
+    # Time original version
+    start_time = time.time()
+    original_score, original_action = minimax.alpha_beta_search(
+        game, og_state, modified_value_function,
+        maximum_depth=max_depth,
+        maximizing_player_id=0
+    )
+    original_time = time.time() - start_time
 
-# Time the original minimax implementation
-og_state = game.new_initial_state()
-if pre_moves:
-    og_state.apply_action(98)
-    og_state.apply_action(584)
+    return {
+        'depth': max_depth,
+        'pre_moves': pre_moves_count,
+        'value_complexity': value_multiplier,
+        'explainable_time': x_time,
+        'original_time': original_time,
+        'overhead_ratio': x_time/original_time,
+        'absolute_overhead': x_time - original_time,
+        'actions_match': x_action == original_action
+    }
 
-minimax._alpha_beta = minimax._alpha_beta._original_func
+# Test different scenarios
+scenarios = [
+    # Test depth impact
+    {'max_depth': 4, 'pre_moves_count': 0, 'value_multiplier': 1},
+    {'max_depth': 5, 'pre_moves_count': 0, 'value_multiplier': 1},
+    {'max_depth': 6, 'pre_moves_count': 0, 'value_multiplier': 1},
+    
+    # Test branching factor impact
+    {'max_depth': 5, 'pre_moves_count': 1, 'value_multiplier': 1},
+    {'max_depth': 5, 'pre_moves_count': 2, 'value_multiplier': 1},
+    
+    # Test evaluation complexity impact
+    {'max_depth': 5, 'pre_moves_count': 0, 'value_multiplier': 2},
+    {'max_depth': 5, 'pre_moves_count': 0, 'value_multiplier': 5},
+    {'max_depth': 5, 'pre_moves_count': 0, 'value_multiplier': 10},
+]
 
-start_time = time.time()
+results = []
+for scenario in scenarios:
+    result = run_comparison(**scenario)
+    results.append(result)
+    print(f"\nScenario: {scenario}")
+    print(f"Explainable time: {result['explainable_time']:.3f}s")
+    print(f"Original time: {result['original_time']:.3f}s")
+    print(f"Overhead ratio: {result['overhead_ratio']:.2f}x")
+    print(f"Absolute overhead: {result['absolute_overhead']:.3f}s")
+    print(f"Actions match: {result['actions_match']}")
 
-# Profile the original implementation
-original_profiler = cProfile.Profile()
-original_profiler.enable()
-original_score, original_action = minimax.alpha_beta_search(
-    game, og_state, value_function,
-    maximum_depth=max_depth,
-    maximizing_player_id=0
-)
-original_profiler.disable()
+# Analyze results
+print("\nAnalysis:")
+print(f"Average overhead ratio: {sum(r['overhead_ratio'] for r in results)/len(results):.2f}x")
+print(f"Average absolute overhead: {sum(r['absolute_overhead'] for r in results)/len(results):.3f}s")
+print(f"Std dev of absolute overhead: {(sum((r['absolute_overhead'] - sum(r['absolute_overhead'] for r in results)/len(results))**2 for r in results)/len(results))**0.5:.3f}s")
 
-original_time = time.time() - start_time
+def plot_results(results):
+    #plt.style.use('seaborn')
+    sns.set_theme()
+    
+    # Create figure with subplots
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
+    
+    # 1. Depth vs Times
+    depth_results = [r for r in results if r['pre_moves'] == 0 and r['value_complexity'] == 1]
+    depths = [r['depth'] for r in depth_results]
+    ax1.plot(depths, [r['explainable_time'] for r in depth_results], 'b-o', label='Explainable')
+    ax1.plot(depths, [r['original_time'] for r in depth_results], 'r-o', label='Original')
+    ax1.set_title('Search Depth vs Execution Time')
+    ax1.set_xlabel('Search Depth')
+    ax1.set_ylabel('Time (seconds)')
+    ax1.legend()
+    
+    # 2. Depth vs Overhead Ratio
+    ax2.plot(depths, [r['overhead_ratio'] for r in depth_results], 'g-o')
+    ax2.set_title('Search Depth vs Overhead Ratio')
+    ax2.set_xlabel('Search Depth')
+    ax2.set_ylabel('Overhead Ratio (explainable/original)')
+    ax2.axhline(y=1, color='r', linestyle='--', alpha=0.3)
+    
+    # 3. Value Complexity vs Times
+    complexity_results = [r for r in results if r['depth'] == 5 and r['pre_moves'] == 0]
+    complexities = [r['value_complexity'] for r in complexity_results]
+    ax3.plot(complexities, [r['explainable_time'] for r in complexity_results], 'b-o', label='Explainable')
+    ax3.plot(complexities, [r['original_time'] for r in complexity_results], 'r-o', label='Original')
+    ax3.set_title('Evaluation Complexity vs Execution Time')
+    ax3.set_xlabel('Value Function Complexity (multiplier)')
+    ax3.set_ylabel('Time (seconds)')
+    ax3.legend()
+    
+    # 4. Value Complexity vs Overhead Ratio
+    ax4.plot(complexities, [r['overhead_ratio'] for r in complexity_results], 'g-o')
+    ax4.set_title('Evaluation Complexity vs Overhead Ratio')
+    ax4.set_xlabel('Value Function Complexity (multiplier)')
+    ax4.set_ylabel('Overhead Ratio (explainable/original)')
+    ax4.axhline(y=1, color='r', linestyle='--', alpha=0.3)
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    plt.savefig('./test/performance_output/minimax_performance_analysis.png')
+    plt.close()
 
-# Print comparison
-print(f"\nYour MiniMax time: {x_time:.3f} seconds")
-print(f"Original MiniMax time: {original_time:.3f} seconds")
-print(f"Explainable action: {x_action}")
-print(f"Original action: {original_action}")
-print(f"Time ratio (explainable/original): {(x_time/original_time*100):.2f}%")
+    # Create additional plot for absolute overhead
+    plt.figure(figsize=(10, 6))
+    plt.plot(depths, [r['absolute_overhead'] for r in depth_results], 'b-o', label='By Depth')
+    plt.plot(complexities, [r['absolute_overhead'] for r in complexity_results], 'r-o', label='By Complexity')
+    plt.title('Absolute Overhead Analysis')
+    plt.xlabel('Parameter Value (Depth or Complexity)')
+    plt.ylabel('Absolute Overhead (seconds)')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.savefig('./test/performance_output/minimax_absolute_overhead.png')
+    plt.close()
 
-# Print detailed profiling information
-print("\nExplainable Implementation Profile:")
-explainable_stats = pstats.Stats(explainable_profiler).sort_stats(SortKey.CUMULATIVE)
-explainable_stats.print_stats(20)  # Show top 20 time-consuming functions
-
-print("\nOriginal Implementation Profile:")
-original_stats = pstats.Stats(original_profiler).sort_stats(SortKey.CUMULATIVE)
-original_stats.print_stats(20)
+# After running the scenarios...
+plot_results(results)
