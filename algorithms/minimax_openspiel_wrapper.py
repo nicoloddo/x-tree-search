@@ -29,9 +29,11 @@ class TreeNode:
 
         self.children = []
         self.score = None
+
+         # Cached properties
         self._history = None
         self._depth = None
-        self._translated_state = None  # Cache for translated game state
+        self._translated_state = None 
         self._parent_state = None
 
     @property
@@ -173,7 +175,7 @@ def track_state_actions(tracker: StateActionTracker):
                 tracker.set_root(node)
             else:
                 node = state
-                node.id = node.parent.id + '_' + str(node.history()[-1])
+                node.id = node.parent.id + '_' + str(node.state.history()[-1])
             
             tracker.nodes[node.id] = node
             
