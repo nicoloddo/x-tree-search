@@ -2,11 +2,10 @@ from functools import wraps
 from typing import List, Tuple, Any, Dict
 
 class StateActionTracker:
-    def __init__(self, start_with_maximizing, max_depth):
+    def __init__(self, start_with_maximizing):
         self.root = None
         self.nodes = {}
         self.start_with_maximizing = start_with_maximizing
-        self.max_depth = max_depth
 
     def set_root(self, node):
         self.root = node
@@ -168,7 +167,7 @@ def track_state_actions(tracker: StateActionTracker):
             
             tracker.nodes[node.id] = node
             
-            node.depth = tracker.max_depth - depth # In OpenSpiel we start at the max depth and subtract from it
+            node.depth = depth
             value, best_action = func(node, depth, alpha, beta, value_function, maximizing_player_id)
             node.score = value
             
@@ -176,7 +175,7 @@ def track_state_actions(tracker: StateActionTracker):
             for action in node.legal_actions()[len(node.children):]:
                 missing_child = node.clone()
                 missing_child.apply_action(action)
-                missing_child.depth = node.depth + 1
+                missing_child.depth = depth - 1
                 tracker.nodes[node.id + '_' + str(action)] = missing_child"""
             
             return value, best_action
@@ -213,7 +212,7 @@ class MiniMax:
         :param max_depth: The maximum depth to search to.
         """
         try:
-            self.tracker = StateActionTracker(self.start_with_maximizing, self.max_depth)
+            self.tracker = StateActionTracker(self.start_with_maximizing)
 
             # If already wrapped, get the original function
             if hasattr(minimax._alpha_beta, '_original_func'):
