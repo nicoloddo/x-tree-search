@@ -45,8 +45,7 @@ def simple_depth_dependant_scoring_function_opsp(node):
     A positive score means black is winning, negative means white is winning.
     
     Args:
-        state: A pyspiel.State object for Breakthrough
-        depth: Current depth in the game tree
+        node: A node of the algorithm applied to Breakthrough
     
     Returns:
         float: The evaluation score where:
