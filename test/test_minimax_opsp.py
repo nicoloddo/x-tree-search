@@ -1,5 +1,5 @@
 from algorithms.minimax_openspiel_wrapper import MiniMax, StateActionTracker
-from games.breakthrough import simple_depth_dependant_scoring_function as value_function
+from games.breakthrough import simple_depth_dependant_scoring_function_opsp as value_function
 from games.breakthrough import BreakthroughOpSp as Game
 import time
 import pyspiel
