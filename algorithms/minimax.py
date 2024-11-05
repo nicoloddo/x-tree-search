@@ -33,6 +33,7 @@ class MiniMaxNode:
         self.nodes_holder = nodes_holder
         self.nodes_holder[self.id] = self
 
+        self.depth = None
         self.score = None
         self.fully_searched = None
         self.alpha = None

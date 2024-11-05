@@ -242,7 +242,7 @@ class AlphaBetaExplainer:
                     CompactSameExplanations(
                         from_adjectives=["as next move", 
                                        "as next possible move"],
-                        same_if_equal_keys=[('evaluation', ['id_length', 'last_move_id'])]
+                        same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])]
                     ),
                     CompactSameExplanations(
                         from_adjectives=["not worth exploring after checking the first possible next move"],
@@ -257,7 +257,7 @@ class AlphaBetaExplainer:
                     CompactSameExplanations(
                         from_adjectives=["as next move", 
                                        "as next possible move"],
-                        same_if_equal_keys=[('evaluation', ['id_length', 'last_move_id'])]
+                        same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])]
                     ),
                     CompactSameExplanations(
                         from_adjectives=["not worth exploring after checking the first possible next move"],

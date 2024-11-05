@@ -113,7 +113,7 @@ class TreeNode:
     
     @property
     def last_move_id(self):
-        return self.id[-1]
+        return self.history()[-1]
     
     @property
     def game_tree_node_string(self):
