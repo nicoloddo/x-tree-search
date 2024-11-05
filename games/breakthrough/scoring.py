@@ -46,7 +46,8 @@ def simple_depth_dependant_scoring_function_opsp(node):
     
     Args:
         state: A pyspiel.State object for Breakthrough
-        depth: Current depth in the game tree
+        depth: Current depth in the game tree 
+        (shallow depth has higher number, 0 is when max depth is hitted)
     
     Returns:
         float: The evaluation score where:
