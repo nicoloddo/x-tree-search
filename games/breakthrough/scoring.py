@@ -65,7 +65,7 @@ def simple_depth_dependant_scoring_function_opsp(node):
             score = 1000 - depth  # Prefer quicker wins
         elif state.returns()[0] < 0:  # White wins (player 1)
             score = -1000 - depth  # Prefer longer losses
-        return float(score)/1000.0  # Draw (shouldn't happen in Breakthrough)
+        return float(score)/1000.0
 
     # Convert state to string and count pieces
     board_str = str(state)
