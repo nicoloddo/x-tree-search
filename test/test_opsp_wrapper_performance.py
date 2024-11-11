@@ -236,19 +236,6 @@ def plot_results(results):
     plt.savefig('./test/performance_output/minimax_performance_analysis.png')
     plt.close()
 
-    # Create additional plot for absolute overhead
-    plt.figure(figsize=(10, 6))
-    plt.plot(depths, [r['absolute_overhead'] for r in depth_results], 'b-o', label='By Depth')
-    plt.plot(complexities, [r['absolute_overhead'] for r in complexity_results], 'r-o', label='By Complexity')
-    plt.plot(premoves, [r['absolute_overhead'] for r in premoves_results], 'g-o', label='By Pre-moves')
-    plt.title('Absolute Overhead Analysis')
-    plt.xlabel('Parameter Value (Depth/Complexity/Pre-moves)')
-    plt.ylabel('Absolute Overhead (seconds)')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.savefig('./test/performance_output/minimax_absolute_overhead.png')
-    plt.close()
-
 results = []
 for scenario in scenarios:
     result = run_comparison(**scenario)
