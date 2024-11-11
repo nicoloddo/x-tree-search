@@ -17,6 +17,9 @@ class LogicalExpression(ABC):
         self.evaluation = None
 
         self.record = None
+
+        # Aux for tactics go here
+        self.compacted = False
     
     @classmethod
     def format_node(cls, node):

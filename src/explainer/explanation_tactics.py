@@ -335,7 +335,7 @@ class CompactSameExplanations(SpecificTactic):
     """When explaining a Comparison, compact
     explanations that has to a similar explanation."""
     
-    def __init__(self, *, from_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None):
+    def __init__(self, *, from_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None, compact_by_giving_example: bool = True):
         """
         Build the CompactSameExplanations tactic.
 
@@ -366,6 +366,7 @@ class CompactSameExplanations(SpecificTactic):
         - same_evaluation (callable, 2 args): Function that accepts (evaluation1, evaluation2) and returns a bool reflecting if the two are
             to be recognized as the same evaluation. Leave blank if you can achieve this through checking keys. 
             Adding this check slows down the application. 
+        - compact_by_giving_example (bool): Wether when compacting we should print all the compacted nodes, or only the main ones as an example.
         """
         super().__init__(self.__class__.__name__)
         self.from_adjectives = from_adjectives
@@ -377,6 +378,7 @@ class CompactSameExplanations(SpecificTactic):
 
         self.relevant_predicate_inside_list = relevant_predicate_inside_list
         self.same_evaluation = same_evaluation
+        self.compact_by_giving_example = compact_by_giving_example
     
     def build_key(self, expl, most_relevant_predicate_index):
         """
@@ -433,6 +435,10 @@ class CompactSameExplanations(SpecificTactic):
         if not isinstance(explanation.antecedent, And):
             return explanation
         
+        # Explanations cannot be compacted twice
+        if explanation.compacted:
+            return explanation
+        
         explanations_book = []
         # We need to unify similar exprs of the antecedent:
         for explanation_part in explanation.antecedent.exprs:
@@ -459,15 +465,18 @@ class CompactSameExplanations(SpecificTactic):
         
         # Delete already seen similar instances
         def compact_and_delete(current, seen, explanation_part_to_nullify_index):
-            # We get the subjects to add to the instance seen before
-            subjects_to_add = current.subject
-            if not isinstance(subjects_to_add, list):
-                subjects_to_add = [subjects_to_add]
+            if not self.compact_by_giving_example:
+                # We get the subjects to add to the instance seen before
+                subjects_to_add = current.subject
+                if not isinstance(subjects_to_add, list):
+                    subjects_to_add = [subjects_to_add]
 
-            # We add the subjects to the previously seen instance
-            if not isinstance(seen.subject, list):
-                seen.subject = [seen.subject]
-            seen.subject.extend(subjects_to_add)
+                # We add the subjects to the previously seen instance
+                if not isinstance(seen.subject, list):
+                    seen.subject = [seen.subject]
+                seen.subject.extend(subjects_to_add)
+            else:
+                pass
             
             # We nullify explanation for this occurrence
             explanation.antecedent.exprs[explanation_part_to_nullify_index].nullify()
@@ -522,4 +531,7 @@ class CompactSameExplanations(SpecificTactic):
                 # Item is similar to one already seen (has the same key)
                 compact_and_delete(most_relevant_subexpression, seen[key], i)
 
+        if self.compact_by_giving_example:
+            explanation.antecedent.exprs = explanation.antecedent.exprs + (Postulate("the explanation for the others is analogous and it has been hidden. You can ask further about them!"),)
+        explanation.compacted = True
         return explanation
