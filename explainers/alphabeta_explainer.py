@@ -67,13 +67,13 @@ class AlphaBetaExplainer:
 
             BooleanAdjective("a win",
                 definition = "node.final_node and node.score > 0",
-                explanation = Assumption("That's how you win in this game!")),
+                explanation = Assumption("These are the rules!")),
             BooleanAdjective("a loss",
                 definition = "node.final_node and node.score < 0",
-                explanation = Assumption("That's how you lose in this game!")),
+                explanation = Assumption("These are the rules!")),
             BooleanAdjective("a draw",
                 definition = "node.final_node and node.score == 0",
-                explanation = Assumption("That's how you draw in this game!")),
+                explanation = Assumption("These are the rules!")),
 
 
             QuantitativePointerAdjective("score",
