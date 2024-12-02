@@ -111,7 +111,7 @@ class Comparison(Explanation):
         obj1_pointer_adjective_name: The name of the pointer adjective that selects the first object to compare.
                                     If not given the node itself will be used.
         comparison_adjective_name: The name of the adjective to use for the comparison.
-        obj2_pointer_adjective_name : The name of the pointer adjective that selects the second object to compare.7
+        obj2_pointer_adjective_name : The name of the pointer adjective that selects the second object to compare.
         """
         super().__init__()
         if len(args) == 2:
@@ -195,8 +195,10 @@ class ComparisonNodesPropertyPossession(Explanation):
         if type(other_nodes) is not list:
             other_nodes = [other_nodes]
 
-        to_forward_explanations = [(adjective_for_comparison, node)]
+        #to_forward_explanations = [(adjective_for_comparison, node)]
+        to_forward_explanations = []
         for o_node in other_nodes:
+            to_forward_explanations.append((self.explanation_of_adjective, node, o_node))
             to_forward_explanations.append((adjective_for_comparison, o_node))
 
         explanations = self.forward_multiple_explanations(*to_forward_explanations)
