@@ -192,14 +192,15 @@ class ComparisonNodesPropertyPossession(Explanation):
         else:
             raise ValueError("The ComparisonNodesPropertyPossession should be the explanation of a comparison adjective.")
 
-        if type(other_nodes) is not list:
-            other_nodes = [other_nodes]
+        if type(other_nodes) is list:
+            to_forward_explanations = []
+            for o_node in other_nodes:
+                to_forward_explanations.append((self.explanation_of_adjective, node, o_node))
+            explanations = self.forward_multiple_explanations(*to_forward_explanations)
+            return And(*explanations)
 
-        #to_forward_explanations = [(adjective_for_comparison, node)]
-        to_forward_explanations = []
-        for o_node in other_nodes:
-            to_forward_explanations.append((self.explanation_of_adjective, node, o_node))
-            to_forward_explanations.append((adjective_for_comparison, o_node))
+        to_forward_explanations = [(adjective_for_comparison, node)]
+        to_forward_explanations.append((adjective_for_comparison, other_nodes))
 
         explanations = self.forward_multiple_explanations(*to_forward_explanations)
         
