@@ -248,14 +248,16 @@ class Implies(LogicalExpression):
             indentation = '\t' * depth
 
             if "print_depth" in self._str_settings_list:
-                self.antecedent = f"Depth {depth}:\n{self.antecedent}"
+                antecedent_str = f"Depth {depth}:\n{self.antecedent}"
+            else:
+                antecedent_str = str(self.antecedent)
 
-            self.antecedent = textwrap.indent(f"{self.antecedent}", indentation)
+            antecedent_str = textwrap.indent(antecedent_str, indentation)
 
         if self.print_mode == 'logic':
-            to_string = f"{self.consequent} {symbol}\n {self.antecedent}"
+            to_string = f"{self.consequent} {symbol}\n {antecedent_str}"
         elif self.print_mode == 'verbal':
-            to_string = f"{self.consequent} ({symbol}\n {self.antecedent})"
+            to_string = f"{self.consequent} ({symbol}\n {antecedent_str})"
 
         return to_string
     
