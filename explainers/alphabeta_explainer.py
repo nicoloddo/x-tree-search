@@ -5,7 +5,7 @@ from src.explainer.adjective import BooleanAdjective, PointerAdjective, Quantita
 from src.explainer.adjective import COMPARISON_AUXILIARY_ADJECTIVE
 from src.explainer.explanation import Possession, RecursivePossession, Assumption, Comparison, If, ConditionalExplanation, CompositeExplanation
 
-from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, CompactSameExplanations
+from src.explainer.explanation_tactics import OnlyRelevantComparisons, SkipQuantitativeExplanations, CompactComparisonsWithSameExplanation
 
 class AlphaBetaExplainer:
     """
@@ -239,12 +239,12 @@ class AlphaBetaExplainer:
             MaxRankAdjective("the best for me", ["better for me than", "at least equal to"], "possible alternative moves",
                 explain_with_adj_if = (If("possession", "opponent player turn", value=False), "the best the opponent can do"),
                 tactics = [
-                    CompactSameExplanations(
+                    CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move", 
                                        "as next possible move"],
                         same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])]
                     ),
-                    CompactSameExplanations(
+                    CompactComparisonsWithSameExplanation(
                         from_adjectives=["not worth exploring after checking the first possible next move"],
                         same_if_equal_keys=['evaluation']
                     )
@@ -254,12 +254,12 @@ class AlphaBetaExplainer:
             MaxRankAdjective("the best the opponent can do", ["worse for me than", "at least equal to"], "possible alternative moves",
                 explain_with_adj_if = (If("possession", "opponent player turn"), "the best for me"),
                 tactics = [
-                    CompactSameExplanations(
+                    CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move", 
                                        "as next possible move"],
                         same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])]
                     ),
-                    CompactSameExplanations(
+                    CompactComparisonsWithSameExplanation(
                         from_adjectives=["not worth exploring after checking the first possible next move"],
                         same_if_equal_keys=['evaluation']
                     )

@@ -192,21 +192,25 @@ class ComparisonNodesPropertyPossession(Explanation):
         else:
             raise ValueError("The ComparisonNodesPropertyPossession should be the explanation of a comparison adjective.")
 
-        if type(other_nodes) is list:
+        if type(other_nodes) is list and len(other_nodes) > 1:
             to_forward_explanations = []
             for o_node in other_nodes:
                 to_forward_explanations.append((self.explanation_of_adjective, node, o_node))
+
             explanations = self.forward_multiple_explanations(*to_forward_explanations)
-            return And(*explanations)
+            explanation = And(*explanations)
+            return explanation
+        else:
+            if type(other_nodes) is list:
+                other_nodes = other_nodes[0]
 
-        to_forward_explanations = [(adjective_for_comparison, node)]
-        to_forward_explanations.append((adjective_for_comparison, other_nodes))
+            to_forward_explanations = [(adjective_for_comparison, node)]
+            to_forward_explanations.append((adjective_for_comparison, other_nodes))
 
-        explanations = self.forward_multiple_explanations(*to_forward_explanations)
-        
-        explanation = And(*explanations)
+            explanations = self.forward_multiple_explanations(*to_forward_explanations)
+            explanation = And(*explanations)
 
-        return explanation
+            return explanation
 
 """ Group Comparison non-straightforward Explanation """
 class GroupComparison(Explanation):
@@ -265,9 +269,12 @@ class GroupComparison(Explanation):
                 if isinstance(group_comparison_explanation.antecedent, And):
                     first_implication = True
                     for expr in group_comparison_explanation.antecedent.exprs:
-                        if isinstance(expr.antecedent, And) and not first_implication:
-                            expr.antecedent.exprs[0].nullify()
-                        first_implication = False
+                        # For each subcomparison in the group comparisons, except the first,
+                        # we remove the antecedent expression because that's always the same.
+                        if expr.predicate == group_comparison_explanation.predicate: # If not, this is not a subcomparison
+                            if isinstance(expr.antecedent, And) and not first_implication:
+                                expr.antecedent.exprs[0].nullify()
+                            first_implication = False
                 if len(comparison_group) == len(group): # The same comparison is true for the whole group
                     group_comparison_explanation.consequent.object = "it" if len(comparison_group) == 1 else "them"
                 

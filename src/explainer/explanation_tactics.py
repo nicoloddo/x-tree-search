@@ -331,13 +331,13 @@ class SubstituteQuantitativeExplanations(GeneralTactic):
         return explanation
     
 
-class CompactSameExplanations(SpecificTactic):
+class CompactComparisonsWithSameExplanation(SpecificTactic):
     """When explaining a Comparison, compact
     explanations that has to a similar explanation."""
     
     def __init__(self, *, from_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None, compact_by_giving_example: bool = False):
         """
-        Build the CompactSameExplanations tactic.
+        Build the CompactComparisonsWithSameExplanation tactic.
 
         Note: the tactic will not compact Recursive Possessions.
 
@@ -403,7 +403,7 @@ class CompactSameExplanations(SpecificTactic):
                 attributes = key_def[1] if len(key_def) > 1 else None
             
             if key_name not in self.allowed_keys_to_check:
-                raise SyntaxError(f"{key_name} is not an allowed key to check to CompactSameExplanations.")
+                raise SyntaxError(f"{key_name} is not an allowed key to check to CompactComparisonsWithSameExplanation.")
             
             # Access the key in the expl dictionary
             value = expl[key_name][most_relevant_predicate_index]
@@ -435,13 +435,27 @@ class CompactSameExplanations(SpecificTactic):
         if not isinstance(explanation.antecedent, And):
             return explanation
         
+        # If the consequent is not a group, there is nothing to compact (that's not a group comparison explanation)
+        if not isinstance(explanation.consequent.object, list) or len(explanation.consequent.object) == 1:
+            return explanation
+        
         # Explanations cannot be compacted twice
         if explanation.compacted:
             return explanation
         
+        # At this point we should have a group comparison explanation that has not been compacted yet
+        # The default explanation of a group comparison has as antecedent an And of multiple comparisons, 
+        # each comparing the main node with all the others.
+
         explanations_book = []
         # We need to unify similar exprs of the antecedent:
-        for explanation_part in explanation.antecedent.exprs:
+        for comparison in explanation.antecedent.exprs:
+            if not isinstance(comparison, Implies) or \
+                not comparison.consequent.predicate == explanation.consequent.predicate:
+                # The expr is not a subcomparison of the group comparison
+                continue
+
+            explanation_part = comparison.antecedent
 
             # Get explanation types and subexpressions
             explanation_part_type = explanation_part.record['explanation_type']
@@ -454,17 +468,23 @@ class CompactSameExplanations(SpecificTactic):
                 explanation_types.extend([e.record['explanation_type'] for e in explanation_part.exprs])
                 sub_exprs.extend(explanation_part.get_flat_exprs(max_depth=2)) # go down to explanation_part.exprs.exprs and add them
             
-            explanations_book.append({'explanation_part_type': explanation_part_type,
-                                      'subexpression': sub_exprs,
-                                      # Keys of subexpressions:
-                                      'explanation_type': explanation_types, # explanation_types of subexpressions
-                                      'predicate': [expr.predicate for expr in sub_exprs],
-                                      'evaluation': [expr.evaluation for expr in sub_exprs],
-                                      'depth': [expr.record['depth'] for expr in sub_exprs],
-                                      'record': [expr.record for expr in sub_exprs]})
+            explanations_book.append({
+                'comparison': comparison,
+                'explanation_part_type': explanation_part_type,
+                'subexpression': sub_exprs,
+                # Keys of subexpressions:
+                'explanation_type': explanation_types, # explanation_types of subexpressions
+                'predicate': [expr.predicate for expr in sub_exprs],
+                'evaluation': [expr.evaluation for expr in sub_exprs],
+                'depth': [expr.record['depth'] for expr in sub_exprs],
+                'record': [expr.record for expr in sub_exprs]})
         
         # Delete already seen similar instances
-        def compact_and_delete(current, seen, explanation_part_to_nullify_index):
+        def compact_and_delete(current, seen, explanation_part_to_nullify_index, comparison):
+            # Nullify the explanation part that was already seen
+            explanation.antecedent.exprs[explanation_part_to_nullify_index].nullify()
+
+            # Compact the subjects
             if not self.compact_by_giving_example:
                 # We get the subjects to add to the instance seen before
                 subjects_to_add = current.subject
@@ -475,11 +495,17 @@ class CompactSameExplanations(SpecificTactic):
                 if not isinstance(seen.subject, list):
                     seen.subject = [seen.subject]
                 seen.subject.extend(subjects_to_add)
+
+                if not isinstance(comparison.consequent.object, list):
+                    comparison.consequent.object = [comparison.consequent.object]
+                comparison.consequent.object.extend(subjects_to_add)
+
+                if len(comparison.consequent.object) == len(explanation.consequent.object):
+                    # The comparison became the same as the one in the explanation
+                    explanation.antecedent = comparison.antecedent
             else:
                 pass
-            
-            # We nullify explanation for this occurrence
-            explanation.antecedent.exprs[explanation_part_to_nullify_index].nullify()
+                
 
         seen = {}
         most_relevant_predicate_indexes = []
@@ -518,18 +544,18 @@ class CompactSameExplanations(SpecificTactic):
                         
                         # Compare evaluations using the provided function
                         if self.same_evaluation(current_evaluation, previous_evaluation):
-                            compact_and_delete(most_relevant_subexpression, previous_relevant_subexpression, i)
+                            compact_and_delete(most_relevant_subexpression, previous_relevant_subexpression, i, explanations_book[j]['comparison'])
                             break
                     else:
                         # Was definitely not seen, we add it to the seen
-                        seen[key] = most_relevant_subexpression
+                        seen[key] = (most_relevant_subexpression, expl['comparison'])
                 else:
                     # The key was not seen before and there is no further check to do
-                    seen[key] = most_relevant_subexpression
+                    seen[key] = (most_relevant_subexpression, expl['comparison'])
 
             else:
                 # Item is similar to one already seen (has the same key)
-                compact_and_delete(most_relevant_subexpression, seen[key], i)
+                compact_and_delete(most_relevant_subexpression, seen[key][0], i, seen[key][1])
 
         if self.compact_by_giving_example:
             explanation.antecedent.exprs = explanation.antecedent.exprs + (Postulate("the explanation for the others is analogous and it has been hidden. You can ask further about them!"),)

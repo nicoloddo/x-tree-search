@@ -18,7 +18,7 @@ Explanation tactics
     :inherited-members:
     :show-inheritance:
 
-.. autoclass:: CompactSameExplanations
+.. autoclass:: CompactComparisonsWithSameExplanation
     :members:
     :inherited-members:
     :show-inheritance:
