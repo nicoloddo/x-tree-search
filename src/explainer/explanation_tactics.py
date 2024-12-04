@@ -335,7 +335,7 @@ class CompactComparisonsWithSameExplanation(SpecificTactic):
     """When explaining a Comparison, compact
     explanations that has to a similar explanation."""
     
-    def __init__(self, *, from_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None, compact_by_giving_example: bool = False):
+    def __init__(self, *, from_adjectives: List[str], same_if_equal_keys = List, also_compact_adjectives: List[str] = [], relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None, compact_by_giving_example: bool = False):
         """
         Build the CompactComparisonsWithSameExplanation tactic.
 
@@ -360,6 +360,9 @@ class CompactComparisonsWithSameExplanation(SpecificTactic):
             the latter being the most important feature this tactic was created for.
             Depth is by default inserted, meaning that only explanation at the same explanation depth will be considered for compacting.
 
+        - also_compact_adjectives (list of str): Adjectives that will be compacted by this tactic when a comparison is found to be the same,
+        without being involved in the similarity check.
+
         - relevant_predicate_inside_list (int) Default -1: If the predicates in the explanation are multiple,
             use this index to select the most relevant predicate among them. As default, we use the last predicate.
             e.g. If "next move" is present multiple times in a single explanation part, which one should we consider for the comparisons?
@@ -375,6 +378,7 @@ class CompactComparisonsWithSameExplanation(SpecificTactic):
 
         default_same_if_equal_keys = ['depth']
         self.same_if_equal_keys = default_same_if_equal_keys + same_if_equal_keys
+        self.also_compact_adjectives = also_compact_adjectives
 
         self.relevant_predicate_inside_list = relevant_predicate_inside_list
         self.same_evaluation = same_evaluation
@@ -480,7 +484,7 @@ class CompactComparisonsWithSameExplanation(SpecificTactic):
                 'record': [expr.record for expr in sub_exprs]})
         
         # Delete already seen similar instances
-        def compact_and_delete(current, seen, explanation_part_to_nullify_index, comparison):
+        def compact_and_delete(current, seen, explanation_part_to_nullify_index, seen_comparison):
             # Nullify the explanation part that was already seen
             explanation.antecedent.exprs[explanation_part_to_nullify_index].nullify()
 
@@ -496,13 +500,20 @@ class CompactComparisonsWithSameExplanation(SpecificTactic):
                     seen.subject = [seen.subject]
                 seen.subject.extend(subjects_to_add)
 
-                if not isinstance(comparison.consequent.object, list):
-                    comparison.consequent.object = [comparison.consequent.object]
-                comparison.consequent.object.extend(subjects_to_add)
+                if not isinstance(seen_comparison.consequent.object, list):
+                    seen_comparison.consequent.object = [seen_comparison.consequent.object]
+                seen_comparison.consequent.object.extend(subjects_to_add)
+
+                if isinstance(seen_comparison.antecedent, NAryOperator):
+                    for expr in seen_comparison.antecedent.get_flat_exprs(max_depth = 2):
+                        if expr.predicate in self.also_compact_adjectives:
+                            if not isinstance(expr.subject, list):
+                                expr.subject = [expr.subject]
+                            expr.subject.extend(subjects_to_add)
 
                 if len(comparison.consequent.object) == len(explanation.consequent.object):
                     # The comparison became the same as the one in the explanation
-                    explanation.antecedent = comparison.antecedent
+                    explanation.antecedent = seen_comparison.antecedent
             else:
                 pass
                 

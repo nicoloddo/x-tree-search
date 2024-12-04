@@ -242,11 +242,8 @@ class AlphaBetaExplainer:
                     CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move", 
                                        "as next possible move"],
-                        same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])]
-                    ),
-                    CompactComparisonsWithSameExplanation(
-                        from_adjectives=["not worth exploring after checking the first possible next move"],
-                        same_if_equal_keys=['evaluation']
+                        same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])],
+                        also_compact_adjectives = ["not worth exploring after checking the first possible next move"]
                     )
                 ]
             ),
@@ -257,11 +254,8 @@ class AlphaBetaExplainer:
                     CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move", 
                                        "as next possible move"],
-                        same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])]
-                    ),
-                    CompactComparisonsWithSameExplanation(
-                        from_adjectives=["not worth exploring after checking the first possible next move"],
-                        same_if_equal_keys=['evaluation']
+                        same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])],
+                        also_compact_adjectives = ["not worth exploring after checking the first possible next move"]
                     )
                 ]
             )
