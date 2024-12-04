@@ -335,7 +335,7 @@ class CompactSameExplanations(SpecificTactic):
     """When explaining a Comparison, compact
     explanations that has to a similar explanation."""
     
-    def __init__(self, *, from_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None, compact_by_giving_example: bool = True):
+    def __init__(self, *, from_adjectives: List[str], same_if_equal_keys = List, relevant_predicate_inside_list: int = -1, same_evaluation: Callable = None, compact_by_giving_example: bool = False):
         """
         Build the CompactSameExplanations tactic.
 

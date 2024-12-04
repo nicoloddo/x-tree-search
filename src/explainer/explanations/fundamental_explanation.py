@@ -262,14 +262,16 @@ class GroupComparison(Explanation):
 
             # Remove redundant information
             if isinstance(group_comparison_explanation, Implies):
-                if first_group_added:
-                    if isinstance(group_comparison_explanation.antecedent, And):
-                        group_comparison_explanation.antecedent.exprs[0].nullify()
+                if isinstance(group_comparison_explanation.antecedent, And):
+                    first_implication = True
+                    for expr in group_comparison_explanation.antecedent.exprs:
+                        if isinstance(expr.antecedent, And) and not first_implication:
+                            expr.antecedent.exprs[0].nullify()
+                        first_implication = False
                 if len(comparison_group) == len(group): # The same comparison is true for the whole group
                     group_comparison_explanation.consequent.object = "it" if len(comparison_group) == 1 else "them"
                 
             comparison_explanations_per_group.append(group_comparison_explanation)
-            first_group_added = True
             
         explanation = And(group_explanation, *comparison_explanations_per_group)
         return explanation
