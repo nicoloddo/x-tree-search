@@ -432,6 +432,7 @@ class CompactComparisonsWithSameExplanation(SpecificTactic):
         return [ComparisonAdjective]
     
     def apply_on_explanation(self, explanation):
+        #return explanation # to debug without the tactic
         if not isinstance(explanation, Implies):
             return explanation
 
@@ -511,7 +512,7 @@ class CompactComparisonsWithSameExplanation(SpecificTactic):
                                 expr.subject = [expr.subject]
                             expr.subject.extend(subjects_to_add)
 
-                if len(comparison.consequent.object) == len(explanation.consequent.object):
+                if len(seen_comparison.consequent.object) == len(explanation.consequent.object):
                     # The comparison became the same as the one in the explanation
                     explanation.antecedent = seen_comparison.antecedent
             else:
