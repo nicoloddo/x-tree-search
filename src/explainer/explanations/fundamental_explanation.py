@@ -193,6 +193,7 @@ class ComparisonNodesPropertyPossession(Explanation):
             raise ValueError("The ComparisonNodesPropertyPossession should be the explanation of a comparison adjective.")
 
         if type(other_nodes) is list and len(other_nodes) > 1:
+            # Comparison between main node and multiple nodes
             to_forward_explanations = []
             for o_node in other_nodes:
                 to_forward_explanations.append((self.explanation_of_adjective, node, o_node))
@@ -200,7 +201,8 @@ class ComparisonNodesPropertyPossession(Explanation):
             explanations = self.forward_multiple_explanations(*to_forward_explanations)
             explanation = And(*explanations)
             return explanation
-        else:
+        else: 
+            # Comparison between main node and a single node
             if type(other_nodes) is list:
                 other_nodes = other_nodes[0]
 
@@ -255,27 +257,34 @@ class GroupComparison(Explanation):
 
         comparison_groups = {}
         for comparison_adjective in comparison_adjectives:
-            comparison_groups[comparison_adjective] = comparison_adjective.get_true_group(node, group)
+            adjective_specific_comparison_group = comparison_adjective.get_true_group(node, group)
+            if len(adjective_specific_comparison_group) > 0:
+                comparison_groups[comparison_adjective] = adjective_specific_comparison_group
         
+        if len(comparison_groups) == 0:
+            return Postulate("No comparison adjective is true for the group.")
+        
+        # If there is only one comparison adjective true for the group comparisons,
+        # we can substitute the object with it or them. We handle this inside the for loop.
+
         comparison_explanations_per_group = []
-        first_group_added = False
         for comparison_adjective, comparison_group in comparison_groups.items():
-            if len(comparison_group) == 0:
-                continue
             group_comparison_explanation = self.forward_explanation(comparison_adjective, node, comparison_group)
 
-            # Remove redundant information
+            # Remove redundant information, which is the information about the main node, repeated at each subcomparison
             if isinstance(group_comparison_explanation, Implies):
                 if isinstance(group_comparison_explanation.antecedent, And):
                     first_implication = True
                     for expr in group_comparison_explanation.antecedent.exprs:
                         # For each subcomparison in the group comparisons, except the first,
-                        # we remove the antecedent expression because that's always the same.
+                        # we remove the first antecedent expression because that's always the same, referring to the main node.
                         if expr.predicate == group_comparison_explanation.predicate: # If not, this is not a subcomparison
                             if isinstance(expr.antecedent, And) and not first_implication:
                                 expr.antecedent.exprs[0].nullify()
                             first_implication = False
+                            
                 if len(comparison_group) == len(group): # The same comparison is true for the whole group
+                    #(this happens when there is only one comparison adjective true for the group comparisons)
                     group_comparison_explanation.consequent.object = "it" if len(comparison_group) == 1 else "them"
                 
             comparison_explanations_per_group.append(group_comparison_explanation)
