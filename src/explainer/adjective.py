@@ -493,6 +493,8 @@ class ComparisonAdjective(Adjective):
             explanation = CompositeExplanation(
                 ComparisonAssumption(name, property_pointer_adjective_name, operator),
                 ComparisonNodesPropertyPossession(property_pointer_adjective_name))
+        else:
+            print("Warning: Using a custom explanation might not be compatible with some explanation tactics.")
         super().__init__(name, AdjectiveType.COMPARISON, explanation, tactics, definition=DEFAULT_GETTER, explain_with_adj_if = explain_with_adj_if)
         self.property_pointer_adjective_name = property_pointer_adjective_name
 
