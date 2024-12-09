@@ -204,12 +204,36 @@ class ComparisonNodesPropertyPossession(Explanation):
         else: 
             # Comparison between main node and a single node
             if type(other_nodes) is list:
-                other_nodes = other_nodes[0]
+                other_node = other_nodes[0]
+            else:
+                other_node = other_nodes
 
             to_forward_explanations = [(adjective_for_comparison, node)]
-            to_forward_explanations.append((adjective_for_comparison, other_nodes))
+            to_forward_explanations.append((adjective_for_comparison, other_node))
 
             explanations = self.forward_multiple_explanations(*to_forward_explanations)
+
+            final_nodes_involved_in_property_possession = [node, other_node]
+            involved_nodes_are_default_nodes = True
+            for node_explanation_index, explanation in enumerate(explanations):
+                if type(explanation) is Implies:
+                    final_proposition = explanation.consequent
+                elif type(explanation) is And:
+                    # TODO: Handle this case
+                    final_proposition = explanation
+                else:
+                    final_proposition = explanation
+
+                if type(final_proposition.evaluation) is type(node):
+                    final_nodes_involved_in_property_possession[node_explanation_index] = final_proposition.evaluation
+                    involved_nodes_are_default_nodes = False
+            
+            if not involved_nodes_are_default_nodes: # If the property of one of the two nodes comes from nodes further down the tree,
+                # We add a further postulate that explicits the comparison between the nodes from which the property derives
+                additional_evaluation = self.explanation_of_adjective.evaluate(*final_nodes_involved_in_property_possession, explanation_tactics = self.explanation_tactics)
+                additional_postulate = self.explanation_of_adjective.proposition(additional_evaluation, final_nodes_involved_in_property_possession, explanation_tactics = self.explanation_tactics)
+                explanations.append(additional_postulate)
+
             explanation = And(*explanations)
 
             return explanation
@@ -276,12 +300,13 @@ class GroupComparison(Explanation):
                 if isinstance(group_comparison_explanation.antecedent, And):
                     first_implication = True
                     for expr in group_comparison_explanation.antecedent.exprs:
-                        # For each subcomparison in the group comparisons, except the first,
-                        # we remove the first antecedent expression because that's always the same, referring to the main node.
-                        if expr.predicate == group_comparison_explanation.predicate: # If not, this is not a subcomparison
-                            if isinstance(expr.antecedent, And) and not first_implication:
-                                expr.antecedent.exprs[0].nullify()
-                            first_implication = False
+                        if isinstance(expr, Implies):
+                            # For each subcomparison in the group comparisons, except the first,
+                            # we remove the first antecedent expression because that's always the same, referring to the main node.
+                            if expr.predicate == group_comparison_explanation.predicate: # If not, this is not a subcomparison
+                                if isinstance(expr.antecedent, And) and not first_implication:
+                                    expr.antecedent.exprs[0].nullify()
+                                first_implication = False
                             
                 if len(comparison_group) == len(group): # The same comparison is true for the whole group
                     #(this happens when there is only one comparison adjective true for the group comparisons)
