@@ -1,7 +1,7 @@
 from .base import Explanation
 from src.explainer.common.utils import AdjectiveType
 
-from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And, Implies
+from src.explainer.propositional_logic import LogicalExpression, Postulate, Proposition, And, Implies, NAryOperator
 
 from typing import Any, List
 
@@ -192,7 +192,7 @@ class ComparisonNodesPropertyPossession(Explanation):
         else:
             raise ValueError("The ComparisonNodesPropertyPossession should be the explanation of a comparison adjective.")
 
-        if type(other_nodes) is list and len(other_nodes) > 1:
+        if isinstance(other_nodes, list) and len(other_nodes) > 1:
             # Comparison between main node and multiple nodes
             to_forward_explanations = []
             for o_node in other_nodes:
@@ -203,7 +203,7 @@ class ComparisonNodesPropertyPossession(Explanation):
             return explanation
         else: 
             # Comparison between main node and a single node
-            if type(other_nodes) is list:
+            if isinstance(other_nodes, list):
                 other_node = other_nodes[0]
             else:
                 other_node = other_nodes
@@ -212,15 +212,23 @@ class ComparisonNodesPropertyPossession(Explanation):
             to_forward_explanations.append((adjective_for_comparison, other_node))
 
             explanations = self.forward_multiple_explanations(*to_forward_explanations)
+            if any(explanation is None for explanation in explanations):
+                return None
 
             final_nodes_involved_in_property_possession = [node, other_node]
             involved_nodes_are_default_nodes = True
             for node_explanation_index, explanation in enumerate(explanations):
-                if type(explanation) is Implies:
+            # TODO: For now we are considering any reference to another node in the explanation to be the relevant comparison to make.
+            # In the future we might want to explcitly let the designer specify if a pointer adjective is a direct motivation for the property possession.
+                if isinstance(explanation, Implies):
                     final_proposition = explanation.consequent
-                elif type(explanation) is And:
-                    # TODO: Handle this case
-                    final_proposition = explanation
+                elif isinstance(explanation, NAryOperator):
+                    final_proposition = explanation # We default to the whole explanation
+                    # We take the first expression with a reference to a node.
+                    for expr in explanation.exprs:
+                        if type(expr.evaluation) is type(node):
+                            final_proposition = expr
+                            break
                 else:
                     final_proposition = explanation
 
@@ -229,10 +237,9 @@ class ComparisonNodesPropertyPossession(Explanation):
                     involved_nodes_are_default_nodes = False
             
             if not involved_nodes_are_default_nodes: # If the property of one of the two nodes comes from nodes further down the tree,
-                # We add a further postulate that explicits the comparison between the nodes from which the property derives
-                additional_evaluation = self.explanation_of_adjective.evaluate(*final_nodes_involved_in_property_possession, explanation_tactics = self.explanation_tactics)
-                additional_postulate = self.explanation_of_adjective.proposition(additional_evaluation, final_nodes_involved_in_property_possession, explanation_tactics = self.explanation_tactics)
-                explanations.append(additional_postulate)
+                # We add a further explanation that explicits the comparison between the nodes from which the property derives
+                additional_explanation = self.forward_explanation(self.explanation_of_adjective, *final_nodes_involved_in_property_possession)
+                explanations.append(additional_explanation)
 
             explanation = And(*explanations)
 
