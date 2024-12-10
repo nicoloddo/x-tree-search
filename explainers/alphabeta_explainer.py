@@ -107,7 +107,7 @@ class AlphaBetaExplainer:
                         ),
                     
                         explanation_if_false = ConditionalExplanation(
-                            condition=If("possession", "not worth exploring after checking the first possible next move"),
+                            condition=If("possession", "not in possession of futures worth exploring after checking the first possible next move"),
                             
                             # The node has not been pruned, we have the full next future consequences list (until final moves or max search depth are reached)
                             explanation_if_false = Possession("as future position after few moves"),
@@ -117,8 +117,8 @@ class AlphaBetaExplainer:
                                 condition = If("possession", "as next move", "final move"), # Is the next move (the only one available) a final move?
 
                                 # The only children of the move that we considered is actually a final move.
-                                # In this case, we don't need to explain why the node was not worth exploring after checking the first possible next move,
-                                # users usually understand easily why this next possible move is not worth exploring after checking the first possible next move when it is a final move.
+                                # In this case, we don't need to explain why the node was not in possession of futures worth exploring after checking the first possible next move,
+                                # users usually understand easily why this next possible move is not in possession of futures worth exploring after checking the first possible next move when it is a final move.
                                 # We simply can say if it is a win, loss or draw.
                                 explanation_if_true = ConditionalExplanation(
                                     condition=If("possession", "as next move", "a win"),
@@ -130,10 +130,10 @@ class AlphaBetaExplainer:
                                         )
                                     ),
 
-                                # Next move is not a final move, thus we need explain that the node was simply not worth exploring after checking the first possible next move and why.
+                                # Next move is not a final move, thus we need explain that the node was simply not in possession of futures worth exploring after checking the first possible next move and why.
                                 explanation_if_false = CompositeExplanation(
                                     Possession("as next possible move"),
-                                    Possession("not worth exploring after checking the first possible next move"),
+                                    Possession("not in possession of futures worth exploring after checking the first possible next move"),
                                 )
                             ),
                         )
@@ -144,7 +144,7 @@ class AlphaBetaExplainer:
             BooleanAdjective("opponent player turn",
                 definition = "not node.maximizing_player_turn"),
 
-            BooleanAdjective("not worth exploring after checking the first possible next move",
+            BooleanAdjective("not in possession of futures worth exploring after checking the first possible next move",
                 # Please use Possession("as next possible move") together with this explanation.
                 definition = "not node.fully_searched",
                 explanation=ConditionalExplanation(    
@@ -178,7 +178,7 @@ class AlphaBetaExplainer:
             PointerAdjective("as next move",
                 definition = "node.score_child",
                 explanation = ConditionalExplanation(
-                    condition = If("possession", "not worth exploring after checking the first possible next move"),
+                    condition = If("possession", "not in possession of futures worth exploring after checking the first possible next move"),
 
                     # It was worth exploring (not pruned node)
                     explanation_if_false = ConditionalExplanation(
@@ -191,7 +191,7 @@ class AlphaBetaExplainer:
                             Possession("as next move", "the best for me"))
                         ),
                     
-                    # It was not worth exploring after checking the first possible next move, we just took the first move
+                    # It was not in possession of futures worth exploring after checking the first possible next move, we just took the first move
                     explanation_if_true = Assumption("The move is legal.", implicit=True)
                     )
                 ),
@@ -243,7 +243,7 @@ class AlphaBetaExplainer:
                         from_adjectives=["as next move", 
                                        "as next possible move"],
                         same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])],
-                        also_compact_adjectives = ["not worth exploring after checking the first possible next move"]
+                        also_compact_adjectives = ["not in possession of futures worth exploring after checking the first possible next move"]
                     )
                 ]
             ),
@@ -255,7 +255,7 @@ class AlphaBetaExplainer:
                         from_adjectives=["as next move", 
                                        "as next possible move"],
                         same_if_equal_keys=[('evaluation', ['depth', 'last_move_id'])],
-                        also_compact_adjectives = ["not worth exploring after checking the first possible next move"]
+                        also_compact_adjectives = ["not in possession of futures worth exploring after checking the first possible next move"]
                     )
                 ]
             )
