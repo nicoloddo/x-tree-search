@@ -5,7 +5,10 @@ import gradio as gr
 import copy
 
 from src.game.agents import User
-from src.explainable_game_interface.gradio_interface import ExplainableGameGradioInterface
+from src.explainable_game_interface.gradio_interface import (
+    ExplainableGameGradioInterface,
+)
+
 
 class BreakthroughGradioInterface(ExplainableGameGradioInterface):
     """
@@ -15,15 +18,16 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
     player interactions, game flow, and AI move explanations. It provides methods to create and update
     the game board, handle user inputs, display game status, and explain AI moves.
     """
+
     @property
     def main_action_space_id(self):
         return "board"
-    
+
     @classmethod
     def coordinates_to_string(cls, coordinates):
         i, j = coordinates
         return f"{i},{j}"
-    
+
     def create_board_cell_images(self):
         """
         Create and store all possible cell images for Breakthrough.
@@ -33,42 +37,58 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         """
         cell_size = 100
         images = {}
-        for cell_type in ['empty', 'w', 'b', 'w_changed', 'b_changed']:
-            img = Image.new('RGB', (cell_size, cell_size), color='beige')
+        for cell_type in ["empty", "w", "b", "w_changed", "b_changed"]:
+            img = Image.new("RGB", (cell_size, cell_size), color="beige")
             draw = ImageDraw.Draw(img)
-            
+
             # Draw border
-            draw.rectangle([0, 0, cell_size-1, cell_size-1], outline='black', width=2)
-            
-            if cell_type != 'empty':
-                piece_color = 'coral' if cell_type.startswith('w') else 'black'
-                outline_color = 'cyan' if cell_type.endswith('_changed') else piece_color
-                
+            draw.rectangle(
+                [0, 0, cell_size - 1, cell_size - 1], outline="black", width=2
+            )
+
+            if cell_type != "empty":
+                piece_color = "coral" if cell_type.startswith("w") else "black"
+                outline_color = (
+                    "cyan" if cell_type.endswith("_changed") else piece_color
+                )
+
                 # Draw the piece (a filled circle)
                 padding = 10
-                draw.ellipse([padding, padding, cell_size-padding, cell_size-padding], fill=piece_color, outline=outline_color, width=2)
-            
+                draw.ellipse(
+                    [padding, padding, cell_size - padding, cell_size - padding],
+                    fill=piece_color,
+                    outline=outline_color,
+                    width=2,
+                )
+
             images[cell_type] = img
         return images
-    
+
     def get_cell_image(self, cell_value, is_changed, i, j):
         """
         Get the appropriate cell image and add the index.
         """
-        if cell_value == '' or cell_value == ' ':
-            img = self.board_cell_images['empty'].copy()
+        if cell_value == "" or cell_value == " ":
+            img = self.board_cell_images["empty"].copy()
         else:
             img_key = f"{cell_value}_changed" if is_changed else cell_value
             img = self.board_cell_images[img_key].copy()
-        
+
         # Add index to the image
         draw = ImageDraw.Draw(img)
         font = ImageFont.load_default().font_variant(size=15)
-        draw.text((5, 3), self.coordinates_to_string((i, j)), font=font, fill='blue')
-        
+        draw.text((5, 3), self.coordinates_to_string((i, j)), font=font, fill="blue")
+
         return img
 
-    def __init__(self, game, explainer=None, interface_hyperlink_mode=True, *, game_title_md="# Breakthrough vs AlphaBeta"):
+    def __init__(
+        self,
+        game,
+        explainer=None,
+        interface_hyperlink_mode=True,
+        *,
+        game_title_md="# Breakthrough",
+    ):
         """
         Initialize the TicTacToeGradioInterface.
 
@@ -91,7 +111,7 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         This is due to Gradio's Gallery interface, nothing we can change, but there is a workaround:<br> 
         Click on an empty space so that the orange border goes to the empty cell before clicking on the piece.
         """
-        game_board_side_size =  game.action_spaces["board"].shape[0]
+        game_board_side_size = game.action_spaces["board"].shape[0]
         if game_board_side_size == 6:
             game_explanation_interface_ratio = "3:4"
         elif game_board_side_size == 8:
@@ -99,15 +119,17 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         else:
             game_explanation_interface_ratio = "1:1"
 
-        super().__init__(game, 
-                         game_title_md=game_title_md, 
-                         action_spaces_to_visualize=[self.main_action_space_id, "agents"],
-                         explainer=explainer,
-                         interface_hyperlink_mode=interface_hyperlink_mode,
-                         game_explanation_ratio=game_explanation_interface_ratio,
-                         help_md=help_md)
+        super().__init__(
+            game,
+            game_title_md=game_title_md,
+            action_spaces_to_visualize=[self.main_action_space_id, "agents"],
+            explainer=explainer,
+            interface_hyperlink_mode=interface_hyperlink_mode,
+            game_explanation_ratio=game_explanation_interface_ratio,
+            help_md=help_md,
+        )
         self.where = {}
-        
+
     async def process_move(self, game, explainer, evt: gr.SelectData):
         """
         Process a move made by the current player.
@@ -122,22 +144,25 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
         """
         try:
             index = evt.index
-            row, col = index // game.action_spaces[self.main_action_space_id].shape[1], index % game.action_spaces[self.main_action_space_id].shape[1]
+            row, col = (
+                index // game.action_spaces[self.main_action_space_id].shape[1],
+                index % game.action_spaces[self.main_action_space_id].shape[1],
+            )
 
             current_player = game.get_current_player()
 
-            if current_player.id not in self.where: # first click
+            if current_player.id not in self.where:  # first click
                 if game.action_spaces["board"][(row, col)] != game.free_label:
                     self.where[current_player.id] = (row, col)
-            else: # second click
+            else:  # second click
                 what = (row, col)
                 where = copy.deepcopy(self.where[current_player.id])
                 del self.where[current_player.id]
 
-                inputs = {'what': what, 'where': where, 'on': "board"}
-                await current_player.play(game, inputs) # User move
+                inputs = {"what": what, "where": where, "on": "board"}
+                await current_player.play(game, inputs)  # User move
                 self.update(game, explainer)
-                await game.continue_game() # AI move
+                await game.continue_game()  # AI move
 
         except Exception as e:
             self.output(str(e), type="error")
@@ -146,11 +171,13 @@ class BreakthroughGradioInterface(ExplainableGameGradioInterface):
             traceback.print_exc()
 
         return self.update(game, explainer)
-    
+
+
 if __name__ == "__main__":
     # Test Gradio Interface
     from games.tic_tac_toe.tic_tac_toe import TicTacToe
     from explainers.alphabeta_explainer import AlphaBetaExplainer
+
     explainer = AlphaBetaExplainer()
     user1 = User(agent_id=0)
     user2 = User(agent_id=1)
