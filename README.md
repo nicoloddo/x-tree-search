@@ -86,7 +86,61 @@ explainer.explain(node, "best")
 
 ## Installation
 
-Installation guidance will be added soon.
+### Basic Installation
+
+To install the basic x-tree-search package:
+
+1. Install PyTorch by following the official installation instructions at [pytorch.org](https://pytorch.org/). Choose the appropriate version for your operating system, package manager, and compute platform.
+
+2. Install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Graphviz Installation
+
+This library uses Graphviz for visualization of decision trees. You need to install both the Python package and the system-level Graphviz executable:
+
+1. **Install the Python package** (already included in requirements.txt):
+   ```bash
+   pip install graphviz
+   ```
+
+2. **Install the system-level Graphviz executable**:
+
+   - **Windows**:
+     - Download and install from [Graphviz's official download page](https://graphviz.org/download/)
+     - Add the Graphviz bin directory to your system PATH (typically `C:\Program Files\Graphviz\bin`)
+
+   - **macOS**:
+     ```bash
+     brew install graphviz
+     ```
+
+   - **Ubuntu/Debian**:
+     ```bash
+     sudo apt-get install graphviz
+     ```
+
+   - **CentOS/RHEL**:
+     ```bash
+     sudo yum install graphviz
+     ```
+
+If you encounter errors like `ExecutableNotFound: failed to execute dot, make sure the Graphviz executables are on your systems' PATH`, ensure the Graphviz executables are properly installed and added to your PATH.
+
+### OpenSpiel Integration
+
+If you want to use the OpenSpiel wrapper:
+
+1. First, install OpenSpiel by following their installation guidance on [GitHub](https://github.com/google-deepmind/open_spiel)
+
+2. Then install the specific OpenSpiel version required by x-tree-search:
+
+```bash
+pip install open_spiel==1.5
+```
 
 ## Contributing
 
