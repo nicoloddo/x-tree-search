@@ -308,9 +308,7 @@ class Implies(LogicalExpression):
 
             antecedent_str = textwrap.indent(antecedent_str, indentation)
         else:
-            raise ValueError(
-                f"There is no found antecedent for the following consequent:\n{self.consequent}"
-            )
+            antecedent_str = str(self.antecedent)
 
         if self.print_mode == "logic":
             to_string = f"{self.consequent} {symbol}\n {antecedent_str}"
