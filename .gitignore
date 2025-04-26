@@ -8,3 +8,4 @@
 bookmarks/
 *.egg-info
 declarator/
+.venv/
