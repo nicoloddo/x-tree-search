@@ -124,8 +124,6 @@ class MiniMax:
     """
 
     tree_node_class = MiniMaxNode
-    max_depth = 3
-    use_alpha_beta = True
 
     @classmethod
     def set_game_state_translator(cls, game_state_translator):
@@ -149,16 +147,17 @@ class MiniMax:
         self.search_root_final = None
         self.start_with_maximizing = start_with_maximizing
 
-        self.set_max_depth(max_depth)
-        self.set_use_alpha_beta(use_alpha_beta)
+        # Instance variables instead of class variables
+        self.max_depth = max_depth
+        self.use_alpha_beta = use_alpha_beta
 
-    @classmethod
-    def set_max_depth(cls, max_depth):
-        cls.max_depth = max_depth
+    def set_max_depth(self, max_depth):
+        """Set the maximum search depth for this MiniMax instance."""
+        self.max_depth = max_depth
 
-    @classmethod
-    def set_use_alpha_beta(cls, use_alpha_beta):
-        cls.use_alpha_beta = use_alpha_beta
+    def set_use_alpha_beta(self, use_alpha_beta):
+        """Set whether to use alpha-beta pruning for this MiniMax instance."""
+        self.use_alpha_beta = use_alpha_beta
 
     def run(
         self,

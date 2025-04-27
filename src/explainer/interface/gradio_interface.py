@@ -131,8 +131,6 @@ class ExplainerGradioInterface:
             visualize_decision_tree=self.ai_explainer.visualize_decision_tree,
             visualize_graph=self.graph_visualizer.visualize_graph,
             apply_explainer_settings=self.apply_explainer_settings,
-            update_minimax_max_depth=self.update_minimax_max_depth,
-            update_use_alpha_beta=self.update_use_alpha_beta,
         )
 
     def on_load(self, request: gr.Request):
@@ -172,40 +170,6 @@ class ExplainerGradioInterface:
         """
         return list(self.nodes.keys())
 
-    def update_minimax_max_depth(self, max_depth):
-        """
-        Update the MiniMax max depth class variable.
-
-        :param max_depth: The new max depth value
-        :return: None
-        """
-        MiniMax.set_max_depth(int(max_depth))
-
-        confirmation = f"✅ Set max depth to {max_depth}."
-        return confirmation
-
-    def update_use_alpha_beta(self, explainer, use_alpha_beta):
-        """
-        Update the MiniMax use_alpha_beta class variable and switch explainer if needed.
-
-        :param explainer: The current explainer instance
-        :param use_alpha_beta: Whether to use alpha-beta pruning
-        :return: The updated explainer and a confirmation message
-        """
-        # Update MiniMax setting
-        MiniMax.set_use_alpha_beta(use_alpha_beta)
-
-        # Switch explainer type if needed
-        new_explainer = self.switch_explainer_type(explainer, use_alpha_beta)
-
-        # Create brief confirmation message
-        explainer_type = "MiniMax AlphaBeta" if use_alpha_beta else "MiniMax"
-        confirmation = f"""✅ Switched to {explainer_type}.
-
-⚠️ Make a new move before asking for new explanations! For the current move, there is a mismatch between the explainer and the algorithm."""
-
-        return new_explainer, confirmation
-
     def switch_explainer_type(self, current_explainer, use_alpha_beta):
         """
         Switch between AlphaBetaExplainer and MiniMaxExplainer based on the use_alpha_beta setting.
@@ -243,6 +207,7 @@ class ExplainerGradioInterface:
     def apply_explainer_settings(
         self,
         explainer,
+        game,
         with_framework,
         explanation_depth,
         assumptions_verbosity,
@@ -281,8 +246,16 @@ class ExplainerGradioInterface:
         explainer.configure_settings(settings_dict)
 
         # Update MiniMax settings
-        MiniMax.set_max_depth(int(minimax_max_depth))
-        MiniMax.set_use_alpha_beta(use_alpha_beta)
+        if hasattr(game, "explaining_agent"):
+            algorithm = game.explaining_agent.core
+            algorithm.set_max_depth(int(minimax_max_depth))
+            algorithm.set_use_alpha_beta(use_alpha_beta)
+            current_max_depth = algorithm.max_depth
+            current_use_alpha_beta = algorithm.use_alpha_beta
+        else:
+            # Fallback if we can't access the algorithm
+            current_max_depth = int(minimax_max_depth)
+            current_use_alpha_beta = use_alpha_beta
 
         # Determine explainer type for message
         explainer_type = "MiniMax AlphaBeta" if use_alpha_beta else "MiniMax"
@@ -292,8 +265,9 @@ class ExplainerGradioInterface:
 
 ## Algorithm Settings
 * Explainer Type: {explainer_type}
-* MiniMax Search Depth: {MiniMax.max_depth}
-* Alpha-Beta Pruning: {'Enabled' if MiniMax.use_alpha_beta else 'Disabled'}
+* MiniMax Search Depth: {current_max_depth}
+* Alpha-Beta Pruning: {'Enabled' if current_use_alpha_beta else 'Disabled'}
+⚠️ If you switched the Alpha-Beta Pruning setting, make a new move before asking for new explanations! For the current move, there is a mismatch between the explainer and the algorithm.
 
 ## Explanation Settings
 * Assumptions Verbosity: {assumptions_verbosity}
@@ -302,7 +276,7 @@ class ExplainerGradioInterface:
 * Print Mode: {print_mode}
 """
 
-        return explainer, confirmation
+        return explainer, game, confirmation
 
     def check_if_comparison_adjective(self, adjective_name):
         """
@@ -319,9 +293,9 @@ class ExplainerGradioInterface:
         else:
             return gr.update(visible=False, value=None)
 
-    def launch(self):
+    def launch(self, game):
         """Launch the Gradio interface."""
-        self.demo = self.interface_builder.build_interface()
+        self.demo = self.interface_builder.build_interface(game)
         self.demo.launch()
 
     class InterfaceBuilder:
@@ -339,8 +313,6 @@ class ExplainerGradioInterface:
             self.visualize_decision_tree = kwargs.get("visualize_decision_tree")
             self.visualize_graph = kwargs.get("visualize_graph")
             self.apply_explainer_settings = kwargs.get("apply_explainer_settings")
-            self.update_minimax_max_depth = kwargs.get("update_minimax_max_depth")
-            self.update_use_alpha_beta = kwargs.get("update_use_alpha_beta")
 
         def update_dropdowns(self):
             """
@@ -539,7 +511,7 @@ class ExplainerGradioInterface:
 
             return components
 
-        def build_explainer_settings_components(self):
+        def build_explainer_settings_components(self, game_state_component):
             """
             Build components for explainer settings.
 
@@ -549,23 +521,36 @@ class ExplainerGradioInterface:
 
             default_values = self.get_default_explainer_settings()
 
+            if (
+                hasattr(game_state_component, "explaining_agent")
+                and hasattr(game_state_component.explaining_agent, "core")
+                and game_state_component.explaining_agent is not None
+            ):
+                default_minimax_max_depth = (
+                    game_state_component.explaining_agent.core.max_depth
+                )
+                default_use_alpha_beta = (
+                    game_state_component.explaining_agent.core.use_alpha_beta
+                )
+            else:
+                default_minimax_max_depth = 6
+                default_use_alpha_beta = True
+
             # Add "Algorithm Settings" section
-            gr.Markdown(
-                "## Algorithm Settings (these settings will be applied instantly)"
-            )
+            gr.Markdown("## Algorithm Settings")
             with gr.Row():
                 with gr.Column():
                     components["minimax_max_depth"] = gr.Slider(
                         minimum=1,
                         maximum=10,
                         step=1,
-                        value=MiniMax.max_depth,
+                        value=default_minimax_max_depth,
                         label="MiniMax Search Max Depth",
                     )
 
                     components["use_alpha_beta"] = gr.Checkbox(
                         label="Use Alpha-Beta Pruning",
-                        value=MiniMax.use_alpha_beta,
+                        value=default_use_alpha_beta,
                     )
 
             # Add "Explanation Settings" section
@@ -711,6 +696,7 @@ class ExplainerGradioInterface:
                     self.apply_explainer_settings,
                     inputs=[
                         explainer_state_component,
+                        game_state_component,
                         components["with_framework"],
                         components["explanation_depth"],
                         components["assumptions_verbosity"],
@@ -722,27 +708,7 @@ class ExplainerGradioInterface:
                     ],
                     outputs=[
                         explainer_state_component,
-                        components["settings_confirmation"],
-                    ],
-                )
-
-            # Update MiniMax max depth setting
-            if "minimax_max_depth" in components:
-                components["minimax_max_depth"].change(
-                    self.update_minimax_max_depth,
-                    inputs=[components["minimax_max_depth"]],
-                    outputs=[
-                        components["settings_confirmation"],
-                    ],
-                )
-
-            # Update use_alpha_beta setting
-            if "use_alpha_beta" in components:
-                components["use_alpha_beta"].change(
-                    self.update_use_alpha_beta,
-                    inputs=[explainer_state_component, components["use_alpha_beta"]],
-                    outputs=[
-                        explainer_state_component,
+                        game_state_component,
                         components["settings_confirmation"],
                     ],
                 )
@@ -763,19 +729,26 @@ class ExplainerGradioInterface:
                             self.update_dropdowns, outputs=self.dropdown_components
                         )
 
-        def build_interface(self):
+        def build_interface(self, game):
             """
             Build the complete Gradio interface.
 
+            :param game: The game instance to use for accessing the MiniMax algorithm
             :return: The Gradio Blocks object representing the interface
             """
             with gr.Blocks() as demo:
+                # Create explainer_state component to hold the explainer
+                explainer_state = gr.State(value=self.init_explainer)
+                game_state = gr.State(value=game)
+
                 gr.Markdown("# X-Tree-Search Explainer")
 
                 with gr.Tabs():
                     with gr.TabItem("Explain", id=self.tab_ids["ai_explanation"]):
                         ai_explanation_components = (
-                            self.build_ai_explanation_components()
+                            self.build_ai_explanation_components(
+                                game_state, explainer_state
+                            )
                         )
                     with gr.TabItem(
                         "Visualize Framework", id=self.tab_ids["visualize"]
@@ -785,10 +758,12 @@ class ExplainerGradioInterface:
                         "Visualize Decision Tree", id=self.tab_ids["move_tree"]
                     ):
                         move_tree_components = (
-                            self.build_visualize_decision_tree_components()
+                            self.build_visualize_decision_tree_components(game_state)
                         )
                     with gr.TabItem("Settings", id=self.tab_ids["settings"]):
-                        settings_components = self.build_explainer_settings_components()
+                        settings_components = self.build_explainer_settings_components(
+                            game_state
+                        )
 
                 components = {
                     **ai_explanation_components,
@@ -798,7 +773,7 @@ class ExplainerGradioInterface:
                 }
 
                 # Connect components
-                self.connect_components(components)
+                self.connect_components(components, game_state, explainer_state)
 
             return demo
 

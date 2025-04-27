@@ -128,8 +128,8 @@ class ExplainableGameGradioInterface(GameGradioInterface):
                     "Algorithm and Explainer Settings",
                     self.explainer_interface.tab_ids["settings"],
                 ):
-                    explainer_settings_components = (
-                        self.explainer_interface.interface_builder.build_explainer_settings_components()
+                    explainer_settings_components = self.explainer_interface.interface_builder.build_explainer_settings_components(
+                        game_state
                     )
 
                 with gr.TabItem(
