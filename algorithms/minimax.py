@@ -124,6 +124,8 @@ class MiniMax:
     """
 
     tree_node_class = MiniMaxNode
+    max_depth = 3
+    use_alpha_beta = True
 
     @classmethod
     def set_game_state_translator(cls, game_state_translator):
@@ -143,15 +145,20 @@ class MiniMax:
 
         # Other attributes:
         self.score = scoring_function
-        self.max_depth = max_depth
         self.search_root = None
         self.search_root_final = None
         self.start_with_maximizing = start_with_maximizing
 
-        if use_alpha_beta:
-            self.algorithm = self.alphabeta
-        else:
-            self.algorithm = self.minimax
+        self.set_max_depth(max_depth)
+        self.set_use_alpha_beta(use_alpha_beta)
+
+    @classmethod
+    def set_max_depth(cls, max_depth):
+        cls.max_depth = max_depth
+
+    @classmethod
+    def set_use_alpha_beta(cls, use_alpha_beta):
+        cls.use_alpha_beta = use_alpha_beta
 
     def run(
         self,
@@ -162,13 +169,18 @@ class MiniMax:
         expansion_constraints_other: Dict = None,
     ):
         try:
+            if self.use_alpha_beta:
+                algorithm = self.alphabeta
+            else:
+                algorithm = self.minimax
+
             if max_depth is None:
                 max_depth = self.max_depth
 
             self.search_root = MiniMaxNode(state_node)
             self.nodes = self.search_root.nodes_holder
 
-            best_child, best_value = self.algorithm(
+            best_child, best_value = algorithm(
                 self.search_root,
                 self.start_with_maximizing,
                 max_depth=max_depth,

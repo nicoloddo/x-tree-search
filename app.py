@@ -102,14 +102,12 @@ game = Game(
 )
 game.explaining_agent = opponent
 
-title = game.__class__.__name__
+title = game.__class__.__name__ + " vs MiniMax"
 
 if use_alpha_beta:
     explainer = AlphaBetaExplainer()
-    title += " (vs MiniMax AlphaBeta)"
 else:
     explainer = MiniMaxExplainer()
-    title += " (vs MiniMax)"
 
 # game and explainer are utilized as States in the interface,
 # thus they are not shared across users.
