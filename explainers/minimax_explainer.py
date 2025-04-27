@@ -19,9 +19,17 @@ from src.explainer.explanation import (
 )
 
 from src.explainer.explanation_tactics import (
-    OnlyRelevantComparisons,
-    SkipQuantitativeExplanations,
-    SubstituteQuantitativeExplanations,
+    CompactComparisonsWithSameExplanation,
+)
+
+game_end_conditional_explanation = ConditionalExplanation(
+    condition=If("possession", "a win"),
+    explanation_if_true=Possession("a win"),
+    explanation_if_false=ConditionalExplanation(
+        condition=If("possession", "a loss"),
+        explanation_if_true=Possession("a loss"),
+        explanation_if_false=Possession("a draw"),
+    ),
 )
 
 
@@ -59,9 +67,6 @@ class MiniMaxExplainer:
 
         # Add highlevel framework
         highlevel_adjectives = cls._get_highlevel_adjectives()
-        highlevel_tactics = [
-            SubstituteQuantitativeExplanations("it leads to a better position")
-        ]
 
         highlevel_settings = {
             "explanation_depth": 4,
@@ -74,7 +79,6 @@ class MiniMaxExplainer:
             refer_to_nodes_as="move",
             adjectives=highlevel_adjectives,
             main_explanation_adjective="the best",
-            tactics=highlevel_tactics,
             settings=highlevel_settings,
         )
 
@@ -136,20 +140,36 @@ class MiniMaxExplainer:
         Returns a list of adjective definitions for the highlevel argumentation framework.
         """
         return [
-            BooleanAdjective("final move", definition="node.is_leaf"),
+            BooleanAdjective(
+                "the most forward in the future I looked",
+                definition="node.max_search_depth_reached",
+            ),
+            BooleanAdjective(
+                "final move",
+                definition="node.final_node",
+                explanation=ConditionalExplanation(
+                    condition=If(
+                        "possession", "the most forward in the future I looked"
+                    ),
+                    explanation_if_true=Possession(
+                        "the most forward in the future I looked"
+                    ),
+                    explanation_if_false=game_end_conditional_explanation,
+                ),
+            ),
             BooleanAdjective(
                 "a win",
-                definition="node.is_leaf and node.readable_score > 0",
+                definition="node.final_node and node.score > 0",
                 explanation=Assumption("These are the rules!"),
             ),
             BooleanAdjective(
                 "a loss",
-                definition="node.is_leaf and node.readable_score < 0",
+                definition="node.final_node and node.score < 0",
                 explanation=Assumption("These are the rules!"),
             ),
             BooleanAdjective(
                 "a draw",
-                definition="node.is_leaf and node.readable_score == 0",
+                definition="node.final_node and node.score == 0",
                 explanation=Assumption("These are the rules!"),
             ),
             QuantitativePointerAdjective(
@@ -159,21 +179,25 @@ class MiniMaxExplainer:
                 explanation=ConditionalExplanation(
                     condition=If("possession", "final move"),
                     # It's a final move: we say if it is a win, loss or draw
-                    explanation_if_true=ConditionalExplanation(
-                        condition=If("possession", "a win"),
-                        explanation_if_true=Possession("a win"),
-                        explanation_if_false=ConditionalExplanation(
-                            condition=If("possession", "a loss"),
-                            explanation_if_true=Possession("a loss"),
-                            explanation_if_false=Possession("a draw"),
-                        ),
-                    ),
+                    explanation_if_true=game_end_conditional_explanation,
                     # Not a final move: explain using backpropagating child
-                    explanation_if_false=CompositeExplanation(
-                        Assumption(
-                            "Internal moves get their value from future positions"
+                    explanation_if_false=ConditionalExplanation(
+                        condition=If(
+                            "possession", "the most forward in the future I looked"
                         ),
-                        Possession("as future position"),
+                        explanation_if_true=CompositeExplanation(
+                            Possession("the most forward in the future I looked"),
+                            Assumption(
+                                "when I can't look further in the future, my evaluation of a move is qualitative, only based on the board position after it",
+                                necessary=True,
+                            ),
+                        ),
+                        explanation_if_false=CompositeExplanation(
+                            Assumption(
+                                "We assume us and the opponent are playing optimally."
+                            ),
+                            Possession("as next move"),
+                        ),
                     ),
                 ),
             ),
@@ -181,18 +205,11 @@ class MiniMaxExplainer:
                 "opponent player turn", definition="not node.maximizing_player_turn"
             ),
             PointerAdjective(
-                "as future position",
+                "as next move",
                 definition="node.score_child",
-                explanation=ConditionalExplanation(
-                    condition=If("possession", "opponent player turn"),
-                    explanation_if_true=CompositeExplanation(
-                        Assumption("We assume the opponent will do their best move."),
-                        Possession("as future position", "the best for opponent"),
-                    ),
-                    explanation_if_false=CompositeExplanation(
-                        Assumption("On our turn we take the maximum rated move."),
-                        Possession("as future position", "the best for me"),
-                    ),
+                explanation=CompositeExplanation(
+                    Assumption("We assume us and the opponent are playing optimally."),
+                    Possession("as next move", "the best"),
                 ),
             ),
             ComparisonAdjective("better for me than", "score", ">"),
@@ -214,9 +231,33 @@ class MiniMaxExplainer:
                 ),
             ),
             MaxRankAdjective(
-                "the best for me", ["better for me than"], "possible alternatives"
+                "the best for me",
+                ["better for me than", "equal to"],
+                "possible alternatives",
+                explain_with_adj_if=(
+                    If("possession", "opponent player turn", value=False),
+                    "the best for opponent",
+                ),
+                tactics=[
+                    CompactComparisonsWithSameExplanation(
+                        from_adjectives=["as next move"],
+                        same_if_equal_keys=[("evaluation", ["depth", "last_move_id"])],
+                    )
+                ],
             ),
-            MinRankAdjective(
-                "the best for opponent", ["better for me than"], "possible alternatives"
+            MaxRankAdjective(
+                "the best for opponent",
+                ["worse for me than", "equal to"],
+                "possible alternatives",
+                explain_with_adj_if=(
+                    If("possession", "opponent player turn"),
+                    "the best for me",
+                ),
+                tactics=[
+                    CompactComparisonsWithSameExplanation(
+                        from_adjectives=["as next move"],
+                        same_if_equal_keys=[("evaluation", ["depth", "last_move_id"])],
+                    )
+                ],
             ),
         ]
