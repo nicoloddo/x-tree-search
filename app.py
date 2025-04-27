@@ -103,6 +103,7 @@ game = Game(
 game.explaining_agent = opponent
 
 title = game.__class__.__name__ + " vs MiniMax"
+title += "\nChoose the search depth or disable AlphaBeta pruning in the settings tab."
 
 if use_alpha_beta:
     explainer = AlphaBetaExplainer()

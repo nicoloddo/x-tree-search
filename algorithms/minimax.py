@@ -207,6 +207,7 @@ class MiniMax:
         constraints_maximizer=None,
         constraints_minimizer=None,
     ):
+        node.fully_searched = True  # The node will be fully searched in minimax always.
         node.maximizing_player_turn = is_maximizing
         node.depth = current_depth
         if current_depth >= max_depth:

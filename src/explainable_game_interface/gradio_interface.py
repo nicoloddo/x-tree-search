@@ -109,6 +109,9 @@ class ExplainableGameGradioInterface(GameGradioInterface):
 
                         with gr.Column(scale=self.explanation_scale):
                             gr.Markdown("# AI Move Explanation")
+                            gr.Markdown(
+                                "To better understand the abstraction provided by the explainer, check the full decision tree in the 'Visualize Decision Tree' tab!"
+                            )
                             self.ai_explanation_components = self.explainer_interface.interface_builder.build_ai_explanation_components(
                                 game_state,
                                 explainer_state,

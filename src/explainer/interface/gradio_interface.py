@@ -560,7 +560,7 @@ class ExplainerGradioInterface:
                     )
 
                     components["use_alpha_beta"] = gr.Checkbox(
-                        label="Use Alpha-Beta Pruning (this settings will be applied instantly)",
+                        label="Use Alpha-Beta Pruning (this setting will be applied instantly)",
                         value=MiniMax.use_alpha_beta,
                     )
 
