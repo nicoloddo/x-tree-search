@@ -8,3 +8,6 @@ nest_asyncio==1.6.0
 numpy==2.1.2
 Pillow==10.4.0
 setuptools==70.3.0
+# On windows comment the following lines
+open_spiel==1.5
+torch==2.4.0

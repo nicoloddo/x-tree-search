@@ -90,13 +90,14 @@ explainer.explain(node, "best")
 
 To install the basic x-tree-search package:
 
-1. Install PyTorch by following the official installation instructions at [pytorch.org](https://pytorch.org/). Choose the appropriate version for your operating system, package manager, and compute platform.
-
-2. Install the required dependencies:
+1. Install the required dependencies:
+On Windows, open the requirements.txt file and comment the lines indicated in the comment before doing this.
 
 ```bash
 pip install -r requirements.txt
 ```
+
+2. If you are on Windows, you commented out torch and open_spiel. Install PyTorch by following the official installation instructions at [pytorch.org](https://pytorch.org/). Choose the appropriate version for your operating system, package manager, and compute platform.
 
 ### Graphviz Installation
 
@@ -134,9 +135,9 @@ If you encounter errors like `ExecutableNotFound: failed to execute dot, make su
 
 If you want to use the OpenSpiel wrapper:
 
-1. First, install OpenSpiel by following their installation guidance on [GitHub](https://github.com/google-deepmind/open_spiel)
+1. Install OpenSpiel by following their installation guidance on [GitHub](https://github.com/google-deepmind/open_spiel)
 
-2. Then install the specific OpenSpiel version required by x-tree-search:
+2. Then install the specific OpenSpiel version required by x-tree-search (already in the requirements.txt for non windows users):
 
 ```bash
 pip install open_spiel==1.5
