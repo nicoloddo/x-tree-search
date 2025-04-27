@@ -21,6 +21,8 @@ from src.explainer.framework import ArgumentationFramework
 from src.explainer.propositional_logic import LogicalExpression, Implies
 
 from algorithms.minimax import MiniMax  # Add import for MiniMax class
+from explainers.alphabeta_explainer import AlphaBetaExplainer
+from explainers.minimax_explainer import MiniMaxExplainer
 
 from src.explainer.explanation_settings import (
     EXPLANATION_DEPTH_ALLOWED_VALUES,
@@ -130,6 +132,7 @@ class ExplainerGradioInterface:
             visualize_graph=self.graph_visualizer.visualize_graph,
             apply_explainer_settings=self.apply_explainer_settings,
             update_minimax_max_depth=self.update_minimax_max_depth,
+            update_use_alpha_beta=self.update_use_alpha_beta,
         )
 
     def on_load(self, request: gr.Request):
@@ -179,6 +182,62 @@ class ExplainerGradioInterface:
         MiniMax.set_max_depth(int(max_depth))
         return None
 
+    def update_use_alpha_beta(self, explainer, use_alpha_beta):
+        """
+        Update the MiniMax use_alpha_beta class variable and switch explainer if needed.
+
+        :param explainer: The current explainer instance
+        :param use_alpha_beta: Whether to use alpha-beta pruning
+        :return: The updated explainer and a confirmation message
+        """
+        # Update MiniMax setting
+        MiniMax.set_use_alpha_beta(use_alpha_beta)
+
+        # Switch explainer type if needed
+        new_explainer = self.switch_explainer_type(explainer, use_alpha_beta)
+
+        # Create brief confirmation message
+        explainer_type = "MiniMax AlphaBeta" if use_alpha_beta else "MiniMax"
+        confirmation = f"""✅ Switched to {explainer_type}.
+
+⚠️ Make a new move before asking for new explanations! For the current move, there is a mismatch between the explainer and the algorithm."""
+
+        return new_explainer, confirmation
+
+    def switch_explainer_type(self, current_explainer, use_alpha_beta):
+        """
+        Switch between AlphaBetaExplainer and MiniMaxExplainer based on the use_alpha_beta setting.
+
+        :param current_explainer: The current explainer instance
+        :param use_alpha_beta: Whether to use alpha-beta pruning
+        :return: The new explainer instance with settings transferred
+        """
+        # Save current settings
+        current_settings = {}
+        if hasattr(current_explainer, "settings"):
+            current_settings = {
+                "with_framework": current_explainer.settings.with_framework,
+                "explanation_depth": current_explainer.settings.explanation_depth,
+                "assumptions_verbosity": current_explainer.settings.assumptions_verbosity,
+                "print_depth": current_explainer.settings.print_depth,
+                "print_implicit_assumptions": current_explainer.settings.print_implicit_assumptions,
+                "print_mode": current_explainer.settings.print_mode,
+            }
+
+        # Create new explainer based on use_alpha_beta
+        if use_alpha_beta and not isinstance(current_explainer, AlphaBetaExplainer):
+            new_explainer = AlphaBetaExplainer()
+        elif not use_alpha_beta and not isinstance(current_explainer, MiniMaxExplainer):
+            new_explainer = MiniMaxExplainer()
+        else:
+            return current_explainer  # No change needed
+
+        # Transfer settings to new explainer
+        if current_settings:
+            new_explainer.configure_settings(current_settings)
+
+        return new_explainer
+
     def apply_explainer_settings(
         self,
         explainer,
@@ -189,6 +248,7 @@ class ExplainerGradioInterface:
         print_implicit_assumptions,
         print_mode,
         minimax_max_depth,
+        use_alpha_beta,
     ):
         """
         Apply the explainer settings.
@@ -201,8 +261,13 @@ class ExplainerGradioInterface:
         :param print_implicit_assumptions: Whether to print implicit assumptions
         :param print_mode: The print mode for explanations
         :param minimax_max_depth: The maximum depth for MiniMax search
+        :param use_alpha_beta: Whether to use alpha-beta pruning
         :return: The updated explainer instance and a confirmation message
         """
+        # Switch explainer type if needed
+        explainer = self.switch_explainer_type(explainer, use_alpha_beta)
+
+        # Apply settings to the explainer
         settings_dict = {
             "with_framework": with_framework,
             "explanation_depth": explanation_depth,
@@ -213,13 +278,22 @@ class ExplainerGradioInterface:
         }
         explainer.configure_settings(settings_dict)
 
-        # Update MiniMax max depth
+        # Update MiniMax settings
         MiniMax.set_max_depth(int(minimax_max_depth))
+        MiniMax.set_use_alpha_beta(use_alpha_beta)
+
+        # Determine explainer type for message
+        explainer_type = "MiniMax AlphaBeta" if use_alpha_beta else "MiniMax"
 
         # Create confirmation message
         confirmation = f"""✅ **Settings successfully applied!**
+
+## Algorithm Settings
+* Explainer Type: {explainer_type}
 * MiniMax Search Depth: {MiniMax.max_depth}
-* Explanation Depth: {explanation_depth}
+* Alpha-Beta Pruning: {'Enabled' if MiniMax.use_alpha_beta else 'Disabled'}
+
+## Explanation Settings
 * Assumptions Verbosity: {assumptions_verbosity}
 * Print Depth: {'Yes' if print_depth else 'No'}
 * Print Implicit Assumptions: {'Yes' if print_implicit_assumptions else 'No'}
@@ -264,6 +338,7 @@ class ExplainerGradioInterface:
             self.visualize_graph = kwargs.get("visualize_graph")
             self.apply_explainer_settings = kwargs.get("apply_explainer_settings")
             self.update_minimax_max_depth = kwargs.get("update_minimax_max_depth")
+            self.update_use_alpha_beta = kwargs.get("update_use_alpha_beta")
 
         def update_dropdowns(self):
             """
@@ -472,6 +547,25 @@ class ExplainerGradioInterface:
 
             default_values = self.get_default_explainer_settings()
 
+            # Add "Algorithm Settings" section
+            gr.Markdown("## Algorithm Settings")
+            with gr.Row():
+                with gr.Column():
+                    components["minimax_max_depth"] = gr.Slider(
+                        minimum=1,
+                        maximum=10,
+                        step=1,
+                        value=MiniMax.max_depth,
+                        label="MiniMax Search Max Depth",
+                    )
+
+                    components["use_alpha_beta"] = gr.Checkbox(
+                        label="Use Alpha-Beta Pruning (this settings will be applied instantly)",
+                        value=MiniMax.use_alpha_beta,
+                    )
+
+            # Add "Explanation Settings" section
+            gr.Markdown("## Explanation Settings")
             with gr.Row():
                 with gr.Column(scale=1):
                     components["with_framework"] = gr.Textbox(
@@ -500,17 +594,6 @@ class ExplainerGradioInterface:
                         choices=PRINT_MODE_ALLOWED_VALUES,
                         label="Print Mode",
                         value=default_values["print_mode"],
-                    )
-
-            # Add MiniMax max depth setting
-            with gr.Row():
-                with gr.Column():
-                    components["minimax_max_depth"] = gr.Slider(
-                        minimum=1,
-                        maximum=10,
-                        step=1,
-                        value=MiniMax.max_depth,
-                        label="MiniMax Search Max Depth",
                     )
 
             components["apply_settings_button"] = gr.Button("Apply Settings")
@@ -631,6 +714,7 @@ class ExplainerGradioInterface:
                         components["print_implicit_assumptions"],
                         components["print_mode"],
                         components["minimax_max_depth"],
+                        components["use_alpha_beta"],
                     ],
                     outputs=[
                         explainer_state_component,
@@ -644,6 +728,17 @@ class ExplainerGradioInterface:
                     self.update_minimax_max_depth,
                     inputs=[components["minimax_max_depth"]],
                     outputs=[],
+                )
+
+            # Update use_alpha_beta setting
+            if "use_alpha_beta" in components:
+                components["use_alpha_beta"].change(
+                    self.update_use_alpha_beta,
+                    inputs=[explainer_state_component, components["use_alpha_beta"]],
+                    outputs=[
+                        explainer_state_component,
+                        components["settings_confirmation"],
+                    ],
                 )
 
             # Update dropdowns
