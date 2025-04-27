@@ -180,7 +180,9 @@ class ExplainerGradioInterface:
         :return: None
         """
         MiniMax.set_max_depth(int(max_depth))
-        return None
+
+        confirmation = f"✅ Set max depth to {max_depth}."
+        return confirmation
 
     def update_use_alpha_beta(self, explainer, use_alpha_beta):
         """
@@ -548,7 +550,9 @@ class ExplainerGradioInterface:
             default_values = self.get_default_explainer_settings()
 
             # Add "Algorithm Settings" section
-            gr.Markdown("## Algorithm Settings")
+            gr.Markdown(
+                "## Algorithm Settings (these settings will be applied instantly)"
+            )
             with gr.Row():
                 with gr.Column():
                     components["minimax_max_depth"] = gr.Slider(
@@ -560,7 +564,7 @@ class ExplainerGradioInterface:
                     )
 
                     components["use_alpha_beta"] = gr.Checkbox(
-                        label="Use Alpha-Beta Pruning (this setting will be applied instantly)",
+                        label="Use Alpha-Beta Pruning",
                         value=MiniMax.use_alpha_beta,
                     )
 
@@ -727,7 +731,9 @@ class ExplainerGradioInterface:
                 components["minimax_max_depth"].change(
                     self.update_minimax_max_depth,
                     inputs=[components["minimax_max_depth"]],
-                    outputs=[],
+                    outputs=[
+                        components["settings_confirmation"],
+                    ],
                 )
 
             # Update use_alpha_beta setting
