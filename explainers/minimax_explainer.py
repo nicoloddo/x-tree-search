@@ -241,7 +241,9 @@ class MiniMaxExplainer:
                 tactics=[
                     CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move"],
-                        same_if_equal_keys=[("evaluation", ["depth", "last_move_id"])],
+                        same_if_equal_keys=[
+                            ("evaluation", ["depth", "action_signature"])
+                        ],
                     )
                 ],
             ),
@@ -256,7 +258,9 @@ class MiniMaxExplainer:
                 tactics=[
                     CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move"],
-                        same_if_equal_keys=[("evaluation", ["depth", "last_move_id"])],
+                        same_if_equal_keys=[
+                            ("evaluation", ["depth", "action_signature"])
+                        ],
                     )
                 ],
             ),

@@ -95,6 +95,10 @@ class MiniMaxNode:
         return self.id[-1]
 
     @property
+    def action_signature(self):
+        return self.node.action_signature
+
+    @property
     def action(self):
         return self.node.action
 

@@ -1,8 +1,14 @@
 from src.structures.tree import Tree
 from src.game.game_model import GameModel
 
+
 class GameTree(Tree):
-    def __init__(self, game, action_space_id, node_string_format = "{who} does {what} in {where} on {on} modifying what was {what_before}"):
+    def __init__(
+        self,
+        game,
+        action_space_id,
+        node_string_format="{who} does {what} in {where} on {on} modifying what was {what_before}",
+    ):
         """
         Initializes the GameTree object which builds upon the Tree class.
 
@@ -31,7 +37,9 @@ class GameTree(Tree):
         """
         super().__init__()
         if not isinstance(game, GameModel):
-            raise ValueError("The game of the GameTree must be a valid GameModel object.")
+            raise ValueError(
+                "The game of the GameTree must be a valid GameModel object."
+            )
 
         self.game = game
         self.action_space_id = action_space_id
@@ -39,16 +47,16 @@ class GameTree(Tree):
 
         self.root = self.__add_node(root_node_bool=True)
         self.root.state = game.action_spaces[action_space_id]
-    
+
     def get_current_state(self):
         """Returns the current node state."""
-        return self.root 
+        return self.root
 
     class GameTreeNode(Tree.TreeNode):
         """
-        Represents a single node in a game tree. Check the Tree.TreeNode documentation for more info. 
+        Represents a single node in a game tree. Check the Tree.TreeNode documentation for more info.
         The only modification from the standard TreeNode is the value of node.value which becomes specifically a dict with mandatory keys.
-        The values of the value dict are mapped to properties. 
+        The values of the value dict are mapped to properties.
 
         Attributes:
             parent (TreeNode): The TreeNode parent of this node. If it is None, this is the root node, identified with the id:"0".
@@ -60,30 +68,37 @@ class GameTree(Tree):
             action (dict) (derived)
             belonging_tree
         """
+
         def __init__(self, parent, value, *, belonging_tree, root_node_bool=False):
             mandatory_features = ["state", "action", "game"]
             self.belonging_tree = belonging_tree
 
-            if root_node_bool: # Root node
+            if root_node_bool:  # Root node
                 value = {}
                 for feature in mandatory_features:
                     value[feature] = None
-                value["game"] = belonging_tree.game # Root nodes set the game feature
-            else: # Not root node
+                value["game"] = belonging_tree.game  # Root nodes set the game feature
+            else:  # Not root node
                 if not parent:
-                    raise ValueError("Not root nodes must have a parent specified at initialization.")
+                    raise ValueError(
+                        "Not root nodes must have a parent specified at initialization."
+                    )
                 if not all(features in value for features in mandatory_features):
-                    raise ValueError(f"All mandatory features should be in the GameTreeNode value: {mandatory_features}")
-            
+                    raise ValueError(
+                        f"All mandatory features should be in the GameTreeNode value: {mandatory_features}"
+                    )
+
             self.expanded = False
             super().__init__(parent, value)
 
         @property
         def state(self):
             return self.value["state"]
+
         @property
         def action(self):
             return self.value["action"]
+
         @property
         def game(self):
             return self.value["game"]
@@ -91,12 +106,28 @@ class GameTree(Tree):
         @state.setter
         def state(self, value):
             self.value["state"] = value
+
         @action.setter
         def action(self, value):
             self.value["action"] = value
+
         @game.setter
         def game(self, value):
             self.value["game"] = value
+
+        @property
+        def action_signature(self):
+            """
+            Creates a unique signature for the move based on the actual action components,
+            not the tree path. This allows identifying the same move regardless of how
+            it was reached in the game tree.
+
+            Returns:
+                str: A unique signature in format "who_what_where_on" or "root" for root node
+            """
+            if self.action is None:
+                return "root"
+            return f"{self.action['who']}_{self.action['what']}_{self.action['where']}_{self.action['on']}"
 
         def expand(self, with_constraints=None):
             """Expands the node by one depth.
@@ -105,13 +136,15 @@ class GameTree(Tree):
             game_tree = self.belonging_tree
 
             if self.expanded:
-                return                
+                return
             self.expanded = True
 
             state = self.state
             action_space_id = game_tree.action_space_id
 
-            available_actions_and_states = self.game.get_available_actions_and_states(action_space_id, with_constraints)
+            available_actions_and_states = self.game.get_available_actions_and_states(
+                action_space_id, with_constraints
+            )
 
             children_values = []
             for actions_and_states in available_actions_and_states:
@@ -124,24 +157,25 @@ class GameTree(Tree):
 
             game_tree.set_children(self.id, children_values)
 
-        def _expand_children(self, count_depth, depth):            
+        def _expand_children(self, count_depth, depth):
             if count_depth >= depth:
                 return
-            
+
             for child in self.children:
                 child.expand()
                 child._expand_children(count_depth + 1, depth)
-        
+
         def expand_to_depth(self, depth):
             """The expand_to_depth is acceptable only without constraints, because children might need different constraints
-            than a parent. Please use the expand method directly while handling the depth yourself if you need to apply constraints."""
+            than a parent. Please use the expand method directly while handling the depth yourself if you need to apply constraints.
+            """
 
             count_depth = 0
 
             if depth > 0:
-                self.expand() # expand first
+                self.expand()  # expand first
                 count_depth += 1
-            
+
             if depth > 1:
                 self._expand_children(count_depth, depth)
 
@@ -152,18 +186,20 @@ class GameTree(Tree):
             game = self.belonging_tree.game
 
             composed_string = node_string_format.format(
-                who=str(self.action['who']),
-                who_game_identifier=game.agents[self.action['who']][0],
-                what=str(self.action['what']),
-                where=str(self.action['where']),
-                on=str(self.action['on']),
-                what_before=str(self.action['what_before'])
+                who=str(self.action["who"]),
+                who_game_identifier=game.agents[self.action["who"]][0],
+                what=str(self.action["what"]),
+                where=str(self.action["where"]),
+                on=str(self.action["on"]),
+                what_before=str(self.action["what_before"]),
             )
             return composed_string
 
     def __add_node(self, parent=None, value=None, *, root_node_bool=False):
         """Overrides the add_node method to ensure GameTreeNode objects are created."""
-        new_node = self.GameTreeNode(parent, value, belonging_tree=self, root_node_bool=root_node_bool)
+        new_node = self.GameTreeNode(
+            parent, value, belonging_tree=self, root_node_bool=root_node_bool
+        )
         self.nodes[new_node.id] = new_node
         return new_node
 
@@ -178,7 +214,7 @@ class GameTree(Tree):
         parent = self.nodes[node_id]
         for value in children_values:
             child = self.__add_node(parent=parent, value=value)
-            probability = 1/len(children_values)
+            probability = 1 / len(children_values)
             parent._add_child(child, probability)
 
     def expand_node_to_depth(self, node_id, *, depth=1):
