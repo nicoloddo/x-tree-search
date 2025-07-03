@@ -53,7 +53,7 @@ class AlphaBetaExplainer:
         settings = {
             "explanation_depth": 4,
             "print_implicit_assumptions": False,
-            "assumptions_verbosity": "verbose",
+            "assumptions_verbosity": "if_asked",
             "print_mode": "verbal",
         }
         explainer.configure_settings(settings)
