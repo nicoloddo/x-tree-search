@@ -196,7 +196,29 @@ class MiniMaxExplainer:
                             Assumption(
                                 "We assume us and the opponent are playing optimally."
                             ),
-                            Possession("as next move"),
+                            ConditionalExplanation(
+                                condition=If(
+                                    "possession", "as next move", "final move"
+                                ),
+                                explanation_if_true=ConditionalExplanation(
+                                    condition=If("possession", "as next move", "a win"),
+                                    explanation_if_true=Possession(
+                                        "as next move", "a win"
+                                    ),
+                                    explanation_if_false=ConditionalExplanation(
+                                        condition=If(
+                                            "possession", "as next move", "a loss"
+                                        ),
+                                        explanation_if_true=Possession(
+                                            "as next move", "a loss"
+                                        ),
+                                        explanation_if_false=Possession(
+                                            "as next move", "a draw"
+                                        ),
+                                    ),
+                                ),
+                                explanation_if_false=Possession("as next move"),
+                            ),
                         ),
                     ),
                 ),
@@ -212,8 +234,18 @@ class MiniMaxExplainer:
                     Possession("as next move", "the best"),
                 ),
             ),
-            ComparisonAdjective("better for me than", "score", ">"),
-            ComparisonAdjective("worse for me than", "score", "<"),
+            ComparisonAdjective(
+                "better for me than",
+                "score",
+                ">",
+                stop_if_found_adjectives=["final move"],
+            ),
+            ComparisonAdjective(
+                "worse for me than",
+                "score",
+                "<",
+                stop_if_found_adjectives=["final move"],
+            ),
             ComparisonAdjective("equal to", "score", "=="),
             NodesGroupPointerAdjective(
                 "possible alternatives",
@@ -242,7 +274,7 @@ class MiniMaxExplainer:
                     CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move"],
                         same_if_equal_keys=[
-                            ("evaluation", ["depth", "action_signature"])
+                            ("evaluation", ["depth", "action_description"])
                         ],
                     )
                 ],
@@ -259,7 +291,7 @@ class MiniMaxExplainer:
                     CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move"],
                         same_if_equal_keys=[
-                            ("evaluation", ["depth", "action_signature"])
+                            ("evaluation", ["depth", "action_description"])
                         ],
                     )
                 ],
