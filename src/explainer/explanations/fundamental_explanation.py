@@ -339,18 +339,22 @@ class ComparisonNodesPropertyPossession(Explanation):
                 # We may need to add a further explanation that explicits the comparison between the nodes from which the property derives
                 one_is_stopper = False
                 if stop_comparison_explanation_pointer_adjectives:
-                    one_is_stopper = any(  # First we check if any of the nodes involved in the property possession are stoppers for the comparison explanation
-                        any(
-                            self.forward_multiple_evaluations(
-                                (
-                                    stop_comparison_explanation_pointer_adjective,
-                                    final_node,
-                                )
-                            )
-                            for stop_comparison_explanation_pointer_adjective in stop_comparison_explanation_pointer_adjectives
-                        )
+                    # First we check if any of the nodes involved in the property possession are stoppers for the comparison explanation
+
+                    # Construct all tuples upfront using list comprehension
+                    all_evaluation_tuples = [
+                        (stop_comparison_explanation_pointer_adjective, final_node)
                         for final_node in final_nodes_involved_in_property_possession
+                        for stop_comparison_explanation_pointer_adjective in stop_comparison_explanation_pointer_adjectives
+                    ]
+
+                    # Evaluate all nodes with all stopper pointer adjectives
+                    all_evaluations = self.forward_multiple_evaluations(
+                        *all_evaluation_tuples
                     )
+
+                    # Check if any evaluation is True
+                    one_is_stopper = any(all_evaluations)
                 if not one_is_stopper:
                     # If none of the nodes involved in the property possession are stoppers for the comparison explanation,
                     # we add a further explanation that explicits the comparison between the nodes from which the property derives
