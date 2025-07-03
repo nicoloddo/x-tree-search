@@ -22,16 +22,6 @@ from src.explainer.explanation_tactics import (
     CompactComparisonsWithSameExplanation,
 )
 
-game_end_conditional_explanation = ConditionalExplanation(
-    condition=If("possession", "a win"),
-    explanation_if_true=Possession("a win"),
-    explanation_if_false=ConditionalExplanation(
-        condition=If("possession", "a loss"),
-        explanation_if_true=Possession("a loss"),
-        explanation_if_false=Possession("a draw"),
-    ),
-)
-
 
 class MiniMaxExplainer:
     """
@@ -139,6 +129,16 @@ class MiniMaxExplainer:
         """
         Returns a list of adjective definitions for the highlevel argumentation framework.
         """
+        game_end_conditional_explanation = ConditionalExplanation(
+            condition=If("possession", "a win"),
+            explanation_if_true=Possession("a win"),
+            explanation_if_false=ConditionalExplanation(
+                condition=If("possession", "a loss"),
+                explanation_if_true=Possession("a loss"),
+                explanation_if_false=Possession("a draw"),
+            ),
+        )
+
         return [
             BooleanAdjective(
                 "the most forward in the future I looked",
