@@ -8,7 +8,6 @@ from src.explainer.adjective import (
     NodesGroupPointerAdjective,
     ComparisonAdjective,
     MaxRankAdjective,
-    MinRankAdjective,
 )
 from src.explainer.adjective import COMPARISON_AUXILIARY_ADJECTIVE
 from src.explainer.explanation import (
@@ -22,8 +21,6 @@ from src.explainer.explanation import (
 )
 
 from src.explainer.explanation_tactics import (
-    OnlyRelevantComparisons,
-    SkipQuantitativeExplanations,
     CompactComparisonsWithSameExplanation,
 )
 
@@ -356,7 +353,7 @@ class AlphaBetaExplainer:
                     CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move", "as next possible move"],
                         same_if_equal_keys=[
-                            ("evaluation", ["depth", "action_signature"])
+                            ("evaluation", ["depth", "action_description"])
                         ],
                         also_compact_adjectives=[
                             "not in possession of futures worth exploring after checking the first possible next move"
@@ -376,7 +373,7 @@ class AlphaBetaExplainer:
                     CompactComparisonsWithSameExplanation(
                         from_adjectives=["as next move", "as next possible move"],
                         same_if_equal_keys=[
-                            ("evaluation", ["depth", "action_signature"])
+                            ("evaluation", ["depth", "action_description"])
                         ],
                         also_compact_adjectives=[
                             "not in possession of futures worth exploring after checking the first possible next move"

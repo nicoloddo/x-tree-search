@@ -58,6 +58,10 @@ class MiniMaxNode:
     def game_tree_node_string(self):
         return str(self.node)
 
+    @property
+    def action_description(self):
+        return str(self.node)
+
     def expand(self, with_constraints=None):
         # Expands the node by one depth.
         self.node.expand(with_constraints)
@@ -93,10 +97,6 @@ class MiniMaxNode:
     @property
     def last_move_id(self):
         return self.id[-1]
-
-    @property
-    def action_signature(self):
-        return self.node.action_signature
 
     @property
     def action(self):

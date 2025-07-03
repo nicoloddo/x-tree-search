@@ -115,20 +115,6 @@ class GameTree(Tree):
         def game(self, value):
             self.value["game"] = value
 
-        @property
-        def action_signature(self):
-            """
-            Creates a unique signature for the move based on the actual action components,
-            not the tree path. This allows identifying the same move regardless of how
-            it was reached in the game tree.
-
-            Returns:
-                str: A unique signature in format "who_what_where_on" or "root" for root node
-            """
-            if self.action is None:
-                return "root"
-            return f"{self.action['who']}_{self.action['what']}_{self.action['where']}_{self.action['on']}"
-
         def expand(self, with_constraints=None):
             """Expands the node by one depth.
             With the constraints you can limit the expansion to valid moves coming from a specific player for example,
