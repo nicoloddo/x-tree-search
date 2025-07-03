@@ -110,12 +110,12 @@ class MiniMaxNode:
     def has_score(self):
         return self.score is not None
 
+    @property
+    def explicit_description(self):
+        return f"{str(self.game_state)} {str(self.game_tree_node_string)}"
+
     def __str__(self) -> str:
-        return (
-            "\n"
-            + f"{str(self.game_state)} {str(self.game_tree_node_string)}, id={self.id}"
-            + ""
-        )
+        return "\n" + f"{self.explicit_description}, id={self.id}" + ""
 
 
 class MiniMax:
