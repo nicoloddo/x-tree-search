@@ -894,6 +894,11 @@ class ExplainerGradioInterface:
                         explaining_question = f""
 
                     explanation = str(explanation)
+                    explanation = (
+                        LogicalExpression.reformat_unnecessarily_explicit_nodes(
+                            explanation
+                        )
+                    )
 
                     # If we are in interface mode, we need to replace the node references with hyperlinks
                     if activated:

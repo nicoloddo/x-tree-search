@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Union, Dict, Any
+from typing import Any
 import textwrap
 import inspect
+import re
 
 
 class LogicalExpression(ABC):
@@ -24,12 +25,70 @@ class LogicalExpression(ABC):
         self.compacted = False
 
     @classmethod
-    def format_node(cls, node):
-        return (
-            f"::node::({node.id})[{node.game_tree_node_string}]"
-            if cls.hyperlink_mode
-            else str(node)
-        )
+    def format_node(cls, node, be_more_explicit=True):
+        if cls.hyperlink_mode:
+            if be_more_explicit:
+                # Format the node ID for display (truncate if longer than 6 chars)
+                display_id = (
+                    node.id if len(str(node.id)) <= 6 else f"...{str(node.id)[-6:]}"
+                )
+                return f"::node::({node.id})[{str(node.game_tree_node_string)} 🞄 id: {display_id}]"
+            else:
+                return f"::node::({node.id})[{node.game_tree_node_string}]"
+        else:
+            return str(node)
+
+    @classmethod
+    def reformat_unnecessarily_explicit_nodes(
+        cls, logical_expression_string: str, *, reformat_all_nodes=False
+    ):
+        """
+        Finds nodes that are formatted with explicit descriptions but don't need to be
+        (i.e., when there are no other nodes with the same game_tree_node_string).
+        Simplifies them to the non-explicit format.
+        This function should be used after the main explanation string is built.
+        At the moment, it is only used in the gradio interface.
+        """
+
+        # Pattern to match explicit node format: ::node::(id)[game_tree_node_string 🞄 id: display_id]
+        # We need to capture the parts to reconstruct the simplified version
+        explicit_pattern = r"::node::\(([^)]+)\)\[(.+?) 🞄 id: ([^\]]+)\]"
+
+        # Find all explicit node representations
+        explicit_matches = re.findall(explicit_pattern, logical_expression_string)
+
+        if not explicit_matches:
+            return logical_expression_string
+
+        # Group by game_tree_node_string to find duplicates
+        node_string_groups = {}
+        for node_id, game_tree_node_string, display_id in explicit_matches:
+            if game_tree_node_string not in node_string_groups:
+                node_string_groups[game_tree_node_string] = []
+            node_string_groups[game_tree_node_string].append(
+                (node_id, game_tree_node_string, display_id)
+            )
+
+        # Identify which nodes can be simplified (no duplicates with different IDs)
+        result_string = logical_expression_string
+        for game_tree_node_string, nodes in node_string_groups.items():
+            # Get unique node IDs for this game_tree_node_string
+            unique_node_ids = set(node_id for node_id, _, _ in nodes)
+
+            if (
+                len(unique_node_ids) == 1 or reformat_all_nodes
+            ):  # Only one unique node ID with this game_tree_node_string
+                node_id, gtn_string, display_id = nodes[0]
+                # Replace explicit format with simplified format
+                explicit_format = (
+                    f"::node::({node_id})[{gtn_string} 🞄 id: {display_id}]"
+                )
+                simplified_format = f"::node::({node_id})[{gtn_string}]"
+                result_string = result_string.replace(
+                    explicit_format, simplified_format
+                )
+
+        return result_string
 
     @classmethod
     def set_hyperlink_mode(cls, value: bool, tree_node_cls=None) -> bool:
@@ -77,7 +136,9 @@ class LogicalExpression(ABC):
         if self.nullified:
             return None
         else:
-            return self._to_str()
+            # First pass: build string with all nodes formatted explicitly
+            raw_string = self._to_str()
+            return raw_string
 
     @abstractmethod
     def _to_str(self) -> str:
