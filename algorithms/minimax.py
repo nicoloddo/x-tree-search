@@ -112,10 +112,10 @@ class MiniMaxNode:
 
     @property
     def explicit_description(self):
-        return f"{str(self.game_state)} {str(self.game_tree_node_string)}"
+        return "\n" + f"{str(self.game_state)} {str(self.game_tree_node_string)}"
 
     def __str__(self) -> str:
-        return "\n" + f"{self.explicit_description}, id={self.id}" + ""
+        return f"{self.explicit_description}, id={self.id}" + ""
 
 
 class MiniMax:
