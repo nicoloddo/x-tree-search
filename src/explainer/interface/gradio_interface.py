@@ -3,8 +3,10 @@ import gradio as gr
 import tempfile
 import inspect
 import sys
+import os
 import graphviz
 import re
+from openai import OpenAI
 
 # TODO: Add new nvidia fast processing xnetwork env variable and install its backend with pip
 
@@ -467,7 +469,7 @@ class ExplainerGradioInterface:
                             value=self.update_ai_explanation(
                                 game_state_component.value,
                                 explainer_state_component.value,
-                            )[0],
+                            )[1],
                             label="Logic driven reasoning",
                         )
                     else:
@@ -804,6 +806,43 @@ class ExplainerGradioInterface:
         def __init__(self, explainer, explain_in_hyperlink_mode):
             self.init_explainer = explainer
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
+            self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+        def process_explanation_with_llm(self, raw_explanation):
+            """
+            Process the raw explanation through an LLM to make it simpler to understand.
+
+            :param raw_explanation: The raw explanation text
+            :return: Simplified explanation text
+            """
+            try:
+                # Create a prompt to simplify the explanation
+                prompt = f"""You are an expert at explaining game AI decision-making in simple terms. 
+
+Please take the following logical-argumentative explanation and rewrite it in a concise way.
+
+IMPORTANT: Keep all ::node:: tags exactly as they are - these are special references to game moves that must be preserved exactly.
+
+Thought process:
+{raw_explanation}"""
+
+                response = self.openai_client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert at explaining game AI decision-making in simple terms. You will be given an argumentative logical explanation of a game AI decision-making process. Your task is to rewrite it in a concise way.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    max_tokens=1000,
+                    temperature=0.7,
+                )
+
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                # If LLM processing fails, return the original explanation with a note
+                return f"**Note: Unable to process explanation through LLM ({str(e)})**\n\n{raw_explanation}"
 
         def update_ai_explanation(
             self,
@@ -839,14 +878,18 @@ class ExplainerGradioInterface:
 
             explanation = ""
             explaining_question = "Why ...?"
+            processed_explanation = ""
 
             # Check for valid inputs
             if adjective is None:
                 explanation = "No adjective was provided."
+                processed_explanation = explanation
             elif not game:
                 explanation = "No game was provided."
+                processed_explanation = explanation
             elif game.explaining_agent is None:
                 explanation = "No explaining agent was found."
+                processed_explanation = explanation
             else:
                 # Set explanation depth
                 if explanation_depth is None:
@@ -864,6 +907,7 @@ class ExplainerGradioInterface:
 
                 if node is None:
                     explanation = f"No {explainer.framework.refer_to_nodes_as} to explain was found."
+                    processed_explanation = explanation
                 else:
                     # Generate explanation
                     if self.explain_in_hyperlink_mode:
@@ -921,6 +965,9 @@ class ExplainerGradioInterface:
                         )
                     )
 
+                    # Store the raw explanation before processing hyperlinks
+                    raw_explanation = explanation
+
                     # If we are in interface mode, we need to replace the node references with hyperlinks
                     if activated:
                         LogicalExpression.set_hyperlink_mode(False)
@@ -930,13 +977,35 @@ class ExplainerGradioInterface:
                             explanation,
                         )
 
+                        # Process the raw explanation through LLM for the logic driven tab
+                        processed_explanation = self.process_explanation_with_llm(
+                            raw_explanation
+                        )
+                        # Apply hyperlinks to the processed explanation too
+                        processed_explanation = re.sub(
+                            ExplainerGradioInterface.node_hyperlink_pattern,
+                            lambda m: f'<span class="draggable-node" data-node="{ExplainerGradioInterface.node_hyperlink_prefix}({m.group(1)})[{m.group(2)}]" title="{m.group(1)}" style="cursor: grab; color: var(--color-accent); font-weight: bold;">{m.group(2)}</span>',
+                            processed_explanation,
+                        )
+                    else:
+                        # If not in hyperlink mode, just process the explanation
+                        processed_explanation = self.process_explanation_with_llm(
+                            raw_explanation
+                        )
+
             # Format the explanation output
             if self.explain_in_hyperlink_mode:
+                logic_driven_return = (
+                    ExplainerGradioInterface.cool_html_text_container.format(
+                        explanation
+                    )
+                )
                 full_return = ExplainerGradioInterface.cool_html_text_container.format(
-                    explanation
+                    processed_explanation
                 )
             else:
-                full_return = f"```markdown\n{explanation}\n```"
+                full_return = f"```markdown\n{processed_explanation}\n```"
+                logic_driven_return = f"```markdown\n{explanation}\n```"
 
             explaining_question = (
                 ExplainerGradioInterface.cool_html_text_container.format(
@@ -946,7 +1015,7 @@ class ExplainerGradioInterface:
 
             return (
                 full_return,
-                full_return,  # Same content for logic driven tab (for now)
+                logic_driven_return,
                 explaining_question,
                 current_node_id,
                 current_adjective,

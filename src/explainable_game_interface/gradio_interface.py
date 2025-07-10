@@ -330,7 +330,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
         adjective = explainer.framework.main_explanation_adjective
         (
             ai_explanation,
-            _,  # logic_driven_output (not used in this context)
+            logic_driven_output,
             explaining_question,
             current_node_id,
             current_adjective,
@@ -345,7 +345,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             showing_state,
             status,
             ai_explanation,
-            ai_explanation,  # Same content for logic_driven_output
+            logic_driven_output,
             show_node_id,
             adjective,
             explaining_question,
