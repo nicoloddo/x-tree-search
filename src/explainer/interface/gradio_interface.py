@@ -84,6 +84,17 @@ class ExplainerGradioInterface:
         border-radius: var(--radius-sm);
         padding: var(--spacing-lg) var(--spacing-xl);">{}</pre>"""
 
+    # HTML template for wrapped text container (for explanation tab)
+    wrapped_html_text_container = """<pre style="
+        font-family: var(--font-mono); 
+        font-size: var(--text-sm); 
+        background: var(--code-background-fill); 
+        overflow: auto;
+        border-radius: var(--radius-sm);
+        padding: var(--spacing-lg) var(--spacing-xl);
+        white-space: pre-wrap;
+        word-wrap: break-word;">{}</pre>"""
+
     @classmethod
     def transform_hyperlink_to_node_id(cls, node_id):
         """
@@ -449,7 +460,7 @@ class ExplainerGradioInterface:
 
             # Create tabbed explanation output
             with gr.Tabs():
-                with gr.TabItem("explanation"):
+                with gr.TabItem("Explanation"):
                     if self.explain_in_hyperlink_mode:
                         components["explanation_output"] = gr.HTML(
                             value=self.update_ai_explanation(
@@ -463,18 +474,18 @@ class ExplainerGradioInterface:
                             value="", label="AI move explanation"
                         )
 
-                with gr.TabItem("logic driven reasoning"):
+                with gr.TabItem("Argumentation"):
                     if self.explain_in_hyperlink_mode:
                         components["logic_driven_output"] = gr.HTML(
                             value=self.update_ai_explanation(
                                 game_state_component.value,
                                 explainer_state_component.value,
                             )[1],
-                            label="Logic driven reasoning",
+                            label="Argumentation",
                         )
                     else:
                         components["logic_driven_output"] = gr.Markdown(
-                            value="", label="Logic driven reasoning"
+                            value="", label="Argumentation"
                         )
 
             # Add toggles if provided
@@ -1000,8 +1011,10 @@ Thought process:
                         explanation
                     )
                 )
-                full_return = ExplainerGradioInterface.cool_html_text_container.format(
-                    processed_explanation
+                full_return = (
+                    ExplainerGradioInterface.wrapped_html_text_container.format(
+                        processed_explanation
+                    )
                 )
             else:
                 full_return = f"```markdown\n{processed_explanation}\n```"
