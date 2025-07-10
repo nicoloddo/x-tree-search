@@ -445,17 +445,35 @@ class ExplainerGradioInterface:
                     )
                 )
 
-            if self.explain_in_hyperlink_mode:
-                components["explanation_output"] = gr.HTML(
-                    value=self.update_ai_explanation(
-                        game_state_component.value, explainer_state_component.value
-                    )[0],
-                    label="AI move explanation",
-                )
-            else:
-                components["explanation_output"] = gr.Markdown(
-                    value="", label="AI move explanation"
-                )
+            # Create tabbed explanation output
+            with gr.Tabs():
+                with gr.TabItem("explanation"):
+                    if self.explain_in_hyperlink_mode:
+                        components["explanation_output"] = gr.HTML(
+                            value=self.update_ai_explanation(
+                                game_state_component.value,
+                                explainer_state_component.value,
+                            )[0],
+                            label="AI move explanation",
+                        )
+                    else:
+                        components["explanation_output"] = gr.Markdown(
+                            value="", label="AI move explanation"
+                        )
+
+                with gr.TabItem("logic driven reasoning"):
+                    if self.explain_in_hyperlink_mode:
+                        components["logic_driven_output"] = gr.HTML(
+                            value=self.update_ai_explanation(
+                                game_state_component.value,
+                                explainer_state_component.value,
+                            )[0],
+                            label="Logic driven reasoning",
+                        )
+                    else:
+                        components["logic_driven_output"] = gr.Markdown(
+                            value="", label="Logic driven reasoning"
+                        )
 
             # Add toggles if provided
             if toggles:
@@ -616,6 +634,7 @@ class ExplainerGradioInterface:
                     ],
                     outputs=[
                         components["explanation_output"],
+                        components["logic_driven_output"],
                         components["explaining_question"],
                         components["current_node_id"],
                         components["current_adjective"],
@@ -634,6 +653,7 @@ class ExplainerGradioInterface:
                     ],
                     outputs=[
                         components["explanation_output"],
+                        components["logic_driven_output"],
                         components["explaining_question"],
                         components["current_node_id"],
                         components["current_adjective"],
@@ -655,24 +675,25 @@ class ExplainerGradioInterface:
                     inputs=[components["comparison_id_input"]],
                     outputs=[components["comparison_id_input"]],
                 )
-                components[
-                    "explanation_output"
-                ].change(  # Make the explanation output draggable
-                    fn=None,  # No Python function needed
-                    inputs=None,
-                    outputs=None,
-                    js="""
-                    (explanation) => {
-                        document.querySelectorAll('.draggable-node').forEach(node => {
-                            node.draggable = true;
-                            node.addEventListener('dragstart', (e) => {
-                                e.dataTransfer.setData('text/plain', node.dataset.node);
-                            });
-                        });
-                        return explanation;  // Return the input to satisfy Gradio's expectation
-                    }
-                    """,
-                )
+                # Make both explanation outputs draggable
+                for output_key in ["explanation_output", "logic_driven_output"]:
+                    if output_key in components:
+                        components[output_key].change(
+                            fn=None,  # No Python function needed
+                            inputs=None,
+                            outputs=None,
+                            js="""
+                            (explanation) => {
+                                document.querySelectorAll('.draggable-node').forEach(node => {
+                                    node.draggable = true;
+                                    node.addEventListener('dragstart', (e) => {
+                                        e.dataTransfer.setData('text/plain', node.dataset.node);
+                                    });
+                                });
+                                return explanation;  // Return the input to satisfy Gradio's expectation
+                            }
+                            """,
+                        )
 
             # Visualize framework graph
             if "visualize_button" in components:
@@ -925,6 +946,7 @@ class ExplainerGradioInterface:
 
             return (
                 full_return,
+                full_return,  # Same content for logic driven tab (for now)
                 explaining_question,
                 current_node_id,
                 current_adjective,

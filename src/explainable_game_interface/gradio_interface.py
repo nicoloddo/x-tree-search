@@ -167,6 +167,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
                 game_components["showing_state"],
                 game_components["status"],
                 self.ai_explanation_components["explanation_output"],
+                self.ai_explanation_components["logic_driven_output"],
                 self.ai_explanation_components["id_input"],
                 self.ai_explanation_components["explain_adj_name"],
                 self.ai_explanation_components["explaining_question"],
@@ -229,7 +230,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
                     "score"
                 ).skip_statement = skip_score
 
-                ai_explanation, explaining_question, _, _, _ = (
+                ai_explanation, _, explaining_question, _, _, _ = (
                     self.explainer_interface.ai_explainer.update_ai_explanation(
                         game,
                         explainer,
@@ -308,6 +309,10 @@ class ExplainableGameGradioInterface(GameGradioInterface):
                 None,
                 None,
                 None,
+                None,  # logic_driven_output
+                None,
+                None,
+                None,
                 None,
                 None,
                 None,
@@ -325,6 +330,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
         adjective = explainer.framework.main_explanation_adjective
         (
             ai_explanation,
+            _,  # logic_driven_output (not used in this context)
             explaining_question,
             current_node_id,
             current_adjective,
@@ -339,6 +345,7 @@ class ExplainableGameGradioInterface(GameGradioInterface):
             showing_state,
             status,
             ai_explanation,
+            ai_explanation,  # Same content for logic_driven_output
             show_node_id,
             adjective,
             explaining_question,
