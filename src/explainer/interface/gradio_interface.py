@@ -819,30 +819,50 @@ class ExplainerGradioInterface:
             self.explain_in_hyperlink_mode = explain_in_hyperlink_mode
             self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-        def process_explanation_with_llm(self, raw_explanation):
+        def process_explanation_with_llm(
+            self, raw_explanation, algorithm_name=None, game_name=None
+        ):
             """
             Process the raw explanation through an LLM to make it simpler to understand.
 
             :param raw_explanation: The raw explanation text
+            :param algorithm_name: Name of the algorithm being used
+            :param game_name: Name of the game being played
             :return: Simplified explanation text
             """
             try:
+                # Build context information
+                context_info = ""
+                if game_name:
+                    context_info += f"Game: {game_name}\n"
+                if algorithm_name:
+                    context_info += f"Algorithm: {algorithm_name}\n"
+
                 # Create a prompt to simplify the explanation
                 prompt = f"""You are an expert at explaining game AI decision-making in simple terms. 
 
-Please take the following logical-argumentative explanation and rewrite it in a concise way.
+{context_info}
+Please take the following logical-argumentative explanation and consider it your own logical reasoning behind a decision.
+Then, given your thought process, explain yourself in natural language. Be concise and to the point.
+Consider that next moves may be either from you or your opponent. You can refer to the move signature to understand the move.
 
 IMPORTANT: Keep all ::node:: tags exactly as they are - these are special references to game moves that must be preserved exactly.
+Use that same format to refer to moves in your explanation. It will be parsed in a way that is visisble for the user.
 
-Thought process:
+Your thought process:
 {raw_explanation}"""
+
+                system_prompt = "You are an expert at explaining game AI decision-making. You will be given an argumentative logical explanation of your own game decision-making process. Your task is to explain yourself and your move to the user, by referring to your logical argumentation. When talking about moves (nodes), you can directly substitute their name with the ::node:: format."
+
+                if algorithm_name and game_name:
+                    system_prompt += f" You are explaining decisions made by the {algorithm_name} algorithm while playing {game_name}."
 
                 response = self.openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
                         {
                             "role": "system",
-                            "content": "You are an expert at explaining game AI decision-making in simple terms. You will be given an argumentative logical explanation of a game AI decision-making process. Your task is to rewrite it in a concise way.",
+                            "content": system_prompt,
                         },
                         {"role": "user", "content": prompt},
                     ],
@@ -988,9 +1008,17 @@ Thought process:
                             explanation,
                         )
 
+                        # Get algorithm and game info for context
+                        algorithm_name = (
+                            type(game.explaining_agent.core).__name__
+                            if game.explaining_agent and game.explaining_agent.core
+                            else "Unknown Algorithm"
+                        )
+                        game_name = type(game).__name__ if game else "Unknown Game"
+
                         # Process the raw explanation through LLM for the logic driven tab
                         processed_explanation = self.process_explanation_with_llm(
-                            raw_explanation
+                            raw_explanation, algorithm_name, game_name
                         )
                         # Apply hyperlinks to the processed explanation too
                         processed_explanation = re.sub(
@@ -999,9 +1027,17 @@ Thought process:
                             processed_explanation,
                         )
                     else:
+                        # Get algorithm and game info for context
+                        algorithm_name = (
+                            type(game.explaining_agent.core).__name__
+                            if game.explaining_agent and game.explaining_agent.core
+                            else "Unknown Algorithm"
+                        )
+                        game_name = type(game).__name__ if game else "Unknown Game"
+
                         # If not in hyperlink mode, just process the explanation
                         processed_explanation = self.process_explanation_with_llm(
-                            raw_explanation
+                            raw_explanation, algorithm_name, game_name
                         )
 
             # Format the explanation output
