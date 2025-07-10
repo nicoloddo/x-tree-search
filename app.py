@@ -10,7 +10,7 @@ use_alpha_beta: Whether to use AlphaBetaExplainer or MiniMaxExplainer.
 players_order: The order of the players. (Not possible to set for OpenSpiel games)
 """
 game = "tic_tac_toe"
-use_alpha_beta = True
+use_alpha_beta = False
 players_order = ["human", "AI"]
 """
 END OF PARAMETERS
@@ -103,7 +103,7 @@ game = Game(
 game.explaining_agent = opponent
 
 title = game.__class__.__name__ + " vs MiniMax"
-title += "\nChoose the search depth or disable AlphaBeta pruning in the settings tab."
+title += "\nChoose the search depth or enable AlphaBeta pruning in the settings tab."
 
 if use_alpha_beta:
     explainer = AlphaBetaExplainer()
